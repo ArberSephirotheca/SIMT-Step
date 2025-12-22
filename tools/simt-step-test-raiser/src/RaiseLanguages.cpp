@@ -1,30 +1,54 @@
 #include "RaiseLanguages.h"
 #include "common.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
+#include <cstdio>
+
 
 using namespace simt::test_raiser;
 using namespace llvm;
 using namespace mlir;
 
 class GlslRaiser : public BaseRaiser {
-    using BaseRaiser::BaseRaiser;
 
-    public: 
-    llvm::LogicalResult emitHarness(mlir::Operation* op) {
-        if (failed(emitAmberHarnessPrologue(os, "GLSL"))) return failure();
-        os << "Hello!\n";
-        if (failed(emitAmberHarnessEpilogue(os, 1, 1, 1))) return failure();
-        return success();
-    }
+public:
+
+using BaseRaiser::BaseRaiser;
+
+LogicalResult emitHarness(Operation* op) {
+    return emitAmberHarness(*this, op, "GLSL", 1, 1, 1);
+}
+
+~GlslRaiser(){}
+
+private:
+LogicalResult emitMainFuncTop(func::FuncOp& f) override {
+    os << "void main()";
+    return success();
+}
+
+LogicalResult emitType(Type type) override {
+    return success();
+}
+
+
+// LogicalResult emitBuiltin(Operation type) override {
+//     return success();
+// }
 
 };
+
 namespace simt::test_raiser {
-    llvm::LogicalResult emitRaised(mlir::Operation *op, llvm::raw_ostream &o, RaiserTarget target){
-        switch (target){
-            case simt::test_raiser::GLSL:
-                GlslRaiser glsl(o);
-                return glsl.emitHarness(op);
-        }
+
+LogicalResult emitRaised(Operation *op,raw_ostream &o, RaiserTarget target){
+    switch (target){
+        case simt::test_raiser::GLSL:
+            GlslRaiser glsl(o);
+            return glsl.emitHarness(op);
     }
+    llvm_unreachable("Target not implemented");
+    return failure();
+}
+
 }
