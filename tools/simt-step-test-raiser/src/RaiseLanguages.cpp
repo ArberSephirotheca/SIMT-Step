@@ -29,6 +29,33 @@ LogicalResult emitMainFuncTop(func::FuncOp& f) override {
 }
 
 LogicalResult emitType(Type type) override {
+    if (type.isInteger()){
+        switch (type.getIntOrFloatBitWidth()){
+            case 1:
+                os << "bool";
+                break;
+            case 32: 
+                os << (type.isUnsignedInteger() ? "uint" : "int");
+                break;
+            case 64:
+                os << (type.isUnsignedInteger() ? "uint64" : "int64");
+                break;
+            default:
+                llvm_unreachable("Unsupported type");
+                break;
+        }
+    }
+    return success();
+}
+
+LogicalResult emitShaderPrologue() override {
+    os << 
+        "#version 430\n"
+        "#extension GL_KHR_shader_subgroup_ballot  : enable\n"
+        "#extension GL_KHR_shader_subgroup_vote    : enable\n"
+        "#extension GL_KHR_shader_subgroup_basic   : enable\n"
+        "#extension GL_KHR_memory_scope_semantics  : enable\n"
+        "#extension GL_ARB_gpu_shader_int64        : enable \n";
     return success();
 }
 
