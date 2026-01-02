@@ -17,6 +17,7 @@
 
 using namespace mlir;
 
+
 void insertSimtDialects(DialectRegistry &registry){
     registry.insert<
         simt::dialect::SimtStepDialect,

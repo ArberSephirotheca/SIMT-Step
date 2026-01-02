@@ -18,6 +18,7 @@
 #include <mlir/Dialect/Vector/IR/VectorOps.h>
 
 #include <mlir/InitAllTranslations.h>
+#include <string>
 #include "mlir/Support/IndentedOstream.h"
 
 
@@ -27,7 +28,8 @@ using namespace mlir;
 
 namespace simt::test_raiser {
 
-BaseRaiser::BaseRaiser(raw_ostream& o): os((raw_indented_ostream&)(o)) {};
+BaseRaiser::BaseRaiser(raw_ostream& o): os(o) {
+}
 
 BaseRaiser::~BaseRaiser(){}
 
@@ -42,13 +44,40 @@ int BaseRaiser::getOrAddValueNumber(Value v){
     return value_map[v] = value_counter++;
 }
 
+std::string BaseRaiser::getOrAddValueName(Value v){
+    return "v" + std::to_string(getOrAddValueNumber(v));
+}
+
+LogicalResult BaseRaiser::emitConst(Type t, int64_t v){
+    switch (t.getIntOrFloatBitWidth()){
+        case 1:
+            os << (v ? "true" : "false");
+            break;
+        case 32:
+            os << v;
+            if (t.isUnsignedInteger()) os << "u";
+            break;
+        case 64:
+            os << v;
+            if (t.isUnsignedInteger()) os << "u";
+            os << "l";
+            break;
+        default:
+            llvm_unreachable("Unable to emit conststant");
+            break;
+    }
+
+    return success();
+}
+
+
 /**
 Uses function overloading to choose the correct printing function for each
 operation type.
 */
 LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
     LogicalResult res = llvm::TypeSwitch<Operation&, LogicalResult>(*op)
-        .Case<func::FuncOp, func::ReturnOp, ModuleOp>([&](auto op){return printOp(op);})
+        .Case<func::FuncOp, func::ReturnOp, ModuleOp, arith::ConstantIntOp>([&](auto op){return printOp(op);})
         .Default([&](Operation &) {
             return op->emitOpError("unsupported");
         });
@@ -64,9 +93,26 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
     return success();
 }
 
+
+/////////////     Builtins     /////////////
+
+//
+LogicalResult BaseRaiser::printOp(ModuleOp& op){
+    for (auto &subop : op.getBodyRegion().front()){
+        if (failed(emitOp(&subop))) {
+            return failure();
+        }
+    }
+
+    return success();
+}
+
+///////////// 'func' dialect /////////////
+
+//
 LogicalResult BaseRaiser::printOp(func::FuncOp& op){
     if (op.getSymName() == "main" && failed(emitMainFuncTop(op))) return failure();
-    os << "{";
+    os << "{\n";
     os.indent();
     for (auto &subop : op.getBody().front()){
         if (failed(emitOp(&subop))) {
@@ -83,17 +129,17 @@ LogicalResult BaseRaiser::printOp(func::ReturnOp& op){
     return success();
 }
 
-LogicalResult BaseRaiser::printOp(ModuleOp& op){
-    for (auto &subop : op.getBodyRegion().front()){
-        if (failed(emitOp(&subop))) {
-            return failure();
-        }
-    }
+///////////// 'arith' dialect /////////////
+
+LogicalResult BaseRaiser::printOp(arith::ConstantIntOp& op){
+    Value v = op.getResult();
+    std::string vname = getOrAddValueName(v);
+    if (failed(emitType(v.getType()))) return failure();
+    os << " " << vname << " = ";
+    if (failed(emitConst(v.getType(), op.value()))) return failure();
 
     return success();
 }
-
-
 
 
 //////////// Other helper functions ////////////
@@ -104,7 +150,7 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, i
             "SET ENGINE_DATA fence_timeout_ms 10000\n"
             "SHADER compute compute_shader " << lang << " TARGET_ENV vulkan1.1\n";
     
-    if (failed(b.emitOp(op))) {
+    if (failed(b.emitShaderPrologue()) || failed(b.emitOp(op))) {
         return failure();
     }
     
