@@ -8,6 +8,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
@@ -70,6 +71,22 @@ LogicalResult BaseRaiser::emitConst(Type t, int64_t v){
     return success();
 }
 
+LogicalResult BaseRaiser::emitConst(Type t, APFloat v){
+    switch (t.getIntOrFloatBitWidth()){
+        case 32:
+            os << v;
+            break;
+        case 64:
+            os << v << "lf";
+            break;
+        default:
+            llvm_unreachable("Unable to emit conststant");
+            break;
+    }
+
+    return success();
+}
+
 
 /**
 Uses function overloading to choose the correct printing function for each
@@ -77,7 +94,10 @@ operation type.
 */
 LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
     LogicalResult res = llvm::TypeSwitch<Operation&, LogicalResult>(*op)
-        .Case<func::FuncOp, func::ReturnOp, ModuleOp, arith::ConstantIntOp>([&](auto op){return printOp(op);})
+        .Case<
+            func::FuncOp, func::ReturnOp, 
+            ModuleOp, 
+            arith::ConstantIntOp, arith::ConstantFloatOp>([&](auto op){return printOp(op);})
         .Default([&](Operation &) {
             return op->emitOpError("unsupported");
         });
@@ -141,24 +161,62 @@ LogicalResult BaseRaiser::printOp(arith::ConstantIntOp& op){
     return success();
 }
 
+LogicalResult BaseRaiser::printOp(arith::ConstantFloatOp& op){
+    Value v = op.getResult();
+    std::string vname = getOrAddValueName(v);
+    if (failed(emitType(v.getType()))) return failure();
+    os << " " << vname << " = ";
+    if (failed(emitConst(v.getType(), op.value()))) return failure();
+
+    return success();
+}
 
 //////////// Other helper functions ////////////
 
-LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, int threadx, int thready, int threadz){
+LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
     b.os << "#!amber\n"
             "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"
+            "DEVICE_FEATURE shaderInt64\n"
+            "DEVICE_FEATURE shaderFloat64\n"
             "SET ENGINE_DATA fence_timeout_ms 10000\n"
             "SHADER compute compute_shader " << lang << " TARGET_ENV vulkan1.1\n";
     
     if (failed(b.emitShaderPrologue()) || failed(b.emitOp(op))) {
         return failure();
     }
+
+    // Stolen from HlslEmitter.cpp
+    int64_t ntx = 1, nty = 1, ntz = 1;
+    if (auto mod = dyn_cast<ModuleOp>(op)){
+        auto func = mod.lookupSymbol<func::FuncOp>("main");
+        if (auto attr = func->getAttr("simt.num_threads")) {
+            if (auto denseAttr = mlir::dyn_cast<DenseI64ArrayAttr>(attr)) {
+                auto vals = denseAttr.asArrayRef();
+                if (vals.size() == 3) {
+                    ntx = vals[0];
+                    nty = vals[1];
+                    ntz = vals[2];
+                }
+            } else if (auto arrayAttr = mlir::dyn_cast<ArrayAttr>(attr)) {
+                if (arrayAttr.size() == 3) {
+                    auto x = mlir::dyn_cast<IntegerAttr>(arrayAttr[0]);
+                    auto y = mlir::dyn_cast<IntegerAttr>(arrayAttr[1]);
+                    auto z = mlir::dyn_cast<IntegerAttr>(arrayAttr[2]);
+                    if (x && y && z) {
+                        ntx = x.getInt();
+                        nty = y.getInt();
+                        ntz = z.getInt();
+                    }
+                }
+            }
+        }
+    }
     
     b.os << "\nEND\n"
         "PIPELINE compute pipeline\n"
         "  ATTACH compute_shader\n"
         "END\n"
-        << "RUN " << threadx << " " << thready << " " << threadz << "\n";
+        << "RUN pipeline " << ntx << " " << nty << " " << ntz << "\n";
     return success();
 }
 
