@@ -17,7 +17,7 @@ public:
 using BaseRaiser::BaseRaiser;
 
 LogicalResult emitHarness(Operation* op) {
-    return emitAmberHarness(*this, op, "GLSL", 1, 1, 1);
+    return emitAmberHarness(*this, op, "GLSL");
 }
 
 ~GlslRaiser(){}
@@ -38,12 +38,26 @@ LogicalResult emitType(Type type) override {
                 os << (type.isUnsignedInteger() ? "uint" : "int");
                 break;
             case 64:
-                os << (type.isUnsignedInteger() ? "uint64" : "int64");
+                os << (type.isUnsignedInteger() ? "uint64_t" : "int64_t");
                 break;
             default:
-                llvm_unreachable("Unsupported type");
+                llvm_unreachable("Unsupported int type");
                 break;
         }
+    } else if (type.isFloat()){
+        switch (type.getIntOrFloatBitWidth()) {
+            case 32:
+                os << "float";
+                break;
+            case 64:
+                os << "double";
+                break;
+            default:
+                llvm_unreachable("Unsupported float type");
+                break;
+        }
+    } else {
+        llvm_unreachable("Unsupported type");
     }
     return success();
 }
@@ -55,7 +69,7 @@ LogicalResult emitShaderPrologue() override {
         "#extension GL_KHR_shader_subgroup_vote    : enable\n"
         "#extension GL_KHR_shader_subgroup_basic   : enable\n"
         "#extension GL_KHR_memory_scope_semantics  : enable\n"
-        "#extension GL_ARB_gpu_shader_int64        : enable \n";
+        "#extension GL_ARB_gpu_shader_int64        : enable\n";
     return success();
 }
 

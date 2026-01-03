@@ -4,6 +4,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Operation.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/Support/LogicalResult.h"
 #include <llvm/Support/raw_ostream.h>
 
@@ -98,18 +99,20 @@ namespace simt::test_raiser {
 
             LogicalResult emitOp(Operation* op);
             LogicalResult emitConst(Type t, int64_t v);
+            LogicalResult emitConst(Type t, APFloat v);
 
             LogicalResult printOp(func::FuncOp& op);
             LogicalResult printOp(func::ReturnOp& op);
             LogicalResult printOp(mlir::ModuleOp& op);
             LogicalResult printOp(arith::ConstantIntOp& op);
+            LogicalResult printOp(arith::ConstantFloatOp& op);
 
 
 
 
         
-            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, int threadx, int thready, int threadz);     
+            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);     
     };
 
-    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, int threadx, int thready, int threadz);
+    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);
 }
