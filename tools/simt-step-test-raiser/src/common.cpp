@@ -115,9 +115,13 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
 
     LogicalResult res = llvm::TypeSwitch<Operation&, LogicalResult>(*op)
         .Case<
-            func::FuncOp, func::ReturnOp, 
-            ModuleOp, 
-            arith::ConstantOp, arith::CmpIOp, arith::CmpFOp>(
+            // func Operations
+            func::FuncOp, func::ReturnOp,
+            // builtin Operations
+            ModuleOp,
+            // arith Operations
+            arith::ConstantOp, arith::CmpIOp, arith::CmpFOp, arith::NegFOp, 
+            arith::SelectOp>(
                 [&](auto op){return printOp(op);})
         
         // Binary operations
@@ -284,6 +288,22 @@ LogicalResult BaseRaiser::printOp(arith::CmpFOp& op){
             break;
     }
 
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(arith::NegFOp& op){
+    Value v = op.getResult();
+    if (failed(emitValueDefine(v))) return failure();
+    os << "-" << getOrAddValueName(op->getOperand(0));
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(arith::SelectOp& op){
+    Value v = op.getResult();
+    if (failed(emitValueDefine(v))) return failure();
+    os  << getOrAddValueName(op->getOperand(0)) << " ? " 
+        << getOrAddValueName(op->getOperand(1)) << " : "
+        << getOrAddValueName(op->getOperand(2));
     return success();
 }
 
