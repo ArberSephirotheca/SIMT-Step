@@ -100,12 +100,14 @@ namespace simt::test_raiser {
             LogicalResult emitOp(Operation* op);
             LogicalResult emitConst(Type t, int64_t v);
             LogicalResult emitConst(Type t, APFloat v);
+            LogicalResult emitValueDefine(Value v);
+            LogicalResult emitBinop(Value output, Value left, Value right, std::string op);
 
             LogicalResult printOp(func::FuncOp& op);
             LogicalResult printOp(func::ReturnOp& op);
             LogicalResult printOp(mlir::ModuleOp& op);
-            LogicalResult printOp(arith::ConstantIntOp& op);
-            LogicalResult printOp(arith::ConstantFloatOp& op);
+            LogicalResult printOp(arith::ConstantOp& op);
+            // LogicalResult printOp(arith::ConstantFloatOp& op);
 
 
 

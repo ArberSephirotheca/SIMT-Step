@@ -5,11 +5,13 @@
 #include <mlir/Tools/mlir-translate/Translation.h>
 #include <mlir/Tools/mlir-translate/MlirTranslateMain.h>
 
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
 #include "llvm/Support/raw_ostream.h"
@@ -87,17 +89,40 @@ LogicalResult BaseRaiser::emitConst(Type t, APFloat v){
     return success();
 }
 
+LogicalResult BaseRaiser::emitValueDefine(Value v){
+    std::string vname = getOrAddValueName(v);
+    if (failed(emitType(v.getType()))) return failure();
+    os << " " << vname << " = ";
+    return success();
+}
+
+LogicalResult BaseRaiser::emitBinop(Value output, Value left, Value right, std::string op){
+    if (failed(emitValueDefine(output))) return failure();
+    os << getOrAddValueName(left) << " " << op << " " << getOrAddValueName(right);
+    return success();
+}
 
 /**
 Uses function overloading to choose the correct printing function for each
 operation type.
 */
 LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
+
+    // Creates the lambda for cases for binary operators
+    auto makeBinop = [this](std::string opstr){
+        return [opstr, this](auto op){return emitBinop(op.getResult(), op->getOperand(0), op->getOperand(1), opstr);};
+    };
+
     LogicalResult res = llvm::TypeSwitch<Operation&, LogicalResult>(*op)
         .Case<
             func::FuncOp, func::ReturnOp, 
             ModuleOp, 
-            arith::ConstantIntOp, arith::ConstantFloatOp>([&](auto op){return printOp(op);})
+            arith::ConstantOp>([&](auto op){return printOp(op);})
+        .Case<arith::AddFOp, arith::AddIOp>(makeBinop("+"))
+        .Case<arith::SubFOp, arith::SubIOp>(makeBinop("-"))
+        .Case<arith::MulFOp, arith::MulIOp>(makeBinop("*"))
+        .Case<arith::DivFOp, arith::DivSIOp, arith::DivUIOp>(makeBinop("/"))
+
         .Default([&](Operation &) {
             return op->emitOpError("unsupported");
         });
@@ -151,24 +176,18 @@ LogicalResult BaseRaiser::printOp(func::ReturnOp& op){
 
 ///////////// 'arith' dialect /////////////
 
-LogicalResult BaseRaiser::printOp(arith::ConstantIntOp& op){
+LogicalResult BaseRaiser::printOp(arith::ConstantOp& op){
     Value v = op.getResult();
-    std::string vname = getOrAddValueName(v);
-    if (failed(emitType(v.getType()))) return failure();
-    os << " " << vname << " = ";
-    if (failed(emitConst(v.getType(), op.value()))) return failure();
+    if (failed(emitValueDefine(v))) return failure();
 
-    return success();
-}
+    if((op.getValue().getType().isFloat() 
+            && succeeded(emitConst(v.getType(), cast<FloatAttr>(op.getValue()).getValue()))) || 
+       (op.getValue().getType().isInteger()
+            && succeeded(emitConst(v.getType(), cast<IntegerAttr>(op.getValue()).getInt())))){
+        return success();
+    }
 
-LogicalResult BaseRaiser::printOp(arith::ConstantFloatOp& op){
-    Value v = op.getResult();
-    std::string vname = getOrAddValueName(v);
-    if (failed(emitType(v.getType()))) return failure();
-    os << " " << vname << " = ";
-    if (failed(emitConst(v.getType(), op.value()))) return failure();
-
-    return success();
+    return failure();
 }
 
 //////////// Other helper functions ////////////
