@@ -122,6 +122,10 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
         .Case<arith::SubFOp, arith::SubIOp>(makeBinop("-"))
         .Case<arith::MulFOp, arith::MulIOp>(makeBinop("*"))
         .Case<arith::DivFOp, arith::DivSIOp, arith::DivUIOp>(makeBinop("/"))
+        .Case<arith::AndIOp>(makeBinop("&"))
+        .Case<arith::OrIOp>(makeBinop("|"))
+        .Case<arith::XOrIOp>(makeBinop("^"))
+        .Case<arith::RemUIOp, arith::RemSIOp>(makeBinop("%"))
 
         .Default([&](Operation &) {
             return op->emitOpError("unsupported");
