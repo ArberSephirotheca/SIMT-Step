@@ -17,31 +17,16 @@ using namespace llvm;
 using namespace mlir;
 
 /*
-mlir::arith::AddFOp
-mlir::arith::AddIOp
-mlir::arith::AndIOp
 mlir::arith::CmpFOp
 mlir::arith::CmpIOp
-mlir::arith::ConstantIntOp
-mlir::arith::ConstantOp
-mlir::arith::DivFOp
-mlir::arith::DivSIOp
 mlir::arith::ExtUIOp
 mlir::arith::IndexCastOp
-mlir::arith::MulFOp
-mlir::arith::MulIOp
 mlir::arith::NegFOp
-mlir::arith::OrIOp
 mlir::arith::RemFOp
-mlir::arith::RemSIOp
 mlir::arith::SelectOp
-mlir::arith::SubFOp
-mlir::arith::SubIOp
 mlir::arith::TruncIOp
-mlir::arith::XOrIOp
-mlir::func::FuncOp
-mlir::func::ReturnOp
-mlir::ModuleOp
+mlir::func::FuncOp +
+mlir::func::ReturnOp +
 mlir::OwningOp
 mlir::vector::ExtractOp
 mlir::vector::InsertOp
