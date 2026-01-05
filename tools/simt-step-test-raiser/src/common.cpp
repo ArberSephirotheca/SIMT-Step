@@ -117,7 +117,10 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
         .Case<
             func::FuncOp, func::ReturnOp, 
             ModuleOp, 
-            arith::ConstantOp>([&](auto op){return printOp(op);})
+            arith::ConstantOp, arith::CmpIOp, arith::CmpFOp>(
+                [&](auto op){return printOp(op);})
+        
+        // Binary operations
         .Case<arith::AddFOp, arith::AddIOp>(makeBinop("+"))
         .Case<arith::SubFOp, arith::SubIOp>(makeBinop("-"))
         .Case<arith::MulFOp, arith::MulIOp>(makeBinop("*"))
@@ -192,6 +195,96 @@ LogicalResult BaseRaiser::printOp(arith::ConstantOp& op){
     }
 
     return failure();
+}
+
+LogicalResult BaseRaiser::printOp(arith::CmpIOp& op){
+    Value v = op.getResult();
+
+    std::string opstr = "<unk>";
+    switch (op.getPredicate()){
+        case arith::CmpIPredicate::eq:
+            opstr = "==";
+            break;
+        case arith::CmpIPredicate::ne:
+            opstr = "!=";
+            break;
+        case arith::CmpIPredicate::sgt:
+        case arith::CmpIPredicate::ugt:
+            opstr = ">";
+            break;
+        case arith::CmpIPredicate::slt:
+        case arith::CmpIPredicate::ult:
+            opstr = "<";
+            break;
+        case arith::CmpIPredicate::sge:
+        case arith::CmpIPredicate::uge:
+            opstr = ">=";
+            break;
+        case arith::CmpIPredicate::sle:
+        case arith::CmpIPredicate::ule:
+            opstr = "<=";
+            break;
+    }
+
+    return emitBinop(v, op->getOperand(0), op->getOperand(1), opstr);
+
+}
+
+LogicalResult BaseRaiser::printOp(arith::CmpFOp& op){
+    Value v = op.getResult();
+    Value left = op->getOperand(0);
+    std::string lname = getOrAddValueName(left);
+    Value right = op->getOperand(1);
+    std::string rname = getOrAddValueName(right);
+    if (failed(emitValueDefine(v))) return failure();
+
+    // Unordered operations return true if either operand is NaN
+    // which is the opposite behavior to most languages. We can
+    // emulate unordered instructions by taking the logical complement
+    // of the opposite intruction. (i.e. a == b -> !(a != b)).
+    switch (op.getPredicate()){
+        case arith::CmpFPredicate::OEQ:
+            os << lname << " == " << rname;
+            break;
+        case arith::CmpFPredicate::UEQ:
+            os << "!(" << lname << " != " << rname << ")";
+            break;
+        case arith::CmpFPredicate::ONE:
+            os << lname << " != " << rname;
+            break;
+        case arith::CmpFPredicate::UNE:
+            os << "!(" << lname << " == " << rname << ")";
+            break;
+        case arith::CmpFPredicate::OGT:
+            os << lname << " > " << rname;
+            break;
+        case arith::CmpFPredicate::UGT:
+            os << "!(" << lname << " <= " << rname << ")";
+            break;
+        case arith::CmpFPredicate::OLT:
+            os << lname << " < " << rname;
+            break;
+        case arith::CmpFPredicate::ULT:
+            os << "!(" << lname << " >= " << rname << ")";
+            break;
+        case arith::CmpFPredicate::OGE:
+            os << lname << " >= " << rname;
+            break;
+        case arith::CmpFPredicate::UGE:
+            os << "!(" << lname << " < " << rname << ")";
+            break;
+        case arith::CmpFPredicate::OLE:
+            os << lname << " < " << rname;
+            break;
+        case arith::CmpFPredicate::ULE:
+            os << "!(" << lname << " >= " << rname << ")";
+            break;
+        default:
+            op->emitError("unsupported");
+            break;
+    }
+
+    return success();
 }
 
 //////////// Other helper functions ////////////

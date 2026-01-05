@@ -5,7 +5,7 @@ func.func @main() attributes {simt.num_threads = array<i64: 1, 2, 3>} {
     %32 = arith.subf %1, %2 : f64
     %33 = arith.mulf %1, %2 : f64
     %34 = arith.divf %1, %2 : f64
-    %35 = arith.remf %1, %2 : f64
+    // %35 = arith.remf %1, %2 : f64
 
     %4 = arith.constant 1 : i32
     %5 = arith.constant 2 : i32
