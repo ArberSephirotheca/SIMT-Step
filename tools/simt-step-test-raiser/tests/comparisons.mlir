@@ -13,6 +13,8 @@ func.func @main() attributes {simt.num_threads = array<i64: 1, 1, 1>} {
     %ih = arith.cmpi sle, %1, %2 : i32
     %ij = arith.cmpi uge, %1, %2 : i32
     %ik = arith.cmpi sge, %1, %2 : i32
+    %il = arith.select %ik, %1, %2 : i32
+
 
     %3 = arith.constant 1.1 : f32
     %4 = arith.constant 2.2 : f32
@@ -28,6 +30,7 @@ func.func @main() attributes {simt.num_threads = array<i64: 1, 1, 1>} {
     %fj = arith.cmpf ugt, %3, %4 : f32
     %fk = arith.cmpf oge, %3, %4 : f32
     %fl = arith.cmpf uge, %3, %4 : f32
+    %fo = arith.select %fl, %3, %4 : f32
 
     func.return
 }

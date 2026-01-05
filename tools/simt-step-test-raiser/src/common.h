@@ -19,9 +19,7 @@ using namespace mlir;
 /*
 mlir::arith::ExtUIOp
 mlir::arith::IndexCastOp
-mlir::arith::NegFOp
 mlir::arith::RemFOp
-mlir::arith::SelectOp
 mlir::arith::TruncIOp
 mlir::func::FuncOp +
 mlir::func::ReturnOp +
@@ -92,6 +90,9 @@ namespace simt::test_raiser {
             LogicalResult printOp(arith::ConstantOp& op);
             LogicalResult printOp(arith::CmpIOp& op);
             LogicalResult printOp(arith::CmpFOp& op);
+            LogicalResult printOp(arith::NegFOp& op);
+            LogicalResult printOp(arith::SelectOp& op);
+
         
             friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);     
     };
