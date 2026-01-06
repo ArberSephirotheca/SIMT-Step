@@ -7,10 +7,6 @@
 
 namespace simt::test_raiser {
 
-    enum RaiserTarget {
-        GLSL
-    };
-
-    llvm::LogicalResult emitRaised(mlir::Operation* op, llvm::raw_ostream& o, RaiserTarget target);
+    llvm::LogicalResult emitRaisedGLSL(mlir::Operation* op, llvm::raw_ostream& o);
     
 }

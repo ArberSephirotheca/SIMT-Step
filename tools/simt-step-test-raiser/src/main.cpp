@@ -1,4 +1,4 @@
-#include "RaiseLanguages.h"
+#include "RaiseGLSL.h"
 
 #include <llvm/Support/CommandLine.h>
 #include <mlir/Tools/mlir-translate/Translation.h>
@@ -27,17 +27,23 @@ void insertSimtDialects(DialectRegistry &registry){
         vector::VectorDialect>();
 }
 
-inline std::function<llvm::LogicalResult (Operation*, raw_ostream&)> transFuncCreator(simt::test_raiser::RaiserTarget r){
-    return [r](Operation *op, raw_ostream &output) {
-        return simt::test_raiser::emitRaised(op, output, r);
-    };
+enum RaiserTarget {
+    GLSL
+};
+inline auto transFuncCreator(RaiserTarget target){
+    switch (target) {
+        case GLSL:
+            return [](Operation *op, raw_ostream &output) {
+                return simt::test_raiser::emitRaisedGLSL(op, output);
+            };
+    }
 }
 
 int main(int argc, char** argv){
 
     TranslateFromMLIRRegistration t(
         "mlir-to-glsl-amber", "translate mlir to GLSL with Amber harness",
-        transFuncCreator(simt::test_raiser::GLSL), insertSimtDialects
+        transFuncCreator(GLSL), insertSimtDialects
     );
 
     return llvm::failed(mlirTranslateMain(argc, argv, "SIMT-Step Test Raiser"));

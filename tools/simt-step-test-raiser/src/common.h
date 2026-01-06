@@ -64,25 +64,65 @@ namespace simt::test_raiser {
         public:
             explicit BaseRaiser(raw_ostream &o);
             virtual ~BaseRaiser();
+
+            // Emits the test harness and GPU code.
             LogicalResult emitHarness(Operation* op);
         protected:
             raw_indented_ostream os;
             llvm::DenseMap<Value, int> value_map;
             int value_counter = 0;
 
+            /*
+            Creates or gets a unique number for each value, which will be used to
+            create a variable for it.
+            */
             int getOrAddValueNumber(Value v);
+
+            /*
+            Same as `getOrAddValueNumber`, but returns string in the form
+            `"v{value number}"`
+            */
             std::string getOrAddValueName(Value v);
 
+            // Emit the language-specific type name for a Type
             virtual LogicalResult emitType(Type type){return failure();}
+
+            // Emit the language-specific prologue inside of the harness and before
+            // any code is emitted.
             virtual LogicalResult emitShaderPrologue(){return failure();}
-            // virtual LogicalResult emitBuiltin(Operation* op);
+
+            // Emit the language-specific main function definition, excluding the
+            // body, which is handled elsewhere.
             virtual LogicalResult emitMainFuncTop(func::FuncOp& op){return failure();};
 
-            LogicalResult emitOp(Operation* op);
+            /*
+            Emits an integer literal. Supports booleans, 64-bit 
+            and 32-bit integers, signed or unsigned.
+            */
             LogicalResult emitConst(Type t, int64_t v);
+
+            /*
+            Emits a floating point literal. Supports single and double precision.
+            */
             LogicalResult emitConst(Type t, APFloat v);
+
+            /*
+            Helper function that emits the RHS of the variable declaration
+            for the given value, in the form `type v{value number} =`
+            */
             LogicalResult emitValueDefine(Value v);
+
+            /*
+            Helper function that emits a full binary operator statement in the form,
+            `type v{out #} = v{left #} {op} v{right #}`
+            */
             LogicalResult emitBinop(Value output, Value left, Value right, std::string op);
+
+            /*
+            Takes an operation and chooses the correct op printer for it. Also handles added trailing
+            semicolons for statements that require it.
+            */
+            LogicalResult emitOp(Operation* op);
 
             LogicalResult printOp(func::FuncOp& op);
             LogicalResult printOp(func::ReturnOp& op);
@@ -93,9 +133,12 @@ namespace simt::test_raiser {
             LogicalResult printOp(arith::NegFOp& op);
             LogicalResult printOp(arith::SelectOp& op);
 
-        
             friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);     
     };
 
+    /*
+    Emits and Amber test harness that wraps the GPU code. Can be used as
+    `emitHarness` for languages Amber supports.
+    */
     LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);
 }
