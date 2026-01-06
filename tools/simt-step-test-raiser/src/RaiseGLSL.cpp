@@ -1,4 +1,4 @@
-#include "RaiseLanguages.h"
+#include "RaiseGLSL.h"
 #include "common.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -82,14 +82,9 @@ LogicalResult emitShaderPrologue() override {
 
 namespace simt::test_raiser {
 
-LogicalResult emitRaised(Operation *op,raw_ostream &o, RaiserTarget target){
-    switch (target){
-        case simt::test_raiser::GLSL:
-            GlslRaiser glsl(o);
-            return glsl.emitHarness(op);
-    }
-    llvm_unreachable("Target not implemented");
-    return failure();
+LogicalResult emitRaisedGLSL(Operation *op,raw_ostream &o){
+    GlslRaiser glsl(o);
+    return glsl.emitHarness(op);
 }
 
 }

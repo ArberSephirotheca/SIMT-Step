@@ -36,16 +36,13 @@ BaseRaiser::BaseRaiser(raw_ostream& o): os(o) {
 
 BaseRaiser::~BaseRaiser(){}
 
-/*
-Creates or gets a unique number for each value, which will be used to
-create a variable for it.
-*/
 int BaseRaiser::getOrAddValueNumber(Value v){
     if (value_map.contains(v)){
         return value_map[v];
     }
     return value_map[v] = value_counter++;
 }
+
 
 std::string BaseRaiser::getOrAddValueName(Value v){
     return "v" + std::to_string(getOrAddValueNumber(v));
@@ -88,6 +85,7 @@ LogicalResult BaseRaiser::emitConst(Type t, APFloat v){
 
     return success();
 }
+
 
 LogicalResult BaseRaiser::emitValueDefine(Value v){
     std::string vname = getOrAddValueName(v);
