@@ -17,13 +17,10 @@ using namespace llvm;
 using namespace mlir;
 
 /*
-mlir::arith::ExtUIOp
 mlir::arith::IndexCastOp
 mlir::arith::RemFOp
-mlir::arith::TruncIOp
 mlir::func::FuncOp +
 mlir::func::ReturnOp +
-mlir::OwningOp
 mlir::vector::ExtractOp
 mlir::vector::InsertOp
 simt::dialect::ActiveMaskOp
@@ -84,16 +81,20 @@ namespace simt::test_raiser {
             */
             std::string getOrAddValueName(Value v);
 
-            // Emit the language-specific type name for a Type
+            // Emits the language-specific type name for a Type
             virtual LogicalResult emitType(Type type){return failure();}
 
-            // Emit the language-specific prologue inside of the harness and before
+            // Emits the language-specific prologue inside of the harness and before
             // any code is emitted.
             virtual LogicalResult emitShaderPrologue(){return failure();}
 
-            // Emit the language-specific main function definition, excluding the
+            // Emits the language-specific main function definition, excluding the
             // body, which is handled elsewhere.
-            virtual LogicalResult emitMainFuncTop(func::FuncOp& op){return failure();};
+            virtual LogicalResult emitMainFuncTop(func::FuncOp& op){return failure();}
+
+            // Emits a declaration of `out`, defined as `in` being cast to the type 
+            // of `out`
+            virtual LogicalResult emitCast(Value in, Value out){return failure();}
 
             /*
             Emits an integer literal. Supports booleans, 64-bit 
@@ -132,6 +133,7 @@ namespace simt::test_raiser {
             LogicalResult printOp(arith::CmpFOp& op);
             LogicalResult printOp(arith::NegFOp& op);
             LogicalResult printOp(arith::SelectOp& op);
+            LogicalResult printOp(arith::ExtUIOp& op);
 
             friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);     
     };

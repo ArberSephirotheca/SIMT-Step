@@ -1,4 +1,4 @@
-#include "common.h"
+#include "BaseRaiser.h"
 
 #include <cstdio>
 #include <llvm/Support/CommandLine.h>
@@ -131,6 +131,12 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
         .Case<arith::OrIOp>(makeBinop("|"))
         .Case<arith::XOrIOp>(makeBinop("^"))
         .Case<arith::RemUIOp, arith::RemSIOp>(makeBinop("%"))
+        
+        // Casting operations
+        .Case<
+            arith::ExtUIOp, arith::ExtSIOp, arith::ExtFOp,
+            arith::TruncFOp, arith::TruncIOp>(
+                [&](auto op){return emitCast(op.getOperand(), op.getResult());})
 
         .Default([&](Operation &) {
             return op->emitOpError("unsupported");
