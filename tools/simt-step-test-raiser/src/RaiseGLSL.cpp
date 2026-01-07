@@ -1,5 +1,5 @@
 #include "RaiseGLSL.h"
-#include "common.h"
+#include "BaseRaiser.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
@@ -74,9 +74,12 @@ LogicalResult emitShaderPrologue() override {
 }
 
 
-// LogicalResult emitBuiltin(Operation type) override {
-//     return success();
-// }
+LogicalResult emitCast(Value in, Value out) override {
+    if(failed(emitValueDefine(out))) return failure();
+    if(failed(emitType(out.getType()))) return failure();
+    os << "(" << getOrAddValueName(in) << ")";
+    return success();
+}
 
 };
 

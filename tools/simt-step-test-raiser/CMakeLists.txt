@@ -2,7 +2,7 @@
 
 add_executable(simt-step-test-raiser
     src/main.cpp
-    src/common.cpp
+    src/BaseRaiser.cpp
     src/RaiseGLSL.cpp
 )
 
