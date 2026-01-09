@@ -22,7 +22,14 @@
 
 #include <mlir/InitAllTranslations.h>
 #include <string>
+#include <vector>
+#include <cstdio>
 #include "mlir/Support/IndentedOstream.h"
+#include "simt-step/plugins/Registry.h"
+#include "simt-step/semantics/CPSInterpreter.h"
+#include "simt-step/semantics/Interpreter.h"
+#include "simt-step/semantics/SemanticsContext.h"
+#include "simt-step/semantics/SimpleSemantics.h"
 
 
 using namespace simt::test_raiser;
@@ -30,6 +37,14 @@ using namespace llvm;
 using namespace mlir;
 
 namespace simt::test_raiser {
+
+// auto getOracleBuffer(Operation* op, semantics::SemanticsContext& sctx){
+//     semantics::SimpleSemantics simples;
+//     simt::semantics::CPSInterpreter<semantics::SimpleSemantics> intepreter(simples);
+//     auto output = intepreter.;
+//     printf("%s\n", output->getAsString().value().str().c_str());
+//     return 0;
+// }
 
 BaseRaiser::BaseRaiser(raw_ostream& o): os(o) {
 }
@@ -100,6 +115,17 @@ LogicalResult BaseRaiser::emitBinop(Value output, Value left, Value right, std::
     return success();
 }
 
+LogicalResult BaseRaiser::emitFuncCall(Value output, std::string fname, std::vector<Value> args){
+    if (failed(emitValueDefine(output))) return failure();
+    os << fname << "(";
+    for (std::size_t i = 0; i < args.size(); i++){
+        os << getOrAddValueName(args[i]);
+        if (i < args.size() - 1) os << ", ";
+    }
+    os << ")";
+    return success();
+}
+
 /**
 Uses function overloading to choose the correct printing function for each
 operation type.
@@ -119,7 +145,10 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
             ModuleOp,
             // arith Operations
             arith::ConstantOp, arith::CmpIOp, arith::CmpFOp, arith::NegFOp, 
-            arith::SelectOp>(
+            arith::SelectOp, arith::RemFOp,
+            // vector Operations
+            vector::ExtractOp
+            >(
                 [&](auto op){return printOp(op);})
         
         // Binary operations
@@ -314,6 +343,9 @@ LogicalResult BaseRaiser::printOp(arith::SelectOp& op){
 //////////// Other helper functions ////////////
 
 LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
+    semantics::SemanticsContext sctx;
+    simt::test_raiser::getOracleBuffer(op, sctx);
+
     b.os << "#!amber\n"
             "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"
             "DEVICE_FEATURE shaderInt64\n"

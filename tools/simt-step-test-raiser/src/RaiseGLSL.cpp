@@ -1,6 +1,12 @@
 #include "RaiseGLSL.h"
 #include "BaseRaiser.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Utils/StaticValueUtils.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/IR/BuiltinTypeInterfaces.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
 #include <cstdio>
@@ -24,6 +30,13 @@ LogicalResult emitHarness(Operation* op) {
 
 private:
 LogicalResult emitMainFuncTop(func::FuncOp& f) override {
+    for (Value v : f.getArguments()){
+        if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
+            os << "in ";
+            if (failed(emitType(t.getElementType()))) return failure();
+            os << getOrAddValueName(v) << "[";
+        }
+    }
     os << "void main()";
     return success();
 }
@@ -56,6 +69,12 @@ LogicalResult emitType(Type type) override {
                 llvm_unreachable("Unsupported float type");
                 break;
         }
+    } else if (auto vectype = dyn_cast<mlir::VectorType>(type)) {
+        long len = vectype.getShape().vec()[0];
+        if (vectype.getShape().size() != 1 || len > 4 || len < 2){
+            llvm_unreachable("Unsupported vector shape");
+        }
+        os << "vec" << len;
     } else {
         llvm_unreachable("Unsupported type");
     }
@@ -80,6 +99,27 @@ LogicalResult emitCast(Value in, Value out) override {
     os << "(" << getOrAddValueName(in) << ")";
     return success();
 }
+
+/////////////// 'arith' dialect ///////////////
+LogicalResult printOp(arith::RemFOp &op) override {
+    return emitFuncCall(op.getResult(), "mod", {op->getOperand(0), op->getOperand(1)});
+}
+
+/////////////// 'vector' dialect ///////////////
+LogicalResult printOp(vector::ExtractOp &op) override {
+    if (failed(emitValueDefine(op.getResult()))) return failure();
+    os << op.getOperand(0) << "[";
+    if (std::optional<int64_t> id = getConstantIntValue(op.getMixedPosition()[0])){
+        if (id == vector::ExtractOp::kPoisonIndex) op->emitError("cannot handle poison indices");
+        os << id;
+    } else {
+        Value v = op.getDynamicPosition()[0];
+        os << getOrAddValueName(v);
+    }
+    os << "]";
+    return success();
+}
+
 
 };
 

@@ -9,11 +9,13 @@ files=${1:-*}
 
 for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
     echo "----- $testfile -----"
-    if [ -z $1 ]; then
+    set -f
+    if [[ files =~ "*" ]]; then
         outfile=$(mktemp -t "XXXXXX.amber")
     else
-        outfile=test.amber
+        outfile=testout.amber
     fi
+    set +f
     ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-glsl-amber $testfile -o $outfile
     if [ $? -ne 0 ]; then
         exit
