@@ -30,11 +30,12 @@ LogicalResult emitHarness(Operation* op) {
 
 private:
 LogicalResult emitMainFuncTop(func::FuncOp& f) override {
+    int locs = 0;
     for (Value v : f.getArguments()){
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
-            os << "in ";
+            os << "layout(set = 0, binding = " << locs++ << ") buffer Buf { ";
             if (failed(emitType(t.getElementType()))) return failure();
-            os << " " << getOrAddValueName(v) << "[];\n";
+            os << " " << getOrAddValueName(v) << "[" << buffer_size << "];};\n";
         }
     }
     os << "void main()";
@@ -106,6 +107,7 @@ LogicalResult printOp(arith::RemFOp &op) override {
 }
 
 /////////////// 'vector' dialect ///////////////
+
 LogicalResult printOp(vector::ExtractOp &op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
     os << op.getOperand(0) << "[";
@@ -117,6 +119,15 @@ LogicalResult printOp(vector::ExtractOp &op) override {
         os << getOrAddValueName(v);
     }
     os << "]";
+    return success();
+}
+
+/////////////// 'simt_step' dialect ///////////////
+
+LogicalResult printOp(DispatchThreadIdOp& op) override {
+    if (failed(emitValueDefine(op.getResult()))) return failure();
+    if (failed(emitType(op->getResultTypes()[0]))) return failure();
+    os << "(gl_GlobalInvocationID.x)";
     return success();
 }
 

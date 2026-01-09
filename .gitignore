@@ -9,3 +9,4 @@
 Agent.md
 /*.log
 *.jsonl
+.cache

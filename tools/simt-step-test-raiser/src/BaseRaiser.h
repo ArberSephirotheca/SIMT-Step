@@ -14,9 +14,11 @@
 #include "mlir/IR/Types.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/IndentedOstream.h"
+#include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 
 using namespace llvm;
 using namespace mlir;
+using namespace simt::dialect;
 
 /*
 mlir::arith::IndexCastOp
@@ -69,6 +71,7 @@ namespace simt::test_raiser {
             raw_indented_ostream os;
             llvm::DenseMap<Value, int> value_map;
             int value_counter = 0;
+            int buffer_size = 0;
 
             /*
             Creates or gets a unique number for each value, which will be used to
@@ -140,9 +143,12 @@ namespace simt::test_raiser {
             LogicalResult printOp(arith::NegFOp& op);
             LogicalResult printOp(arith::SelectOp& op);
             LogicalResult printOp(arith::ExtUIOp& op);
+            LogicalResult printOp(BufferLoadOp& op);
+            LogicalResult printOp(BufferStoreOp& op);
 
             virtual LogicalResult printOp(vector::ExtractOp& op){return failure();}
             virtual LogicalResult printOp(arith::RemFOp& op){return failure();}
+            virtual LogicalResult printOp(DispatchThreadIdOp& op){return failure();}
 
             friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);     
     };
@@ -152,4 +158,6 @@ namespace simt::test_raiser {
     `emitHarness` for languages Amber supports.
     */
     LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);
+
+    LogicalResult getExpectedBuffer(Operation& op, std::vector<int>& buffer, int buffersize = 100, std::vector<std::string> args = {});
 }

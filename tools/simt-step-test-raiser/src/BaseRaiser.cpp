@@ -1,6 +1,10 @@
 #include "BaseRaiser.h"
 
+#include <cstddef>
 #include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
 #include <llvm/Support/CommandLine.h>
 #include <mlir/Tools/mlir-translate/Translation.h>
 #include <mlir/Tools/mlir-translate/MlirTranslateMain.h>
@@ -13,7 +17,9 @@
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/LogicalResult.h"
+#include "llvm/Support/Regex.h"
 #include "llvm/Support/raw_ostream.h"
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -21,7 +27,10 @@
 #include <mlir/Dialect/Vector/IR/VectorOps.h>
 
 #include <mlir/InitAllTranslations.h>
+#include <regex>
+#include <sstream>
 #include <string>
+#include <system_error>
 #include <vector>
 #include <cstdio>
 #include "mlir/Support/IndentedOstream.h"
@@ -134,7 +143,9 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
             arith::ConstantOp, arith::CmpIOp, arith::CmpFOp, arith::NegFOp, 
             arith::SelectOp, arith::RemFOp,
             // vector Operations
-            vector::ExtractOp
+            vector::ExtractOp,
+            // simt_step Operations
+            ::DispatchThreadIdOp, ::BufferLoadOp, ::BufferStoreOp
             >(
                 [&](auto op){return printOp(op);})
         
@@ -327,20 +338,108 @@ LogicalResult BaseRaiser::printOp(arith::SelectOp& op){
     return success();
 }
 
+///////////// 'simt_step' dialect /////////////
+LogicalResult BaseRaiser::printOp(::BufferLoadOp& op) {
+    if (failed(emitValueDefine(op.getResult()))) return failure();
+    os << getOrAddValueName(op.getOperand(0)) << "[" << getOrAddValueName(op.getOperand(1)) << "]";
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(::BufferStoreOp& op) {
+    os << getOrAddValueName(op.getOperand(0)) << "[" << getOrAddValueName(op.getOperand(1)) << "] = "
+    << getOrAddValueName(op.getOperand(2));
+    return success();
+}
+
 //////////// Other helper functions ////////////
 
-LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
+LogicalResult getExpectedBuffer(Operation& op, std::vector<int> &buffer, int buffersize, std::vector<std::string> args){
 
-    b.os << "#!amber\n"
-            "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"
-            "DEVICE_FEATURE shaderInt64\n"
-            "DEVICE_FEATURE shaderFloat64\n"
-            "SET ENGINE_DATA fence_timeout_ms 10000\n"
-            "SHADER compute compute_shader " << lang << " TARGET_ENV vulkan1.1\n";
-    
-    if (failed(b.emitShaderPrologue()) || failed(b.emitOp(op))) {
+    // Find runner
+    std::string runnerpath = SIMT_STEP_RUNNER_PATH;
+    if (std::getenv("SIMT_STEP_RUNNER_PATH") && llvm::sys::fs::can_execute(std::getenv("SIMT_STEP_RUNNER_PATH"))){
+        runnerpath = std::getenv("SIMT_STEP_RUNNER_PATH");
+    }
+    if (!llvm::sys::fs::can_execute(runnerpath)){
+        std::cerr
+            << "Could not execute simt_step_runner at path '"
+            << runnerpath << "'\n";
         return failure();
     }
+    
+    // Make temporary file for MLIR code
+    auto mlirtmp = llvm::sys::fs::TempFile::create("/tmp/raisertmp%%%%%%%.mlir");
+    if (!mlirtmp) {
+        std::cerr << "Could not create temp file for mlir code!\n";
+        return failure();
+    }
+    llvm::raw_fd_stream tmpMlirIn(mlirtmp->FD, false);
+    op.print(tmpMlirIn);
+    tmpMlirIn.close();
+
+    // Find arguments with MemoryResources
+    std::string buffers = "{\\\"buffers\\\":[";
+    if (auto mod = dyn_cast<ModuleOp>(op); 
+        auto mainfunc = mod.lookupSymbol<func::FuncOp>("main")){
+            for (auto arg : mainfunc.getArguments()){
+                if (auto memarg = dyn_cast<simt::dialect::ResourceType>(arg.getType())){
+                    buffers.append("{\\\"buffer\\\":\\\"arg" + std::to_string(arg.getArgNumber()) + "\\\","
+                                + "\\\"size\\\":" + std::to_string(buffersize) + ",\\\"fill\\\":0},");
+                }
+            }
+    }
+    if (buffers.back() != ',') buffers = "";
+    else {
+        buffers.pop_back(); // Remove trailing comma
+        buffers.append("]}");
+    }
+
+
+    // Complete command string and run
+    auto outputtmp = llvm::sys::fs::TempFile::create("/tmp/raiser%%%%%%%%%%%%%.out");
+    if (!outputtmp) {
+        std::cerr << "Could not create temp file for output!\n";
+        return failure();
+    }
+    std::string sargs = join(args, " ");
+    std::string syscmd = "bash -c '" + runnerpath + " " + mlirtmp->TmpName + " " + sargs;
+
+    if (buffers.length() > 0) syscmd.append(" --init-file=<(printf \"" + buffers + "\")");
+
+    syscmd.append(" > " + outputtmp->TmpName + "'");
+    std::cerr << syscmd << "\n";
+
+    if (system(syscmd.c_str())){
+        std::cerr << "Error while running interpreter\n";
+    }
+
+
+    // Parse output string
+    std::ifstream ots(outputtmp->TmpName);
+    std::stringstream obuf;
+    obuf << ots.rdbuf();
+    std::string s = obuf.str();
+
+    std::regex entries_regex("buf\\d+\\[(\\d+)\\] = (-?\\d+)");
+    auto regbeg = std::sregex_iterator(s.begin(), s.end(), entries_regex);
+    auto regend = std::sregex_iterator();
+    buffer.clear();
+    for (std::sregex_iterator i = regbeg; i != regend; i++){
+        std::smatch match = *i;
+        unsigned index = std::stoi(match[1]);
+        int value = std::stoi(match[2]);
+        while (buffer.size() + 1 < index){
+            buffer.push_back(0);
+        }
+        buffer.push_back(value);
+    }
+
+
+    return success();
+    
+}
+
+LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
 
     // Stolen from HlslEmitter.cpp
     int64_t ntx = 1, nty = 1, ntz = 1;
@@ -368,12 +467,43 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
             }
         }
     }
+
+    std::vector<int> buffer;
+    if (failed(getExpectedBuffer(*op, buffer, 1, {"--lanes=" + std::to_string(ntx)}))){
+        std::cerr << "Could not get expected values buffer\n";
+        return failure();
+    }
+    b.buffer_size = buffer.size();
+
+    b.os << "#!amber\n"
+            "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"
+            "DEVICE_FEATURE shaderInt64\n"
+            "DEVICE_FEATURE shaderFloat64\n"
+            "SET ENGINE_DATA fence_timeout_ms 10000\n"
+            "SHADER compute compute_shader " << lang << " TARGET_ENV vulkan1.1\n";
     
-    b.os << "\nEND\n"
-        "PIPELINE compute pipeline\n"
-        "  ATTACH compute_shader\n"
-        "END\n"
+    if (failed(b.emitShaderPrologue()) || failed(b.emitOp(op))) {
+        return failure();
+    }
+    
+    b.os << "\nEND\n";
+    if (buffer.size()){
+        b.os << "BUFFER expected DATA_TYPE int32 SIZE " << buffer.size() << " FILL 0\n";
+        b.os << "BUFFER actual DATA_TYPE int32 DATA\n  ";
+        for (int i : buffer) b.os << i << " ";
+        b.os << "\nEND\n";
+    }
+    b.os << "PIPELINE compute pipeline\n"
+        "  ATTACH compute_shader\n";
+    if (buffer.size()){
+        b.os << "  BIND BUFFER expected AS storage DESCRIPTOR_SET 0 BINDING 0\n";
+    }
+    b.os << "END\n"
         << "RUN pipeline " << ntx << " " << nty << " " << ntz << "\n";
+    
+    if (buffer.size()){
+        b.os << "EXPECT expected EQ_BUFFER actual";
+    }
     return success();
 }
 
