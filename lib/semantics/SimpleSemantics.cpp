@@ -5,6 +5,7 @@
 
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/STLExtras.h>
+#include <llvm/ADT/StringRef.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/ErrorHandling.h>
 #include <vector>
@@ -29,6 +30,19 @@ SemValue makeValueFromAttribute(mlir::Attribute attr) {
 
     llvm::errs() << "simple semantics: unsupported constant attribute\n";
     return SemValue();
+}
+
+ExecutionMode resolveExecutionMode(const SemanticsContext &context,
+                                   llvm::StringRef opName,
+                                   ExecutionMode defaultMode) {
+    if (context.overrideMode)
+        return *context.overrideMode;
+    if (context.policy) {
+        auto it = context.policy->overrides.find(opName);
+        if (it != context.policy->overrides.end())
+            return it->second;
+    }
+    return defaultMode;
 }
 
 } // namespace
@@ -56,6 +70,9 @@ auto SimpleSemantics::evalOperation(mlir::Operation *op,
     if (auto andOp = llvm::dyn_cast<mlir::arith::AndIOp>(op))
         return handleAndIOp(andOp, context);
 
+    if (auto orOp = llvm::dyn_cast<mlir::arith::OrIOp>(op))
+        return handleOrIOp(orOp, context);
+
     if (auto cmpOp = llvm::dyn_cast<mlir::arith::CmpIOp>(op))
         return handleCmpIOp(cmpOp, context);
 
@@ -64,6 +81,16 @@ auto SimpleSemantics::evalOperation(mlir::Operation *op,
 
     if (llvm::isa<simt::dialect::DispatchThreadIdOp>(op))
         return handleDispatchThreadId(context);
+
+    if (auto callOp = llvm::dyn_cast<mlir::func::CallOp>(op)) {
+        if (callOp.getNumResults() == 1 && context.valueEnv) {
+            auto it = context.valueEnv->find(callOp.getResult(0));
+            if (it != context.valueEnv->end())
+                return StepType::produce(it->second);
+        }
+        llvm::errs() << "simple semantics: unsupported func.call evaluation\n";
+        return StepType::halt();
+    }
 
     if (llvm::isa<simt::dialect::LoopOp>(op))
         return StepType::halt();
@@ -137,6 +164,22 @@ auto SimpleSemantics::handleAndIOp(mlir::arith::AndIOp op,
         return StepType::halt();
     }
     auto result = lhsOrErr->bitAnd(*rhsOrErr);
+    return StepType::produce(std::move(result));
+}
+
+auto SimpleSemantics::handleOrIOp(mlir::arith::OrIOp op,
+                                  SemanticsContext &context) -> StepType {
+    auto lhsOrErr = evaluateValue(op.getLhs(), context);
+    if (!lhsOrErr) {
+        llvm::consumeError(lhsOrErr.takeError());
+        return StepType::halt();
+    }
+    auto rhsOrErr = evaluateValue(op.getRhs(), context);
+    if (!rhsOrErr) {
+        llvm::consumeError(rhsOrErr.takeError());
+        return StepType::halt();
+    }
+    auto result = lhsOrErr->bitOr(*rhsOrErr);
     return StepType::produce(std::move(result));
 }
 
@@ -291,6 +334,17 @@ SimpleSemantics::evaluateValue(mlir::Value value,
         return v;
     }
 
+    if (auto orOp = value.getDefiningOp<mlir::arith::OrIOp>()) {
+        auto step = handleOrIOp(orOp, context);
+        if (!step.isProduce())
+            return llvm::make_error<llvm::StringError>(
+                "ori did not produce a value", llvm::inconvertibleErrorCode());
+        auto state = std::move(step).takeState();
+        auto v = std::get<typename StepType::Produce>(std::move(state)).value;
+        logVal(v);
+        return v;
+    }
+
     if (context.valueEnv) {
         auto it = context.valueEnv->find(value);
         if (it != context.valueEnv->end())
@@ -397,11 +451,37 @@ SimpleSemantics::memory() {
     return globalMemory();
 }
 
+llvm::DenseMap<mlir::Value, llvm::DenseMap<int64_t, SemValue>> &
+SimpleSemantics::memoryMutable() {
+    return globalMemory();
+}
+
 auto SimpleSemantics::handleBufferStore(mlir::Operation *op,
                                         SemanticsContext &context) -> StepType {
     // operands: resource, index, value
     if (op->getNumOperands() != 3)
         return StepType::halt();
+    std::uint64_t expectedMask =
+        context.expectedMask ? context.expectedMask : context.activeMask;
+    if (expectedMask == 0)
+        expectedMask = 1ull << context.laneId;
+
+    ExecutionMode defaultMode =
+        context.policy ? context.policy->memoryOps : ExecutionMode::Independent;
+    ExecutionMode mode =
+        resolveExecutionMode(context, op->getName().getStringRef(), defaultMode);
+    constexpr std::uint32_t BufferStoreOp = 2;
+    std::uint32_t token = static_cast<std::uint32_t>(
+        reinterpret_cast<std::uintptr_t>(op) ^
+        (reinterpret_cast<std::uintptr_t>(op) >> 32));
+    if (mode == ExecutionMode::Collective) {
+        auto deferStore = []() -> StepType { return StepType::halt(); };
+        CollectiveEffect effect;
+        effect.operation = BufferStoreOp;
+        effect.activeMask = expectedMask;
+        effect.token = token;
+        return StepType::suspend(effect, std::move(deferStore));
+    }
     auto idxOrErr = evaluateValue(op->getOperand(1), context);
     if (!idxOrErr) {
         llvm::consumeError(idxOrErr.takeError());
@@ -414,7 +494,20 @@ auto SimpleSemantics::handleBufferStore(mlir::Operation *op,
     }
     int64_t idx = idxOrErr->asInt64();
     mlir::Value res = op->getOperand(0);
-    globalMemory()[res][idx] = *valOrErr;
+    SemValue val = *valOrErr;
+    auto doStore = [res, idx, val]() -> StepType {
+        globalMemory()[res][idx] = val;
+        return StepType::halt();
+    };
+    if (mode == ExecutionMode::Independent)
+        return doStore();
+    if (mode == ExecutionMode::Synchronous) {
+        SynchronizationEffect effect;
+        effect.operation = BufferStoreOp;
+        effect.activeMask = expectedMask;
+        effect.token = token;
+        return StepType::suspend(effect, std::move(doStore));
+    }
     return StepType::halt();
 }
 
@@ -422,6 +515,27 @@ auto SimpleSemantics::handleBufferLoad(mlir::Operation *op,
                                        SemanticsContext &context) -> StepType {
     if (op->getNumOperands() != 2)
         return StepType::halt();
+    std::uint64_t expectedMask =
+        context.expectedMask ? context.expectedMask : context.activeMask;
+    if (expectedMask == 0)
+        expectedMask = 1ull << context.laneId;
+
+    ExecutionMode defaultMode =
+        context.policy ? context.policy->memoryOps : ExecutionMode::Independent;
+    ExecutionMode mode =
+        resolveExecutionMode(context, op->getName().getStringRef(), defaultMode);
+    constexpr std::uint32_t BufferLoadOp = 3;
+    std::uint32_t token = static_cast<std::uint32_t>(
+        reinterpret_cast<std::uintptr_t>(op) ^
+        (reinterpret_cast<std::uintptr_t>(op) >> 32));
+    if (mode == ExecutionMode::Collective) {
+        auto deferLoad = []() -> StepType { return StepType::halt(); };
+        CollectiveEffect effect;
+        effect.operation = BufferLoadOp;
+        effect.activeMask = expectedMask;
+        effect.token = token;
+        return StepType::suspend(effect, std::move(deferLoad));
+    }
     auto idxOrErr = evaluateValue(op->getOperand(1), context);
     if (!idxOrErr) {
         llvm::consumeError(idxOrErr.takeError());
@@ -429,13 +543,25 @@ auto SimpleSemantics::handleBufferLoad(mlir::Operation *op,
     }
     int64_t idx = idxOrErr->asInt64();
     mlir::Value res = op->getOperand(0);
-    auto resIt = globalMemory().find(res);
-    if (resIt == globalMemory().end())
-        llvm::report_fatal_error("buffer.load: missing value at index");
-    auto it = resIt->second.find(idx);
-    if (it == resIt->second.end())
-        llvm::report_fatal_error("buffer.load: missing value at index");
-    return StepType::produce(it->second);
+    auto doLoad = [res, idx]() -> StepType {
+        auto resIt = globalMemory().find(res);
+        if (resIt == globalMemory().end())
+            llvm::report_fatal_error("buffer.load: missing value at index");
+        auto it = resIt->second.find(idx);
+        if (it == resIt->second.end())
+            llvm::report_fatal_error("buffer.load: missing value at index");
+        return StepType::produce(it->second);
+    };
+    if (mode == ExecutionMode::Independent)
+        return doLoad();
+    if (mode == ExecutionMode::Synchronous) {
+        SynchronizationEffect effect;
+        effect.operation = BufferLoadOp;
+        effect.activeMask = expectedMask;
+        effect.token = token;
+        return StepType::suspend(effect, std::move(doLoad));
+    }
+    return StepType::halt();
 }
 
 auto SimpleSemantics::handleWaveCountBits(mlir::Operation *op,
@@ -449,10 +575,29 @@ auto SimpleSemantics::handleWaveCountBits(mlir::Operation *op,
     }
     std::uint64_t expectedMask =
         context.expectedMask ? context.expectedMask : context.activeMask;
-    // Treat as a collective: wait for all lanes in expectedMask, then produce the
-    // same count for each lane. Predicate participates in the collective; if it is
-    // false, the lane still waits but returns 0 to match the HLSL contract.
+    if (expectedMask == 0)
+        expectedMask = 1ull << context.laneId;
     constexpr std::uint32_t WaveCountBitsOp = 1;
+    bool pred = predOrErr->asBool();
+    ExecutionMode mode = resolveExecutionMode(
+        context, op->getName().getStringRef(),
+        context.policy ? context.policy->waveOps : ExecutionMode::Collective);
+    auto resume = [expectedMask, pred]() -> StepType {
+        std::int32_t count =
+            pred ? static_cast<std::int32_t>(std::popcount(expectedMask)) : 0;
+        return StepType::produce(SemValue::fromInt32(count));
+    };
+    if (mode == ExecutionMode::Independent)
+        return resume();
+    if (mode == ExecutionMode::Synchronous) {
+        SynchronizationEffect effect;
+        effect.operation = WaveCountBitsOp;
+        effect.activeMask = expectedMask;
+        effect.token = static_cast<std::uint32_t>(
+            reinterpret_cast<std::uintptr_t>(op) ^
+            (reinterpret_cast<std::uintptr_t>(op) >> 32));
+        return StepType::suspend(effect, std::move(resume));
+    }
     CollectiveEffect effect;
     effect.operation = WaveCountBitsOp;
     effect.activeMask = expectedMask;
@@ -460,12 +605,7 @@ auto SimpleSemantics::handleWaveCountBits(mlir::Operation *op,
     effect.token = static_cast<std::uint32_t>(
         reinterpret_cast<std::uintptr_t>(op) ^
         (reinterpret_cast<std::uintptr_t>(op) >> 32));
-    bool pred = predOrErr->asBool();
-    return StepType::suspend(effect, [expectedMask, pred]() -> StepType {
-        std::int32_t count =
-            pred ? static_cast<std::int32_t>(std::popcount(expectedMask)) : 0;
-        return StepType::produce(SemValue::fromInt32(count));
-    });
+    return StepType::suspend(effect, std::move(resume));
 }
 
 namespace {

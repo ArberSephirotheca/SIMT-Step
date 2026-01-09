@@ -1,47 +1,38 @@
-// Simple driver that generates a SIMT-Step kernel and optionally raises it to
-// HLSL or runs it through the CPS interpreter.
-
-#include "SimtProgramGenerator.h"
-
-#include "HlslEmitter.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SimpleProgram.h"
-#include "simt-step/semantics/SimpleSemantics.h"
 #include "simt-step/semantics/TraceJsonWriter.h"
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/IR/Block.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/DialectRegistry.h>
-#include <mlir/Support/LogicalResult.h>
+#include <mlir/IR/Value.h>
+#include <mlir/Parser/Parser.h>
 
-#include <algorithm>
-#include <cstdlib>
-#include <vector>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <algorithm>
+#include <vector>
+
 using namespace mlir;
 
 int main(int argc, char **argv) {
-
+    llvm::InitLLVM y(argc, argv);
+    llvm::cl::opt<std::string> inputFile(llvm::cl::Positional,
+                                         llvm::cl::desc("<input mlir>"),
+                                         llvm::cl::init("-"));
+    llvm::cl::opt<std::string> funcName(
+        "func", llvm::cl::desc("Entry function name"),
+        llvm::cl::init("main"));
     llvm::cl::opt<unsigned> numLanes(
-        "lanes", llvm::cl::desc("Number of lanes (mask bits)"),
+        "lanes", llvm::cl::desc("Number of lanes to execute"),
         llvm::cl::init(4));
-    llvm::cl::opt<bool> dumpIR("print-ir", llvm::cl::desc("Print generated MLIR"),
-                               llvm::cl::init(false));
-    llvm::cl::opt<bool> dumpHlsl("raise-hlsl",
-                                 llvm::cl::desc("Print raised HLSL for generated module"),
-                                 llvm::cl::init(false));
-    llvm::cl::opt<bool> runInterp("run", llvm::cl::desc("Run generated module in interpreter"),
-                                  llvm::cl::init(false));
-    llvm::cl::opt<std::uint64_t> seedOpt("seed", llvm::cl::desc("Seed for RNG (0=deterministic)"),
-                                         llvm::cl::init(0));
-    llvm::cl::opt<std::string> programOpt(
-        "program",
-        llvm::cl::desc("Program generator (deterministic|randomized|richer)"),
-        llvm::cl::init("richer"));
+    llvm::cl::opt<bool> dumpIR(
+        "print-ir", llvm::cl::desc("Print parsed IR before running"),
+        llvm::cl::init(false));
     llvm::cl::opt<bool> collectiveControlFlow(
         "collective-cf",
         llvm::cl::desc("Make control-flow ops collective before split"),
@@ -61,68 +52,34 @@ int main(int argc, char **argv) {
     llvm::cl::opt<std::string> traceFile(
         "trace-file", llvm::cl::desc("Write interpreter trace to JSONL file"),
         llvm::cl::init(""));
-    llvm::cl::ParseCommandLineOptions(argc, argv, "simt-step fuzz driver\n");
+    llvm::cl::ParseCommandLineOptions(argc, argv, "simt-step runner\n");
 
-    mlir::DialectRegistry registry;
+    DialectRegistry registry;
     simt::dialect::registerSimtStepDialect(registry);
     registry.insert<arith::ArithDialect, func::FuncDialect>();
-    mlir::MLIRContext context(registry);
+    MLIRContext context(registry);
     context.loadAllAvailableDialects();
     (void)context.getOrLoadDialect<simt::dialect::SimtStepDialect>();
     (void)context.getOrLoadDialect<arith::ArithDialect>();
     (void)context.getOrLoadDialect<func::FuncDialect>();
 
-    simt::fuzz::GeneratorConfig cfg;
-    cfg.numThreads = {static_cast<std::int64_t>(numLanes), 1, 1};
-    cfg.seed = seedOpt;
-    llvm::errs() << "[fuzz] generating module...\n";
-    llvm::errs().flush();
-    mlir::OwningOpRef<mlir::ModuleOp> module;
-    if (programOpt == "deterministic") {
-        module = simt::fuzz::createDeterministicIfLoopModule(context, cfg);
-    } else if (programOpt == "randomized" || programOpt == "random") {
-        module = simt::fuzz::createRandomizedModule(context, cfg);
-    } else if (programOpt == "richer") {
-        module = simt::fuzz::createRicherRandomModule(context, cfg);
-    } else {
-        llvm::errs() << "unknown --program=" << programOpt << "\n";
-        return 1;
-    }
+    auto module = parseSourceFile<ModuleOp>(inputFile, &context);
     if (!module) {
-        llvm::errs() << "failed to build module\n";
+        llvm::errs() << "failed to parse module\n";
         return 1;
     }
 
-    llvm::errs() << "[fuzz] module built.\n";
-    llvm::errs().flush();
-    auto func = module->lookupSymbol<func::FuncOp>("main");
-    if (!func) {
-        llvm::errs() << "generated module missing @main\n";
-        return 1;
-    }
     if (dumpIR) {
         module->print(llvm::outs());
         llvm::outs() << "\n";
     }
 
-    if (dumpHlsl) {
-        if (failed(simt::raise::emitModuleAsHlsl(*module, llvm::outs())))
-            return 1;
+    auto func = module->lookupSymbol<func::FuncOp>(funcName);
+    if (!func) {
+        llvm::errs() << "module missing @" << funcName << "\n";
+        return 1;
     }
 
-    if (!runInterp)
-        return 0;
-
-    if (std::getenv("SIMT_CPS_DEBUG"))
-        simt::semantics::EnableCPSDebugLogs = true;
-
-    auto &entry = func.getBody().front();
-    simt::semantics::SimpleProgramRunner runner;
-    std::unique_ptr<simt::semantics::TraceJsonWriter> traceWriter;
-    if (!traceFile.empty()) {
-        traceWriter = std::make_unique<simt::semantics::TraceJsonWriter>(traceFile);
-        runner.setTraceSink(traceWriter.get());
-    }
     if (collectiveControlFlow && syncControlFlow) {
         llvm::errs() << "error: --collective-cf conflicts with --sync-cf\n";
         return 1;
@@ -141,13 +98,22 @@ int main(int argc, char **argv) {
         execPolicy.memoryOps = simt::semantics::ExecutionMode::Collective;
     else if (syncMemory)
         execPolicy.memoryOps = simt::semantics::ExecutionMode::Synchronous;
+
     simt::semantics::SemanticsContext semaCtx;
     unsigned width = std::min<unsigned>(64, std::max<unsigned>(1, numLanes));
     semaCtx.activeMask =
         width >= 64 ? ~0ull : ((1ull << static_cast<std::uint64_t>(width)) - 1ull);
     semaCtx.policy = &execPolicy;
-    simt::semantics::SimpleSemantics::clearMemory();
 
+    simt::semantics::SimpleSemantics::clearMemory();
+    simt::semantics::SimpleProgramRunner runner;
+    std::unique_ptr<simt::semantics::TraceJsonWriter> traceWriter;
+    if (!traceFile.empty()) {
+        traceWriter = std::make_unique<simt::semantics::TraceJsonWriter>(traceFile);
+        runner.setTraceSink(traceWriter.get());
+    }
+
+    auto &entry = func.getBody().front();
     if (llvm::Error err = runner.runBlock(&entry, semaCtx)) {
         llvm::errs() << "run failed: " << llvm::toString(std::move(err)) << "\n";
         return 1;
@@ -184,8 +150,8 @@ int main(int argc, char **argv) {
             std::sort(entries.begin(), entries.end(),
                       [](const auto &a, const auto &b) { return a.first < b.first; });
             for (const auto &kv : entries)
-                llvm::outs() << "  " << bufName << "[" << kv.first << "] = "
-                             << kv.second.asInt64() << "\n";
+                llvm::outs() << "  " << bufName << "[" << kv.first
+                             << "] = " << kv.second.asInt64() << "\n";
         }
     }
 

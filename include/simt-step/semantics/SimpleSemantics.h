@@ -26,6 +26,8 @@ public:
     static void clearMemory();
     static const llvm::DenseMap<mlir::Value, llvm::DenseMap<int64_t, ValueType>> &
     memory();
+    static llvm::DenseMap<mlir::Value, llvm::DenseMap<int64_t, ValueType>> &
+    memoryMutable();
 
 private:
     StepType handleConstant(mlir::arith::ConstantOp op);
@@ -36,6 +38,8 @@ private:
                            SemanticsContext &context);
     StepType handleAndIOp(mlir::arith::AndIOp op,
                           SemanticsContext &context);
+    StepType handleOrIOp(mlir::arith::OrIOp op,
+                         SemanticsContext &context);
     StepType handleCmpIOp(mlir::arith::CmpIOp op, SemanticsContext &context);
     StepType handleDispatchThreadId(SemanticsContext &context);
     StepType handleWaveCountBits(mlir::Operation *op, SemanticsContext &context);

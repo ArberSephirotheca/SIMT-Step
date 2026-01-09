@@ -42,6 +42,24 @@ static Value makeBool(OpBuilder &b, Location loc, bool v) {
     return b.create<arith::ConstantIntOp>(loc, v ? 1 : 0, 1);
 }
 
+static func::FuncOp buildScalarHelper(OpBuilder &b, Location loc,
+                                      llvm::StringRef name, RNG *rng) {
+    auto i32 = b.getI32Type();
+    auto funcType = b.getFunctionType({i32}, {i32});
+    auto func = b.create<func::FuncOp>(loc, name, funcType);
+    auto *entry = func.addEntryBlock();
+    OpBuilder fb(entry, entry->begin());
+    Value arg = entry->getArgument(0);
+    int c1 = rng ? rng->pick(1, 4) : 1;
+    int c2 = rng ? rng->pick(2, 5) : 3;
+    int c3 = rng ? rng->pick(0, 4) : 2;
+    Value v1 = fb.create<arith::AddIOp>(loc, arg, makeI32(fb, loc, c1));
+    Value v2 = fb.create<arith::RemSIOp>(loc, v1, makeI32(fb, loc, c2));
+    Value v3 = fb.create<arith::AddIOp>(loc, v2, makeI32(fb, loc, c3));
+    fb.create<func::ReturnOp>(loc, ValueRange{v3});
+    return func;
+}
+
 static Value makeNonUniformCond(OpBuilder &b, Location loc, RNG &rng,
                                 const GeneratorConfig &cfg, Value tid) {
     int lanes = static_cast<int>(cfg.numThreads[0]);
@@ -109,6 +127,81 @@ static Value buildValue(OpBuilder &b, Location loc, BuildState &st) {
 
 static Value buildPattern(OpBuilder &b, Location loc, BuildState &st,
                           unsigned depth, unsigned maxDepth);
+
+static Value buildSwitch(OpBuilder &b, Location loc, BuildState &st,
+                         unsigned depth, unsigned maxDepth) {
+    int numCases = st.rng.pick(2, 4);
+    bool includeDefault = st.rng.coin();
+    bool allowFallthrough = st.rng.coin();
+    int defaultIndex = st.rng.pick(0, numCases - 1);
+    llvm::SmallVector<bool, 4> emitWaveInCase;
+    emitWaveInCase.reserve(numCases);
+    bool anyWave = false;
+    bool allWave = true;
+    for (int i = 0; i < numCases; ++i) {
+        bool pick = st.rng.coin();
+        emitWaveInCase.push_back(pick);
+        anyWave |= pick;
+        allWave &= pick;
+    }
+    if (!anyWave)
+        emitWaveInCase[st.rng.pick(0, numCases - 1)] = true;
+    if (allWave)
+        emitWaveInCase[st.rng.pick(0, numCases - 1)] = false;
+
+    llvm::SmallVector<bool, 4> fallthroughCase;
+    fallthroughCase.reserve(numCases);
+    for (int i = 0; i < numCases; ++i) {
+        bool fall = allowFallthrough && (i + 1) < numCases && st.rng.coin();
+        fallthroughCase.push_back(fall);
+    }
+
+    int selectorMod = includeDefault ? numCases : (numCases - 1);
+    Value selector = st.tid;
+    if (selectorMod > 1) {
+        Value mod = makeI32(b, loc, selectorMod);
+        selector = b.create<arith::RemSIOp>(loc, selector, mod);
+    }
+
+    Value initVal = buildValue(b, loc, st);
+
+    llvm::SmallVector<int64_t, 4> caseValues;
+    caseValues.reserve(numCases - 1);
+    int nextCaseValue = 0;
+    for (int i = 0; i < numCases; ++i) {
+        if (i == defaultIndex)
+            continue;
+        caseValues.push_back(nextCaseValue++);
+    }
+
+    auto switchOp = b.create<simt::dialect::SwitchOp>(
+        loc, TypeRange{b.getI32Type()}, selector, ValueRange{initVal}, caseValues,
+        defaultIndex);
+
+    auto &region = switchOp.getCaseBody();
+    while (static_cast<int>(region.getBlocks().size()) < numCases) {
+        auto *blk = new Block();
+        blk->addArguments({b.getI32Type()}, SmallVector<Location>{loc});
+        region.push_back(blk);
+    }
+
+    int caseIdx = 0;
+    for (auto &blk : region) {
+        if (caseIdx >= numCases)
+            break;
+        if (blk.getNumArguments() == 0) {
+            blk.addArguments({b.getI32Type()}, SmallVector<Location>{loc});
+        }
+        OpBuilder cb(&blk, blk.begin());
+        Value bodyVal = buildPattern(cb, loc, st, depth + 1, maxDepth);
+        if (emitWaveInCase[caseIdx])
+            emitWaveCount(cb, loc, st, makeBool(cb, loc, true));
+        auto yield = cb.create<simt::dialect::YieldOp>(loc, ValueRange{bodyVal});
+        yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
+        ++caseIdx;
+    }
+    return switchOp.getResult(0);
+}
 
 static Value buildIf(OpBuilder &b, Location loc, BuildState &st, unsigned depth,
                      unsigned maxDepth) {
@@ -197,12 +290,14 @@ static Value buildPattern(OpBuilder &b, Location loc, BuildState &st,
                           unsigned depth, unsigned maxDepth) {
     if (depth >= maxDepth)
         return buildValue(b, loc, st);
-    int choice = st.rng.pick(0, 2); // 0 leaf, 1 if, 2 loop
+    int choice = st.rng.pick(0, 3); // 0 leaf, 1 if, 2 loop, 3 switch
     if (choice == 0)
         return buildValue(b, loc, st);
     if (choice == 1)
         return buildIf(b, loc, st, depth, maxDepth);
-    return buildLoop(b, loc, st, depth, maxDepth);
+    if (choice == 2)
+        return buildLoop(b, loc, st, depth, maxDepth);
+    return buildSwitch(b, loc, st, depth, maxDepth);
 }
 } // namespace
 
@@ -220,6 +315,8 @@ createDeterministicIfLoopModule(mlir::MLIRContext &context,
         &context, simt::dialect::MemorySpace::Global, builder.getI32Type());
     llvm::errs() << "[fuzz-gen] resource type ready\n";
 
+    auto helper = buildScalarHelper(builder, loc, "helper0", nullptr);
+
     auto funcType = builder.getFunctionType({resTy}, {});
     auto func = builder.create<func::FuncOp>(loc, "main", funcType);
     llvm::errs() << "[fuzz-gen] func created\n";
@@ -234,6 +331,11 @@ createDeterministicIfLoopModule(mlir::MLIRContext &context,
     Value tid =
         builder.create<simt::dialect::DispatchThreadIdOp>(loc, builder.getI32Type());
     llvm::errs() << "[fuzz-gen] tid op created\n";
+    auto call = builder.create<func::CallOp>(loc, helper, ValueRange{tid});
+    Value callRes = call.getResult(0);
+    Value callBase = makeI32(builder, loc, 128);
+    Value callIdx = builder.create<arith::AddIOp>(loc, callBase, tid);
+    builder.create<simt::dialect::BufferStoreOp>(loc, outWave, callIdx, callRes);
     Value c0 = builder.create<arith::ConstantIntOp>(loc, 0, 32);
     Value cond =
         builder.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, tid, c0);
@@ -352,6 +454,7 @@ createRandomizedModule(mlir::MLIRContext &context,
 
     auto resTy = simt::dialect::ResourceType::get(
         &context, simt::dialect::MemorySpace::Global, builder.getI32Type());
+    auto helper = buildScalarHelper(builder, loc, "helper0", &rng);
     auto funcType = builder.getFunctionType({resTy}, {});
     auto func = builder.create<func::FuncOp>(loc, "main", funcType);
     func->setAttr("simt.num_threads",
@@ -364,6 +467,11 @@ createRandomizedModule(mlir::MLIRContext &context,
     Value outWave = entry->getArgument(0);
     Value tid =
         builder.create<simt::dialect::DispatchThreadIdOp>(loc, builder.getI32Type());
+    auto call = builder.create<func::CallOp>(loc, helper, ValueRange{tid});
+    Value callRes = call.getResult(0);
+    Value callBase = makeI32(builder, loc, 128);
+    Value callIdx = builder.create<arith::AddIOp>(loc, callBase, tid);
+    builder.create<simt::dialect::BufferStoreOp>(loc, outWave, callIdx, callRes);
 
     // Build a non-uniform branch predicate.
     Value cond = makeNonUniformCond(builder, loc, rng, cfg, tid);
@@ -457,6 +565,7 @@ createRicherRandomModule(mlir::MLIRContext &context,
 
     auto resTy = simt::dialect::ResourceType::get(
         &context, simt::dialect::MemorySpace::Global, builder.getI32Type());
+    auto helper = buildScalarHelper(builder, loc, "helper0", &rng);
     auto funcType = builder.getFunctionType({resTy}, {});
     auto func = builder.create<func::FuncOp>(loc, "main", funcType);
     func->setAttr("simt.num_threads",
@@ -469,6 +578,11 @@ createRicherRandomModule(mlir::MLIRContext &context,
     Value outWave = entry->getArgument(0);
     Value tid =
         builder.create<simt::dialect::DispatchThreadIdOp>(loc, builder.getI32Type());
+    auto call = builder.create<func::CallOp>(loc, helper, ValueRange{tid});
+    Value callRes = call.getResult(0);
+    Value callBase = makeI32(builder, loc, 128);
+    Value callIdx = builder.create<arith::AddIOp>(loc, callBase, tid);
+    builder.create<simt::dialect::BufferStoreOp>(loc, outWave, callIdx, callRes);
 
     BuildState st{cfg, rng, /*waveId=*/0, tid, outWave};
 

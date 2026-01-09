@@ -204,12 +204,14 @@ mlir::LogicalResult CustomOp::verify() {
 void SwitchOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
                      mlir::TypeRange resultTypes, mlir::Value selector,
                      mlir::ValueRange initialValues,
-                     mlir::ArrayRef<int64_t> caseValues) {
+                     mlir::ArrayRef<int64_t> caseValues,
+                     int64_t defaultIndex) {
   state.addTypes(resultTypes);
   state.addOperands(selector);
   state.addOperands(initialValues);
   state.addAttribute("case_values",
                      builder.getDenseI64ArrayAttr(caseValues));
+  state.addAttribute("default_index", builder.getI64IntegerAttr(defaultIndex));
 
   mlir::OpBuilder::InsertionGuard guard(builder);
   auto *body = state.addRegion();
@@ -229,10 +231,22 @@ mlir::LogicalResult SwitchOp::verify() {
   auto caseValues = getCaseValuesAttr();
   if (!caseValues)
     return emitOpError("requires 'case_values' attribute");
+  auto defaultIndexAttr = getDefaultIndexAttr();
+  if (!defaultIndexAttr)
+    return emitOpError("requires 'default_index' attribute");
 
   mlir::Region &body = getCaseBody();
   if (body.empty())
     return emitOpError("requires a non-empty body region");
+
+  std::size_t caseCount = static_cast<std::size_t>(caseValues.size());
+  if (caseCount + 1 != body.getBlocks().size())
+    return emitOpError(
+        "case_values count must be one less than the number of case blocks");
+  int64_t defaultIndex = defaultIndexAttr.getInt();
+  if (defaultIndex < 0 ||
+      static_cast<std::size_t>(defaultIndex) >= body.getBlocks().size())
+    return emitOpError("default_index must name a valid case block");
 
   for (mlir::Block &block : body) {
     if (block.getNumArguments() != getNumResults())
@@ -241,6 +255,11 @@ mlir::LogicalResult SwitchOp::verify() {
     if (block.empty() || !llvm::isa<YieldOp>(block.back()))
       return emitOpError(
           "each block in the body must terminate with simt_step.yield");
+    auto yield = llvm::cast<YieldOp>(block.back());
+    auto fallthroughAttr = yield->getAttrOfType<mlir::BoolAttr>("fallthrough");
+    if (!fallthroughAttr)
+      return emitOpError(
+          "each switch case must have a bool 'fallthrough' attribute");
   }
 
   return mlir::success();
@@ -362,12 +381,26 @@ verifyLoopAncestor(mlir::Operation *op, llvm::StringRef opName) {
   return op->emitError() << opName << " must be nested inside 'simt_step.loop'";
 }
 
+static mlir::LogicalResult
+verifyLoopOrSwitchAncestor(mlir::Operation *op, llvm::StringRef opName) {
+  for (mlir::Operation *parent = op->getParentOp(); parent;
+       parent = parent->getParentOp()) {
+    if (llvm::isa<simt::dialect::LoopOp, simt::dialect::SwitchOp>(parent))
+      return mlir::success();
+    if (llvm::isa<mlir::ModuleOp>(parent))
+      break;
+  }
+  return op->emitError() << opName
+                         << " must be nested inside 'simt_step.loop' or "
+                            "'simt_step.switch'";
+}
+
 mlir::LogicalResult ContinueOp::verify() {
   return verifyLoopAncestor(getOperation(), "simt_step.continue");
 }
 
 mlir::LogicalResult BreakOp::verify() {
-  return verifyLoopAncestor(getOperation(), "simt_step.break");
+  return verifyLoopOrSwitchAncestor(getOperation(), "simt_step.break");
 }
 
 void BufferLoadOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,

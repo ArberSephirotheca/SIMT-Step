@@ -34,6 +34,7 @@ def SimtStep_Dialect : Dialect {
 def SimtStep_IndependentTrait : NativeOpTrait<"SimtIndependent">;
 def SimtStep_SynchronizedTrait : NativeOpTrait<"SimtSynchronized">;
 def SimtStep_CollectiveTrait : NativeOpTrait<"SimtCollective">;
+def SimtStep_WaveTrait : NativeOpTrait<"SimtWave">;
 
 // Enum attributes -----------------------------------------------------------
 
@@ -103,6 +104,7 @@ def SimtStep_ResourceType : TypeDef<SimtStep_Dialect, "Resource"> {
 // Minimal op examples ------------------------------------------------------
 
 def SimtStep_WaveAllOp : Op<SimtStep_Dialect, "wave_all"> {
+  let traits = [SimtStep_WaveTrait];
   let summary = "Wave-level logical AND over lane predicates";
   let description = [{
     Computes whether all active lanes evaluate the predicate to true. The final
@@ -117,6 +119,7 @@ def SimtStep_WaveAllOp : Op<SimtStep_Dialect, "wave_all"> {
 }
 
 def SimtStep_WaveAnyOp : Op<SimtStep_Dialect, "wave_any"> {
+  let traits = [SimtStep_WaveTrait];
   let summary = "Wave-level logical OR over lane predicates";
   let description = [{
     Computes whether any active lane evaluates the predicate to true. Returns a
@@ -130,6 +133,7 @@ def SimtStep_WaveAnyOp : Op<SimtStep_Dialect, "wave_any"> {
 }
 
 def SimtStep_WaveBallotOp : Op<SimtStep_Dialect, "wave_ballot"> {
+  let traits = [SimtStep_WaveTrait];
   let summary = "Wave-level ballot producing a bitmask of lanes with predicate true";
   let description = [{
     Produces an integer mask encoding which active lanes have the predicate set.
@@ -143,6 +147,7 @@ def SimtStep_WaveBallotOp : Op<SimtStep_Dialect, "wave_ballot"> {
 }
 
 def SimtStep_WaveCountBitsOp : Op<SimtStep_Dialect, "wave_count_bits"> {
+  let traits = [SimtStep_WaveTrait];
   let summary = "Wave-level population count of lanes with predicate true";
   let description = [{
     Counts the number of active lanes whose predicate evaluates to true.
@@ -406,12 +411,15 @@ def SimtStep_SwitchOp : Op<SimtStep_Dialect, "switch"> {
     Structured container for lowering switch statements. The selector operand
     chooses among cases enumerated in the `case_values` attribute. Each case
     and the default branch end with `simt_step.yield`, forwarding the
-    switch-carried values.
+    switch-carried values. The `default_index` attribute identifies which
+    block in the case region is the default; `case_values` are ordered to
+    match the remaining blocks.
   }];
 
   let arguments = (ins AnyType:$selector,
                        Variadic<AnyType>:$initialValues,
-                       DenseI64ArrayAttr:$case_values);
+                       DenseI64ArrayAttr:$case_values,
+                       I64Attr:$default_index);
   let results = (outs Variadic<AnyType>:$results);
   let regions = (region AnyRegion:$caseBody);
 
@@ -419,7 +427,8 @@ def SimtStep_SwitchOp : Op<SimtStep_Dialect, "switch"> {
   let builders = [
     OpBuilder<(ins "mlir::TypeRange":$resultTypes, "mlir::Value":$selector,
                     "mlir::ValueRange":$initialValues,
-                    "mlir::ArrayRef<int64_t>":$caseValues)>
+                    "mlir::ArrayRef<int64_t>":$caseValues,
+                    "int64_t":$defaultIndex)>
   ];
 
   let hasVerifier = 1;
@@ -490,7 +499,7 @@ def SimtStep_LoopOp : Op<SimtStep_Dialect, "loop",
 
 def SimtStep_BreakOp : Op<SimtStep_Dialect, "break",
     [Terminator]> {
-  let summary = "Structured break from simt.loop";
+  let summary = "Structured break from simt.loop or simt.switch";
   let arguments = (ins Variadic<AnyType>:$results);
   let hasVerifier = 1;
 }

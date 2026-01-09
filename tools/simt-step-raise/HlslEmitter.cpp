@@ -11,9 +11,12 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Block.h>
 
+#include <llvm/Support/ErrorHandling.h>
+
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 using namespace mlir;
 
@@ -82,6 +85,12 @@ struct HlslEmitter {
         if (auto mul = dyn_cast<arith::MulIOp>(op)) {
             return "(" + emitValue(mul.getLhs()) + " * " + emitValue(mul.getRhs()) + ")";
         }
+        if (auto andi = dyn_cast<arith::AndIOp>(op)) {
+            return "(" + emitValue(andi.getLhs()) + " & " + emitValue(andi.getRhs()) + ")";
+        }
+        if (auto ori = dyn_cast<arith::OrIOp>(op)) {
+            return "(" + emitValue(ori.getLhs()) + " | " + emitValue(ori.getRhs()) + ")";
+        }
         if (auto shl = dyn_cast<arith::ShLIOp>(op)) {
             return "(" + emitValue(shl.getLhs()) + " << " + emitValue(shl.getRhs()) + ")";
         }
@@ -113,14 +122,29 @@ struct HlslEmitter {
         return "<unsupported>";
     }
 
-    LogicalResult emitRegionAssign(Region &r, const std::string &target) {
+    LogicalResult emitRegionAssign(Region &r,
+                                   llvm::ArrayRef<std::string> targets) {
         auto &blk = r.front();
         for (auto &op : blk) {
             if (auto y = dyn_cast<simt::dialect::YieldOp>(op)) {
-                if (!y.getOperands().empty() && !target.empty()) {
-                    emitIndent();
-                    os << target << " = " << get(y.getOperand(0)) << ";\n";
+                if (targets.empty()) {
+                    if (!y.getOperands().empty())
+                        return failure();
+                } else if (y.getNumOperands() != targets.size()) {
+                    return failure();
                 }
+                for (unsigned i = 0; i < targets.size(); ++i) {
+                    if (targets[i].empty())
+                        continue;
+                    emitIndent();
+                    os << targets[i] << " = " << get(y.getOperand(i)) << ";\n";
+                }
+                return success();
+            }
+            if (auto br = dyn_cast<simt::dialect::BreakOp>(op)) {
+                (void)br;
+                emitIndent();
+                os << "break;\n";
                 return success();
             }
             if (failed(emitOp(&op)))
@@ -130,48 +154,31 @@ struct HlslEmitter {
     }
 
     LogicalResult emitIf(simt::dialect::IfOp ifOp) {
-        if (ifOp.getNumResults() > 1)
-            return failure();
-        auto trivialElseYield = [&]() -> std::optional<std::string> {
-            auto &blk = ifOp.getElseRegion().front();
-            if (blk.empty())
-                return std::string{};
-            if (std::next(blk.begin()) != blk.end())
-                return std::nullopt;
-            if (auto y = dyn_cast<simt::dialect::YieldOp>(&blk.front())) {
-                if (y.getNumOperands() == 0)
-                    return std::string{};
-                if (y.getNumOperands() == 1)
-                    return emitValue(y.getOperand(0));
-            }
-            return std::nullopt;
-        };
-        std::string resName;
-        std::optional<std::string> elseInit;
-        bool hasResult = !ifOp.getResults().empty();
-        if (hasResult) {
-            resName = makeTmp();
-            elseInit = trivialElseYield();
+        unsigned numResults = ifOp.getNumResults();
+        std::vector<std::string> resultNames;
+        resultNames.reserve(numResults);
+        for (unsigned i = 0; i < numResults; ++i) {
+            std::string name = makeTmp();
+            resultNames.push_back(name);
             emitIndent();
-            os << emitType(ifOp.getResultTypes().front()) << " " << resName;
-            if (elseInit)
-                os << " = " << *elseInit;
-            os << ";\n";
+            os << emitType(ifOp.getResultTypes()[i]) << " " << name << ";\n";
         }
         emitIndent();
         os << "if (" << get(ifOp.getCondition()) << ") {\n";
         indent += "  ";
-        if (failed(emitRegionAssign(ifOp.getThenRegion(), resName)))
+        if (failed(emitRegionAssign(ifOp.getThenRegion(), resultNames)))
             return failure();
         indent.pop_back();
         indent.pop_back();
-        bool omitElse = (!hasResult && trivialElseYield().has_value()) ||
-                        (hasResult && elseInit.has_value());
-        if (!omitElse) {
+        bool hasElseRegion = !ifOp.getElseRegion().empty();
+        if (numResults > 0 && (!hasElseRegion || ifOp.getElseRegion().front().empty()))
+            return failure();
+        bool hasElse = hasElseRegion && !ifOp.getElseRegion().front().empty();
+        if (hasElse) {
             emitIndent();
             os << "} else {\n";
             indent += "  ";
-            if (failed(emitRegionAssign(ifOp.getElseRegion(), resName)))
+            if (failed(emitRegionAssign(ifOp.getElseRegion(), resultNames)))
                 return failure();
             indent.pop_back();
             indent.pop_back();
@@ -181,8 +188,8 @@ struct HlslEmitter {
             emitIndent();
             os << "}\n";
         }
-        if (!resName.empty())
-            names[ifOp.getResult(0)] = resName;
+        for (unsigned i = 0; i < numResults; ++i)
+            names[ifOp.getResult(i)] = resultNames[i];
         return success();
     }
 
@@ -270,6 +277,120 @@ struct HlslEmitter {
         return success();
     }
 
+    LogicalResult emitSwitch(simt::dialect::SwitchOp sw) {
+        unsigned numResults = sw.getNumResults();
+        auto initVals = sw.getInitialValues();
+        std::vector<std::string> resultNames;
+        resultNames.reserve(numResults);
+
+        for (unsigned i = 0; i < numResults; ++i) {
+            std::string name = makeTmp();
+            resultNames.push_back(name);
+            emitIndent();
+            os << emitType(sw.getResultTypes()[i]) << " " << name;
+            if (i < initVals.size())
+                os << " = " << get(initVals[i]);
+            os << ";\n";
+        }
+
+        auto caseValues = sw.getCaseValues();
+        auto &region = sw.getCaseBody();
+        unsigned numBlocks =
+            static_cast<unsigned>(std::distance(region.begin(), region.end()));
+        if (caseValues.size() + 1 != numBlocks)
+            llvm::report_fatal_error("HlslEmitter: switch case_values size mismatch");
+        auto defaultIndexAttr = sw.getDefaultIndexAttr();
+        if (!defaultIndexAttr)
+            llvm::report_fatal_error("HlslEmitter: switch missing default_index");
+        int64_t defaultIndex = defaultIndexAttr.getInt();
+        if (defaultIndex < 0 ||
+            static_cast<std::size_t>(defaultIndex) >= numBlocks)
+            llvm::report_fatal_error("HlslEmitter: switch default_index out of range");
+
+        std::vector<bool> caseFallthrough;
+        caseFallthrough.reserve(numBlocks);
+        for (auto &blk : region) {
+            if (blk.empty())
+                llvm::report_fatal_error("HlslEmitter: switch case missing yield");
+            auto y = dyn_cast<simt::dialect::YieldOp>(blk.back());
+            if (!y)
+                llvm::report_fatal_error("HlslEmitter: switch case missing yield");
+            auto attr = y->getAttrOfType<mlir::BoolAttr>("fallthrough");
+            if (!attr)
+                llvm::report_fatal_error("HlslEmitter: switch missing fallthrough attr");
+            bool fall = attr.getValue();
+            caseFallthrough.push_back(fall);
+        }
+
+        emitIndent();
+        os << "switch (" << get(sw.getSelector()) << ") {\n";
+        indent += "  ";
+        unsigned blockIndex = 0;
+
+        unsigned caseValueIndex = 0;
+        for (auto &blk : region) {
+            bool isDefault = (blockIndex == static_cast<unsigned>(defaultIndex));
+            emitIndent();
+            if (isDefault)
+                os << "default:\n";
+            else
+                os << "case " << caseValues[caseValueIndex++] << ":\n";
+            indent += "  ";
+            emitIndent();
+            os << "{\n";
+            indent += "  ";
+
+            for (unsigned i = 0; i < blk.getNumArguments(); ++i) {
+                if (i < resultNames.size())
+                    names[blk.getArgument(i)] = resultNames[i];
+            }
+
+            bool sawYield = false;
+            for (auto &op : blk) {
+                if (auto y = dyn_cast<simt::dialect::YieldOp>(op)) {
+                    if (y.getNumOperands() != numResults)
+                        return failure();
+                    for (unsigned i = 0; i < numResults; ++i) {
+                        emitIndent();
+                        os << resultNames[i] << " = " << get(y.getOperand(i)) << ";\n";
+                    }
+                    sawYield = true;
+                    break;
+                }
+                if (failed(emitOp(&op)))
+                    return failure();
+            }
+            if (!sawYield)
+                return failure();
+            bool fallthrough = false;
+            if (blockIndex < caseFallthrough.size())
+                fallthrough = caseFallthrough[blockIndex];
+            if (!fallthrough) {
+                emitIndent();
+                os << "break;\n";
+            }
+
+            indent.pop_back();
+            indent.pop_back();
+            emitIndent();
+            os << "}\n";
+            indent.pop_back();
+            indent.pop_back();
+            ++blockIndex;
+        }
+        if (caseValueIndex != caseValues.size())
+            llvm::report_fatal_error("HlslEmitter: switch case_values mapping mismatch");
+
+        indent.pop_back();
+        indent.pop_back();
+        emitIndent();
+        os << "}\n";
+
+        for (unsigned i = 0; i < numResults; ++i)
+            names[sw.getResult(i)] = resultNames[i];
+        return success();
+    }
+
     LogicalResult emitOp(Operation *op) {
         if (auto c = dyn_cast<arith::ConstantIntOp>(op)) {
             names[c.getResult()] = formatConst(c);
@@ -283,18 +404,26 @@ struct HlslEmitter {
             return success();
         }
         if (isa<arith::AddIOp, arith::RemSIOp, arith::CmpIOp,
-                arith::SubIOp, arith::MulIOp, arith::ShLIOp, arith::ShRSIOp,
-                simt::dialect::WaveCountBitsOp>(op)) {
+                arith::SubIOp, arith::MulIOp, arith::AndIOp, arith::OrIOp,
+                arith::ShLIOp, arith::ShRSIOp, simt::dialect::WaveCountBitsOp>(op)) {
             std::string tmp = makeTmp();
             names[op->getResult(0)] = tmp;
             emitIndent();
             os << emitType(op->getResult(0).getType()) << " " << tmp << " = " << emitExpr(op) << ";\n";
             return success();
         }
+        if (auto br = dyn_cast<simt::dialect::BreakOp>(op)) {
+            (void)br;
+            emitIndent();
+            os << "break;\n";
+            return success();
+        }
         if (auto ifOp = dyn_cast<simt::dialect::IfOp>(op))
             return emitIf(ifOp);
         if (auto loop = dyn_cast<simt::dialect::LoopOp>(op))
             return emitLoop(loop);
+        if (auto sw = dyn_cast<simt::dialect::SwitchOp>(op))
+            return emitSwitch(sw);
         if (auto load = dyn_cast<simt::dialect::BufferLoadOp>(op)) {
             std::string tmp = makeTmp();
             names[load.getResult()] = tmp;
@@ -311,6 +440,39 @@ struct HlslEmitter {
                << "[" << get(store.getIndex()) << "] = " << get(store.getValue()) << ";\n";
             return success();
         }
+        if (auto call = dyn_cast<func::CallOp>(op)) {
+            if (call.getNumResults() > 1)
+                llvm::report_fatal_error("HlslEmitter: call with multiple results");
+            std::string callee = call.getCallee().str();
+            if (call.getNumResults() == 1) {
+                std::string tmp = makeTmp();
+                names[call.getResult(0)] = tmp;
+                emitIndent();
+                os << emitType(call.getResult(0).getType()) << " " << tmp << " = ";
+            } else {
+                emitIndent();
+            }
+            os << callee << "(";
+            for (unsigned i = 0; i < call.getNumOperands(); ++i) {
+                if (i)
+                    os << ", ";
+                os << get(call.getOperand(i));
+            }
+            os << ");\n";
+            return success();
+        }
+        if (auto ret = dyn_cast<func::ReturnOp>(op)) {
+            emitIndent();
+            if (ret.getNumOperands() == 0) {
+                os << "return;\n";
+                return success();
+            }
+            if (ret.getNumOperands() == 1) {
+                os << "return " << get(ret.getOperand(0)) << ";\n";
+                return success();
+            }
+            llvm::report_fatal_error("HlslEmitter: multiple return values");
+        }
         if (isa<simt::dialect::YieldOp, simt::dialect::ConditionOp>(op))
             return success();
         return failure();
@@ -318,6 +480,40 @@ struct HlslEmitter {
 };
 
 } // namespace
+
+static LogicalResult emitHelperFunction(func::FuncOp func,
+                                        llvm::raw_ostream &os) {
+    auto results = func.getFunctionType().getResults();
+    if (results.size() > 1)
+        llvm::report_fatal_error("HlslEmitter: helper multiple results");
+
+    HlslEmitter emitter(os);
+    std::string retType = results.empty() ? "void" : emitter.emitType(results[0]);
+
+    os << retType << " " << func.getName() << "(";
+    bool first = true;
+    for (auto arg : func.getArguments()) {
+        if (!first)
+            os << ", ";
+        first = false;
+        os << emitter.emitType(arg.getType()) << " arg" << arg.getArgNumber();
+        emitter.names[arg] = "arg" + std::to_string(arg.getArgNumber());
+    }
+    os << ") {\n";
+    emitter.indent = "  ";
+
+    auto &entry = func.getBody().front();
+    for (auto &op : entry) {
+        if (failed(emitter.emitOp(&op))) {
+            os << "unsupported op in helper: " << op.getName() << "\n";
+            return failure();
+        }
+        if (isa<func::ReturnOp>(op))
+            break;
+    }
+    os << "}\n\n";
+    return success();
+}
 
 LogicalResult emitModuleAsHlsl(ModuleOp module, llvm::raw_ostream &os) {
     func::FuncOp func;
@@ -367,6 +563,13 @@ LogicalResult emitModuleAsHlsl(ModuleOp module, llvm::raw_ostream &os) {
     }
     if (!resources.empty())
         os << "\n";
+
+    for (auto op : module.getOps<func::FuncOp>()) {
+        if (op == func)
+            continue;
+        if (failed(emitHelperFunction(op, os)))
+            return failure();
+    }
 
     os << "[numthreads(" << ntx << "," << nty << "," << ntz << ")]\n";
     os << "void main(";

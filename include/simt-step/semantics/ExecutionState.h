@@ -7,6 +7,7 @@
 #include <limits>
 #include <optional>
 #include <queue>
+#include <string>
 #include <utility>
 
 #include <mlir/IR/Block.h>
@@ -17,7 +18,13 @@
 #include <llvm/ADT/DenseSet.h>
 #include <llvm/ADT/SmallVector.h>
 
+namespace mlir {
+class Operation;
+} // namespace mlir
+
 namespace simt::semantics {
+
+struct ExecutionPolicy;
 
 using LaneId = std::uint32_t;
 using WaveId = std::uint32_t;
@@ -40,6 +47,8 @@ enum class DynamicBlockKind {
     IfElse,
     SwitchCase,
     SwitchDefault,
+    LoopPrepare,
+    LoopBody,
 };
 
 template <typename ValueT, typename StepT>
@@ -57,12 +66,16 @@ struct DynamicBlock {
     const mlir::Operation *ifOp = nullptr;
     bool isLoopPrepare = false;
     bool isLoopBody = false;
+    std::optional<std::uint32_t> loopIteration;
 
     DynamicBlockKind kind = DynamicBlockKind::Plain;
 
     llvm::DenseMap<LaneId, StepT> continuations;
     llvm::DenseMap<LaneId, StepT> pendingOps;
     llvm::DenseMap<LaneId, llvm::DenseMap<mlir::Value, ValueT>> valueEnvs;
+    llvm::DenseMap<const mlir::Operation *, DynamicBlockKey> callChildren;
+    llvm::DenseMap<const mlir::Operation *, std::uint32_t> controlTokens;
+    llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlReadyMask;
 };
 
 template <typename ValueT>
@@ -75,6 +88,15 @@ struct LoopFrameState {
     llvm::DenseMap<LaneId, llvm::SmallVector<ValueT, 4>> carried;
 };
 
+template <typename ValueT>
+struct SwitchFrameState {
+    const mlir::Operation *switchOp = nullptr;
+    std::uint32_t baseSeq = 0;
+    llvm::SmallVector<const mlir::Block *, 4> caseBlocks;
+    llvm::DenseMap<LaneId, llvm::SmallVector<ValueT, 8>> carried;
+    llvm::DenseMap<LaneId, DynamicBlockKey> pendingCases;
+};
+
 template <typename ValueT, typename StepT>
 struct CollectiveSyncPoint {
     CollectiveEffect effect;
@@ -82,6 +104,9 @@ struct CollectiveSyncPoint {
     std::uint64_t expectedMask = 0;
     llvm::DenseSet<LaneId> arrivals;
     llvm::DenseMap<LaneId, ValueT> operands;
+    llvm::DenseMap<LaneId, ValueT> results;
+    llvm::DenseMap<LaneId, ValueT> memoryIndices;
+    llvm::DenseMap<LaneId, ValueT> memoryValues;
     llvm::DenseMap<LaneId, StepT> continuations;
 };
 
@@ -94,6 +119,23 @@ struct SynchronizationSyncPoint {
     llvm::DenseMap<LaneId, StepT> continuations;
 };
 
+template <typename StepT>
+struct ControlFlowSyncPoint {
+    std::uint64_t expectedMask = 0;
+    std::uint64_t readyMask = 0;
+    llvm::DenseSet<LaneId> arrivals;
+    llvm::DenseMap<LaneId, StepT> continuations;
+};
+
+template <typename ValueT>
+struct CallFrame {
+    DynamicBlockKey callerKey;
+    mlir::Block *callerBlock = nullptr;
+    mlir::Block::iterator resumeIt;
+    llvm::SmallVector<mlir::Value, 4> results;
+    std::string calleeName;
+};
+
 template <typename ValueT, typename StepT>
 struct LaneContext {
     llvm::DenseMap<mlir::Value, ValueT> values;
@@ -101,6 +143,7 @@ struct LaneContext {
     std::optional<ValueT> returnValue;
     std::optional<DynamicBlockKey> currentBlock;
     enum class Phase { Running, Waiting, Completed } phase = Phase::Running;
+    llvm::SmallVector<CallFrame<ValueT>, 4> callStack;
 };
 
 template <typename ValueT, typename StepT>
@@ -111,6 +154,7 @@ struct MergeStackEntry {
     std::uint64_t expectedMask = 0;
     std::uint64_t completedMask = 0;
     std::optional<LoopFrameState<ValueT>> loopFrame;
+    std::optional<SwitchFrameState<ValueT>> switchFrame;
 };
 
 template <typename ValueT, typename StepT>
@@ -121,6 +165,12 @@ struct WaveContext {
     llvm::DenseMap<std::uint32_t, CollectiveSyncPoint<ValueT, StepT>> collectives;
     llvm::DenseMap<std::uint32_t, SynchronizationSyncPoint<ValueT, StepT>> syncPoints;
     llvm::DenseMap<LaneId, LaneContext<ValueT, StepT>> lanes;
+    std::uint32_t nextCallSeq = 1;
+    std::uint32_t nextControlToken = 1;
+    llvm::DenseMap<std::uint32_t, const mlir::Operation *> controlTokenToOp;
+    llvm::DenseMap<std::uint32_t, const mlir::Operation *> syncTokenToOp;
+    llvm::DenseMap<std::uint32_t, const mlir::Operation *> collectiveTokenToOp;
+    const ExecutionPolicy *policy = nullptr;
 };
 
 template <typename ValueT, typename StepT>
