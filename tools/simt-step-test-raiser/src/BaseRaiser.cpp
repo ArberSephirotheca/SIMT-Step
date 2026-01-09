@@ -25,11 +25,6 @@
 #include <vector>
 #include <cstdio>
 #include "mlir/Support/IndentedOstream.h"
-#include "simt-step/plugins/Registry.h"
-#include "simt-step/semantics/CPSInterpreter.h"
-#include "simt-step/semantics/Interpreter.h"
-#include "simt-step/semantics/SemanticsContext.h"
-#include "simt-step/semantics/SimpleSemantics.h"
 
 
 using namespace simt::test_raiser;
@@ -37,14 +32,6 @@ using namespace llvm;
 using namespace mlir;
 
 namespace simt::test_raiser {
-
-// auto getOracleBuffer(Operation* op, semantics::SemanticsContext& sctx){
-//     semantics::SimpleSemantics simples;
-//     simt::semantics::CPSInterpreter<semantics::SimpleSemantics> intepreter(simples);
-//     auto output = intepreter.;
-//     printf("%s\n", output->getAsString().value().str().c_str());
-//     return 0;
-// }
 
 BaseRaiser::BaseRaiser(raw_ostream& o): os(o) {
 }
@@ -343,8 +330,6 @@ LogicalResult BaseRaiser::printOp(arith::SelectOp& op){
 //////////// Other helper functions ////////////
 
 LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
-    semantics::SemanticsContext sctx;
-    simt::test_raiser::getOracleBuffer(op, sctx);
 
     b.os << "#!amber\n"
             "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"

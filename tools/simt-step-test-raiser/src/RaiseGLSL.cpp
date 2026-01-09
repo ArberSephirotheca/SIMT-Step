@@ -34,7 +34,7 @@ LogicalResult emitMainFuncTop(func::FuncOp& f) override {
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
             os << "in ";
             if (failed(emitType(t.getElementType()))) return failure();
-            os << getOrAddValueName(v) << "[";
+            os << " " << getOrAddValueName(v) << "[];\n";
         }
     }
     os << "void main()";
