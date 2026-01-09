@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Operation.h"
@@ -9,6 +10,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <string>
+#include <vector>
 #include "mlir/IR/Types.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/IndentedOstream.h"
@@ -18,7 +20,6 @@ using namespace mlir;
 
 /*
 mlir::arith::IndexCastOp
-mlir::arith::RemFOp
 mlir::func::FuncOp +
 mlir::func::ReturnOp +
 mlir::vector::ExtractOp
@@ -120,6 +121,11 @@ namespace simt::test_raiser {
             LogicalResult emitBinop(Value output, Value left, Value right, std::string op);
 
             /*
+            Emits a function call to `fname` with args `args` and whose return value is stored in `output`
+            */
+            LogicalResult emitFuncCall(Value output, std::string fname, std::vector<Value> args);
+
+            /*
             Takes an operation and chooses the correct op printer for it. Also handles added trailing
             semicolons for statements that require it.
             */
@@ -134,6 +140,9 @@ namespace simt::test_raiser {
             LogicalResult printOp(arith::NegFOp& op);
             LogicalResult printOp(arith::SelectOp& op);
             LogicalResult printOp(arith::ExtUIOp& op);
+
+            virtual LogicalResult printOp(vector::ExtractOp& op){return failure();}
+            virtual LogicalResult printOp(arith::RemFOp& op){return failure();}
 
             friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);     
     };
