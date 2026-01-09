@@ -38,7 +38,8 @@ COPY . .
 RUN cmake -G Ninja -S . -B build \
       -DLLVM_DIR=$LLVM_PREFIX/lib/cmake/llvm \
       -DMLIR_DIR=$LLVM_PREFIX/lib/cmake/mlir \
-      -DCMAKE_BUILD_TYPE=Release
+      -DCMAKE_BUILD_TYPE=Release\
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 RUN cmake --build build
 
 CMD ["bash"]
