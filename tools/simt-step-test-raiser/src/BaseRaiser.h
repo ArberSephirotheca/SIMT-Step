@@ -7,8 +7,10 @@
 #include "mlir/IR/Operation.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/Support/LogicalResult.h"
+#include <deque>
 #include <llvm/Support/raw_ostream.h>
 
+#include <stack>
 #include <string>
 #include <vector>
 #include "mlir/IR/Types.h"
@@ -24,11 +26,9 @@ using namespace simt::dialect;
 mlir::arith::IndexCastOp
 mlir::func::FuncOp +
 mlir::func::ReturnOp +
-mlir::vector::ExtractOp
 mlir::vector::InsertOp
 simt::dialect::ActiveMaskOp
 simt::dialect::BarrierOp
-simt::dialect::BreakOp
 simt::dialect::BufferAtomicAddOp
 simt::dialect::BufferAtomicAndOp
 simt::dialect::BufferAtomicCompareExchangeOp
@@ -37,26 +37,15 @@ simt::dialect::BufferAtomicMaxOp
 simt::dialect::BufferAtomicMinOp
 simt::dialect::BufferAtomicOrOp
 simt::dialect::BufferAtomicXorOp
-simt::dialect::BufferLoadOp
-simt::dialect::BufferStoreOp
-simt::dialect::ConditionOp
-simt::dialect::ContinueOp
-simt::dialect::DispatchThreadIdOp
 simt::dialect::FenceOp
 simt::dialect::GroupIdOp
 simt::dialect::GroupIndexOp
 simt::dialect::GroupThreadIdOp
-simt::dialect::IfOp
 simt::dialect::LaneIdOp
-simt::dialect::SwitchOp
 simt::dialect::WaveAllOp
 simt::dialect::WaveAnyOp
 simt::dialect::WaveCountBitsOp
-simt::dialect::YieldOp
-simt_hlsl_import::ArithOp
-simt_hlsl_import::BufferAtomicOp
-simt_hlsl_import::CmpOp
-simt_hlsl_import::LogicalOp
+simt::dialect::YieldOp +
 */
 
 namespace simt::test_raiser {
@@ -66,8 +55,32 @@ namespace simt::test_raiser {
             virtual ~BaseRaiser();
 
             // Emits the test harness and GPU code.
-            LogicalResult emitHarness(Operation* op);
+            virtual LogicalResult emitHarness(Operation* op, std::vector<int64_t> expected){return failure();}
         protected:
+            struct ScopeHandler {
+                struct Scope {
+                    std::vector<Value> results;
+                    enum ScopeKinds {
+                        IF_SCOPE,
+                        LOOP_SCOPE,
+                        SWITCH_SCOPE
+                    } scopeKind;
+                    LogicalResult emitGroupSet(BaseRaiser& b, std::vector<Value> lefts, std::vector<Value> rights);
+                    LogicalResult emitGroupDeclare(BaseRaiser& b, std::vector<Value> values);
+                    LogicalResult emitSetResults(BaseRaiser& b, std::vector<Value> rights);
+                    LogicalResult emitDeclareResults(BaseRaiser& b);
+                };
+                std::deque<Scope> stack;
+                
+                Scope pop();
+                Scope peek();
+                void push(Scope);
+                LogicalResult peekKind(Scope::ScopeKinds kind, Scope& out);
+            };
+            friend ScopeHandler;
+            ScopeHandler scopeHandler;
+
+
             raw_indented_ostream os;
             llvm::DenseMap<Value, int> value_map;
             int value_counter = 0;
@@ -134,6 +147,8 @@ namespace simt::test_raiser {
             */
             LogicalResult emitOp(Operation* op);
 
+            LogicalResult emitRegion(Region& region);
+
             LogicalResult printOp(func::FuncOp& op);
             LogicalResult printOp(func::ReturnOp& op);
             LogicalResult printOp(mlir::ModuleOp& op);
@@ -145,19 +160,34 @@ namespace simt::test_raiser {
             LogicalResult printOp(arith::ExtUIOp& op);
             LogicalResult printOp(BufferLoadOp& op);
             LogicalResult printOp(BufferStoreOp& op);
+            LogicalResult printOp(IfOp& op);
+            LogicalResult printOp(YieldOp& op);
+            LogicalResult printOp(LoopOp& op);
+            LogicalResult printOp(ConditionOp& op);
+            LogicalResult printOp(BreakOp& op);
+            LogicalResult printOp(ContinueOp& op);
+            LogicalResult printOp(SwitchOp& op);
+
+
 
             virtual LogicalResult printOp(vector::ExtractOp& op){return failure();}
             virtual LogicalResult printOp(arith::RemFOp& op){return failure();}
             virtual LogicalResult printOp(DispatchThreadIdOp& op){return failure();}
+            virtual LogicalResult printOp(BufferAtomicAddOp& op){return failure();}
 
-            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);     
+            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<int64_t> expected);
     };
 
     /*
     Emits and Amber test harness that wraps the GPU code. Can be used as
     `emitHarness` for languages Amber supports.
     */
-    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang);
+    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<int64_t> expected);
 
-    LogicalResult getExpectedBuffer(Operation& op, std::vector<int>& buffer, int buffersize = 100, std::vector<std::string> args = {});
+    /*
+    Gets the thread dimensions from the main function and the argument index of the buffer 
+    (or -1 if there is no buffer), and places them in the corrispoding referenced variables.
+    */
+    LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& ntz, int64_t& bufferIndex);
+
 }

@@ -10,6 +10,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
 #include <cstdio>
+#include <vector>
 
 
 using namespace simt::test_raiser;
@@ -22,8 +23,8 @@ public:
 
 using BaseRaiser::BaseRaiser;
 
-LogicalResult emitHarness(Operation* op) {
-    return emitAmberHarness(*this, op, "GLSL");
+LogicalResult emitHarness(Operation* op, std::vector<int64_t> expected) override {
+    return emitAmberHarness(*this, op, "GLSL", expected);
 }
 
 ~GlslRaiser(){}
@@ -75,6 +76,7 @@ LogicalResult emitType(Type type) override {
         if (vectype.getShape().size() != 1 || len > 4 || len < 2){
             llvm_unreachable("Unsupported vector shape");
         }
+        if (vectype.getElementType().isInteger()) os << "i";
         os << "vec" << len;
     } else {
         llvm_unreachable("Unsupported type");
@@ -110,10 +112,11 @@ LogicalResult printOp(arith::RemFOp &op) override {
 
 LogicalResult printOp(vector::ExtractOp &op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
-    os << op.getOperand(0) << "[";
+    os << getOrAddValueName(op.getOperand(0)) << "[";
     if (std::optional<int64_t> id = getConstantIntValue(op.getMixedPosition()[0])){
         if (id == vector::ExtractOp::kPoisonIndex) op->emitError("cannot handle poison indices");
-        os << id;
+        if (!id.has_value()) return failure();
+        os << id.value();
     } else {
         Value v = op.getDynamicPosition()[0];
         os << getOrAddValueName(v);
@@ -127,7 +130,20 @@ LogicalResult printOp(vector::ExtractOp &op) override {
 LogicalResult printOp(DispatchThreadIdOp& op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
     if (failed(emitType(op->getResultTypes()[0]))) return failure();
-    os << "(gl_GlobalInvocationID.x)";
+    os << "(gl_GlobalInvocationID";
+    if (!dyn_cast<mlir::VectorType>(op.getResult().getType())){
+        os << ".x";
+    }
+    os << ")";
+    return success();
+}
+
+LogicalResult printOp(BufferAtomicAddOp& op) override {
+    if (failed(emitValueDefine(op.getResult()))) return failure();
+    os 
+        << "atomicAdd(" << getOrAddValueName(op->getOperand(0)) 
+        << "[" << getOrAddValueName(op->getOperand(1)) << "], "
+        << getOrAddValueName(op->getOperand(2)) << ")";
     return success();
 }
 
@@ -136,9 +152,9 @@ LogicalResult printOp(DispatchThreadIdOp& op) override {
 
 namespace simt::test_raiser {
 
-LogicalResult emitRaisedGLSL(Operation *op,raw_ostream &o){
+LogicalResult emitRaisedGLSL(Operation *op, raw_ostream &o, std::vector<int64_t> expected){
     GlslRaiser glsl(o);
-    return glsl.emitHarness(op);
+    return glsl.emitHarness(op, expected);
 }
 
 }
