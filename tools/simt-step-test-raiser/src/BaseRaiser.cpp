@@ -1,10 +1,12 @@
 #include "BaseRaiser.h"
 
+#include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
+#include <deque>
+#include <iterator>
 #include <llvm/Support/CommandLine.h>
 #include <mlir/Tools/mlir-translate/Translation.h>
 #include <mlir/Tools/mlir-translate/MlirTranslateMain.h>
@@ -17,7 +19,6 @@
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/LogicalResult.h"
 #include "llvm/Support/Regex.h"
 #include "llvm/Support/raw_ostream.h"
@@ -27,10 +28,7 @@
 #include <mlir/Dialect/Vector/IR/VectorOps.h>
 
 #include <mlir/InitAllTranslations.h>
-#include <regex>
-#include <sstream>
 #include <string>
-#include <system_error>
 #include <vector>
 #include <cstdio>
 #include "mlir/Support/IndentedOstream.h"
@@ -42,11 +40,13 @@ using namespace mlir;
 
 namespace simt::test_raiser {
 
-BaseRaiser::BaseRaiser(raw_ostream& o): os(o) {
+BaseRaiser::BaseRaiser(raw_ostream& o): scopeHandler(), os(o) {
 }
 
 BaseRaiser::~BaseRaiser(){}
 
+
+// TODO: Get and Add should be seperate for better error checking
 int BaseRaiser::getOrAddValueNumber(Value v){
     if (value_map.contains(v)){
         return value_map[v];
@@ -145,7 +145,9 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
             // vector Operations
             vector::ExtractOp,
             // simt_step Operations
-            ::DispatchThreadIdOp, ::BufferLoadOp, ::BufferStoreOp
+            DispatchThreadIdOp, BufferLoadOp, BufferStoreOp,
+            BufferAtomicAddOp, IfOp, YieldOp, LoopOp, ConditionOp,
+            BreakOp, ContinueOp, SwitchOp
             >(
                 [&](auto op){return printOp(op);})
         
@@ -173,25 +175,26 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
         return failure();
     }
     
-    if (!isa<func::FuncOp, ModuleOp>(op)){
+    if (!isa<func::FuncOp, ModuleOp, IfOp, YieldOp, LoopOp, ConditionOp>(op)){
         os << ";\n";
     }
 
     return success();
 }
 
-
-/////////////     Builtins     /////////////
-
-//
-LogicalResult BaseRaiser::printOp(ModuleOp& op){
-    for (auto &subop : op.getBodyRegion().front()){
+LogicalResult BaseRaiser::emitRegion(Region& region){
+    for (auto &subop : region.front()){
         if (failed(emitOp(&subop))) {
             return failure();
         }
     }
-
     return success();
+}
+
+/////////////     Builtins     /////////////
+
+LogicalResult BaseRaiser::printOp(ModuleOp& op){
+    return emitRegion(op.getBodyRegion());
 }
 
 ///////////// 'func' dialect /////////////
@@ -201,11 +204,7 @@ LogicalResult BaseRaiser::printOp(func::FuncOp& op){
     if (op.getSymName() == "main" && failed(emitMainFuncTop(op))) return failure();
     os << "{\n";
     os.indent();
-    for (auto &subop : op.getBody().front()){
-        if (failed(emitOp(&subop))) {
-            return failure();
-        }
-    }
+    if (failed(emitRegion(op.getRegion()))) return failure();
     os.unindent();
     os << "}";
     return success();
@@ -339,112 +338,227 @@ LogicalResult BaseRaiser::printOp(arith::SelectOp& op){
 }
 
 ///////////// 'simt_step' dialect /////////////
-LogicalResult BaseRaiser::printOp(::BufferLoadOp& op) {
+LogicalResult BaseRaiser::printOp(BufferLoadOp& op) {
     if (failed(emitValueDefine(op.getResult()))) return failure();
     os << getOrAddValueName(op.getOperand(0)) << "[" << getOrAddValueName(op.getOperand(1)) << "]";
     return success();
 }
 
-LogicalResult BaseRaiser::printOp(::BufferStoreOp& op) {
+LogicalResult BaseRaiser::printOp(BufferStoreOp& op) {
     os << getOrAddValueName(op.getOperand(0)) << "[" << getOrAddValueName(op.getOperand(1)) << "] = "
     << getOrAddValueName(op.getOperand(2));
     return success();
 }
 
-//////////// Other helper functions ////////////
+LogicalResult BaseRaiser::printOp(IfOp& op){
+    std::vector<Value> vs(op->getResults().begin(), op->getResults().end());
+    scopeHandler.push((BaseRaiser::ScopeHandler::Scope){vs, ScopeHandler::Scope::IF_SCOPE});
+    if (failed(scopeHandler.peek().emitDeclareResults(*this))) return failure();
 
-LogicalResult getExpectedBuffer(Operation& op, std::vector<int> &buffer, int buffersize, std::vector<std::string> args){
+    os << "if (" << getOrAddValueName(op.getOperand()) << ") {\n";
+    os.indent();
+    if (failed(emitRegion(op.getThenRegion()))) return failure();
+    os.unindent();
+    os << "} else {\n";
+    os.indent();
+    if (failed(emitRegion(op.getElseRegion()))) return failure();
+    os.unindent();
+    os << "}\n";
 
-    // Find runner
-    std::string runnerpath = SIMT_STEP_RUNNER_PATH;
-    if (std::getenv("SIMT_STEP_RUNNER_PATH") && llvm::sys::fs::can_execute(std::getenv("SIMT_STEP_RUNNER_PATH"))){
-        runnerpath = std::getenv("SIMT_STEP_RUNNER_PATH");
-    }
-    if (!llvm::sys::fs::can_execute(runnerpath)){
-        std::cerr
-            << "Could not execute simt_step_runner at path '"
-            << runnerpath << "'\n";
+    scopeHandler.pop();
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(YieldOp& op){
+    if (failed(scopeHandler.peek().emitSetResults(
+        *this, std::vector<Value>(op->getOperands().begin(), op->getOperands().end())))) 
         return failure();
-    }
     
-    // Make temporary file for MLIR code
-    auto mlirtmp = llvm::sys::fs::TempFile::create("/tmp/raisertmp%%%%%%%.mlir");
-    if (!mlirtmp) {
-        std::cerr << "Could not create temp file for mlir code!\n";
-        return failure();
-    }
-    llvm::raw_fd_stream tmpMlirIn(mlirtmp->FD, false);
-    op.print(tmpMlirIn);
-    tmpMlirIn.close();
-
-    // Find arguments with MemoryResources
-    std::string buffers = "{\\\"buffers\\\":[";
-    if (auto mod = dyn_cast<ModuleOp>(op); 
-        auto mainfunc = mod.lookupSymbol<func::FuncOp>("main")){
-            for (auto arg : mainfunc.getArguments()){
-                if (auto memarg = dyn_cast<simt::dialect::ResourceType>(arg.getType())){
-                    buffers.append("{\\\"buffer\\\":\\\"arg" + std::to_string(arg.getArgNumber()) + "\\\","
-                                + "\\\"size\\\":" + std::to_string(buffersize) + ",\\\"fill\\\":0},");
-                }
-            }
-    }
-    if (buffers.back() != ',') buffers = "";
-    else {
-        buffers.pop_back(); // Remove trailing comma
-        buffers.append("]}");
+    if (auto attr = op->getAttr("fallthrough")){
+        auto battr = dyn_cast<BoolAttr>(attr);
+        assert(battr);
+        if (!battr.getValue()) os << "break;\n";
     }
 
+    return success();
+}
 
-    // Complete command string and run
-    auto outputtmp = llvm::sys::fs::TempFile::create("/tmp/raiser%%%%%%%%%%%%%.out");
-    if (!outputtmp) {
-        std::cerr << "Could not create temp file for output!\n";
-        return failure();
-    }
-    std::string sargs = join(args, " ");
-    std::string syscmd = "bash -c '" + runnerpath + " " + mlirtmp->TmpName + " " + sargs;
+LogicalResult BaseRaiser::printOp(LoopOp& op){
+    std::vector<Value> values(op->getResults().begin(), op->getResults().end());
+    std::vector<Value> inits(op.getOperands().begin(), op.getOperands().end());
+    scopeHandler.push((BaseRaiser::ScopeHandler::Scope){values, ScopeHandler::Scope::LOOP_SCOPE});
+    if (failed(scopeHandler.peek().emitDeclareResults(*this))) return failure();
+    if (failed(scopeHandler.peek().emitSetResults(*this, inits))) return failure();
+    os << "while (true) {\n";
+    os.indent();
 
-    if (buffers.length() > 0) syscmd.append(" --init-file=<(printf \"" + buffers + "\")");
-
-    syscmd.append(" > " + outputtmp->TmpName + "'");
-    std::cerr << syscmd << "\n";
-
-    if (system(syscmd.c_str())){
-        std::cerr << "Error while running interpreter\n";
-    }
-
-
-    // Parse output string
-    std::ifstream ots(outputtmp->TmpName);
-    std::stringstream obuf;
-    obuf << ots.rdbuf();
-    std::string s = obuf.str();
-
-    std::regex entries_regex("buf\\d+\\[(\\d+)\\] = (-?\\d+)");
-    auto regbeg = std::sregex_iterator(s.begin(), s.end(), entries_regex);
-    auto regend = std::sregex_iterator();
-    buffer.clear();
-    for (std::sregex_iterator i = regbeg; i != regend; i++){
-        std::smatch match = *i;
-        unsigned index = std::stoi(match[1]);
-        int value = std::stoi(match[2]);
-        while (buffer.size() + 1 < index){
-            buffer.push_back(0);
+    for (auto& region : op->getRegions()){
+        assert(region.getBlocks().size() == 1);
+        for (auto arg : region.getBlocks().front().getArguments()){
+            value_map[arg] = getOrAddValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
         }
-        buffer.push_back(value);
     }
+
+    if (failed(emitRegion(op.getPrepareRegion()))) return failure();
+    if (failed(emitRegion(op.getBodyRegion()))) return failure();
+
+    os.unindent();
+    os << "}\n";
+    scopeHandler.pop();
+    
+
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(ConditionOp& op){
+    if (failed(scopeHandler.peek().emitSetResults(*this, 
+        std::vector<Value>(op->getOperands().begin()+1, op->getOperands().end())))) return failure();
+    os << "if (!" << getOrAddValueName(op->getOperand(0)) << ") break;\n";
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(BreakOp& op){
+    ScopeHandler::Scope s;
+    if (failed(scopeHandler.peekKind(ScopeHandler::Scope::LOOP_SCOPE, s))){
+        // TODO: Switch statement too
+        llvm_unreachable("Cannot find loop scope to break from");    
+    }
+
+    if (failed(s.emitSetResults(*this, 
+        std::vector<Value>(op->getOperands().begin(), op->getOperands().end())))) return failure();
+    os << "break;\n";
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(ContinueOp& op){
+    ScopeHandler::Scope s;
+    if (failed(scopeHandler.peekKind(ScopeHandler::Scope::LOOP_SCOPE, s))){
+        llvm_unreachable("Cannot find loop scope to break from");    
+    }
+
+    if (failed(s.emitSetResults(*this, 
+        std::vector<Value>(op->getOperands().begin(), op->getOperands().end())))) return failure();
+    os << "continue;\n";
+    return success();
+}
+
+LogicalResult BaseRaiser::printOp(SwitchOp& op){
+    auto case_values_attr = op->getAttr("case_values");
+    assert(case_values_attr);
+    std::vector<int64_t> case_values;
+    if (auto attr = dyn_cast<DenseI64ArrayAttr>(case_values_attr)){
+        for (int64_t i = 0; i < attr.size(); i++){
+            case_values.push_back(attr[i]);
+        }
+    } else {
+        llvm_unreachable("Incorrect type for attribute case_values");
+    }
+
+    auto default_ind_attr = op->getAttr("default_index");
+    assert(default_ind_attr);
+    auto default_index_iattr = dyn_cast<IntegerAttr>(default_ind_attr);
+    assert(default_index_iattr);
+    int64_t default_index = default_index_iattr.getInt();
+
+    std::vector<Value> values(op->getResults().begin(), op->getResults().end());
+    std::vector<Value> inits(op.getOperands().begin() + 1, op.getOperands().end());
+    scopeHandler.push((BaseRaiser::ScopeHandler::Scope){values, ScopeHandler::Scope::SWITCH_SCOPE});
+    if (failed(scopeHandler.peek().emitDeclareResults(*this))) return failure();
+    if (failed(scopeHandler.peek().emitSetResults(*this, inits))) return failure();
+    
+    os << "switch (" << getOrAddValueName(op->getOperand(0)) << ") {\n";
+    os.indent();
+
+    for (auto& region : op->getRegions()){
+        if (region.getRegionNumber() == default_index){
+            os << "default:\n";
+        } else {
+            os << "case " << case_values[region.getRegionNumber()] << ":\n";
+        }
+        os.indent();
+
+        for (auto arg : region.getBlocks().front().getArguments()){
+            value_map[arg] = getOrAddValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
+        }
+
+        if (failed(emitRegion(region))) return failure();
+
+        os.unindent();
+    }
+
+    os.unindent();
+    os << "}\n";
+    scopeHandler.pop();
 
 
     return success();
-    
+
 }
 
-LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
+//////////// Scope handler ////////////
 
+BaseRaiser::ScopeHandler::Scope BaseRaiser::ScopeHandler::pop() {
+    Scope res = stack.back();
+    stack.pop_back();
+    return res;
+}
+
+BaseRaiser::ScopeHandler::Scope BaseRaiser::ScopeHandler::peek() {
+    return stack.back();
+}
+
+LogicalResult BaseRaiser::ScopeHandler::peekKind(BaseRaiser::ScopeHandler::Scope::ScopeKinds kind, BaseRaiser::ScopeHandler::Scope& out) {
+    for (auto i = stack.rbegin(); i != stack.rend(); i++){
+        if (i->scopeKind == kind) {
+            out = *i;
+            return success();
+        }
+    }
+    return failure();
+}
+
+void BaseRaiser::ScopeHandler::push(BaseRaiser::ScopeHandler::Scope v) {
+    stack.push_back(v);
+}
+
+LogicalResult BaseRaiser::ScopeHandler::Scope::emitGroupSet(BaseRaiser& b, std::vector<Value> lefts, std::vector<Value> rights){
+    assert(lefts.size() == rights.size());
+    for (size_t i = 0; i < lefts.size(); i++){
+        b.os << b.getOrAddValueName(lefts[i]) << " = " << b.getOrAddValueName(rights[i]) << ";\n";
+    }
+    return success();
+}
+
+LogicalResult BaseRaiser::ScopeHandler::Scope::emitGroupDeclare(BaseRaiser& b, std::vector<Value> values){
+    for (auto v : values){
+        if (failed(b.emitType(v.getType()))) return failure();
+        b.os << " " << b.getOrAddValueName(v) << ";\n";
+    }
+    return success();
+}
+
+LogicalResult BaseRaiser::ScopeHandler::Scope::emitDeclareResults(BaseRaiser& b){
+    return emitGroupDeclare(b, results);
+}
+
+LogicalResult BaseRaiser::ScopeHandler::Scope::emitSetResults(BaseRaiser& b, std::vector<Value> rights){
+    return emitGroupSet(b, results, rights);
+}
+
+
+
+//////////// Other helper functions ////////////
+
+LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& ntz, int64_t& bufferIndex){
     // Stolen from HlslEmitter.cpp
-    int64_t ntx = 1, nty = 1, ntz = 1;
     if (auto mod = dyn_cast<ModuleOp>(op)){
         auto func = mod.lookupSymbol<func::FuncOp>("main");
+        bufferIndex = -1;
+        for (auto arg : func.getArguments()){
+            if (auto memarg = dyn_cast<simt::dialect::ResourceType>(arg.getType())){
+                bufferIndex = arg.getArgNumber();
+            }
+        }
         if (auto attr = func->getAttr("simt.num_threads")) {
             if (auto denseAttr = mlir::dyn_cast<DenseI64ArrayAttr>(attr)) {
                 auto vals = denseAttr.asArrayRef();
@@ -452,6 +566,7 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
                     ntx = vals[0];
                     nty = vals[1];
                     ntz = vals[2];
+                    return success();
                 }
             } else if (auto arrayAttr = mlir::dyn_cast<ArrayAttr>(attr)) {
                 if (arrayAttr.size() == 3) {
@@ -462,17 +577,21 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang){
                         ntx = x.getInt();
                         nty = y.getInt();
                         ntz = z.getInt();
+                        return success();
                     }
                 }
             }
         }
     }
 
-    std::vector<int> buffer;
-    if (failed(getExpectedBuffer(*op, buffer, 1, {"--lanes=" + std::to_string(ntx)}))){
-        std::cerr << "Could not get expected values buffer\n";
-        return failure();
-    }
+    return failure();
+}
+
+LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<int64_t> buffer){
+
+    int64_t ntx, nty, ntz, bufferIndex;
+    if(failed(getMainInfo(op, ntx, nty, ntz, bufferIndex))) return failure();
+
     b.buffer_size = buffer.size();
 
     b.os << "#!amber\n"
