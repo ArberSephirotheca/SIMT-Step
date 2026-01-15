@@ -191,6 +191,15 @@ LogicalResult BaseRaiser::emitRegion(Region& region){
     return success();
 }
 
+LogicalResult BaseRaiser::emitBlock(Block& block){
+    for (auto& subop : block){
+        if (failed(emitOp(&subop))) {
+            return failure();
+        }
+    }
+    return success();
+}
+
 /////////////     Builtins     /////////////
 
 LogicalResult BaseRaiser::printOp(ModuleOp& op){
@@ -201,7 +210,21 @@ LogicalResult BaseRaiser::printOp(ModuleOp& op){
 
 //
 LogicalResult BaseRaiser::printOp(func::FuncOp& op){
-    if (op.getSymName() == "main" && failed(emitMainFuncTop(op))) return failure();
+    if (op.getSymName() == "main"){
+        if (failed(emitMainFuncTop(op))) return failure();
+    } else {
+        assert(op.getFunctionType().getNumResults() == 1);
+        if (failed(emitType(op.getFunctionType().getResult(0)))) return failure();
+        os << " " << op.getSymName() << "(";
+        for (auto arg : op.getArguments()){
+            if (failed(emitType(arg.getType()))) return failure();
+            os << " " << getOrAddValueName(arg);
+            if (arg.getArgNumber() < op.getNumArguments() - 1){
+                os << ", ";
+            }
+        }
+        os << ")";
+    }
     os << "{\n";
     os.indent();
     if (failed(emitRegion(op.getRegion()))) return failure();
@@ -443,23 +466,6 @@ LogicalResult BaseRaiser::printOp(ContinueOp& op){
 }
 
 LogicalResult BaseRaiser::printOp(SwitchOp& op){
-    auto case_values_attr = op->getAttr("case_values");
-    assert(case_values_attr);
-    std::vector<int64_t> case_values;
-    if (auto attr = dyn_cast<DenseI64ArrayAttr>(case_values_attr)){
-        for (int64_t i = 0; i < attr.size(); i++){
-            case_values.push_back(attr[i]);
-        }
-    } else {
-        llvm_unreachable("Incorrect type for attribute case_values");
-    }
-
-    auto default_ind_attr = op->getAttr("default_index");
-    assert(default_ind_attr);
-    auto default_index_iattr = dyn_cast<IntegerAttr>(default_ind_attr);
-    assert(default_index_iattr);
-    int64_t default_index = default_index_iattr.getInt();
-
     std::vector<Value> values(op->getResults().begin(), op->getResults().end());
     std::vector<Value> inits(op.getOperands().begin() + 1, op.getOperands().end());
     scopeHandler.push((BaseRaiser::ScopeHandler::Scope){values, ScopeHandler::Scope::SWITCH_SCOPE});
@@ -469,21 +475,23 @@ LogicalResult BaseRaiser::printOp(SwitchOp& op){
     os << "switch (" << getOrAddValueName(op->getOperand(0)) << ") {\n";
     os.indent();
 
-    for (auto& region : op->getRegions()){
-        if (region.getRegionNumber() == default_index){
+    size_t block_index = 0;
+    for (auto& block : op.getCaseBody().getBlocks()){
+        if (block_index == op.getDefaultIndex()){
             os << "default:\n";
         } else {
-            os << "case " << case_values[region.getRegionNumber()] << ":\n";
+            os << "case " << op.getCaseValues()[block_index] << ":\n";
         }
         os.indent();
 
-        for (auto arg : region.getBlocks().front().getArguments()){
+        for (auto arg : block.getArguments()){
             value_map[arg] = getOrAddValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
         }
 
-        if (failed(emitRegion(region))) return failure();
+        if (failed(emitBlock(block))) return failure();
 
         os.unindent();
+        block_index++;
     }
 
     os.unindent();

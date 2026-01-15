@@ -45,7 +45,6 @@ simt::dialect::LaneIdOp
 simt::dialect::WaveAllOp
 simt::dialect::WaveAnyOp
 simt::dialect::WaveCountBitsOp
-simt::dialect::YieldOp +
 */
 
 namespace simt::test_raiser {
@@ -148,6 +147,8 @@ namespace simt::test_raiser {
             LogicalResult emitOp(Operation* op);
 
             LogicalResult emitRegion(Region& region);
+
+            LogicalResult emitBlock(Block& block);
 
             LogicalResult printOp(func::FuncOp& op);
             LogicalResult printOp(func::ReturnOp& op);
