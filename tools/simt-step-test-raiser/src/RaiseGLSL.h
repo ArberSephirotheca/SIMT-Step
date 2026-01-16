@@ -7,6 +7,6 @@
 
 namespace simt::test_raiser {
 
-    llvm::LogicalResult emitRaisedGLSL(mlir::Operation* op, llvm::raw_ostream& o, std::vector<int64_t> expected);
+    llvm::LogicalResult emitRaisedGLSL(mlir::Operation* op, llvm::raw_ostream& o, std::vector<std::vector<int64_t>> expected);
     
 }

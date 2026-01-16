@@ -33,16 +33,21 @@ void insertSimtDialects(DialectRegistry &registry){
         vector::VectorDialect>();
 }
 
-llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<int64_t>& outBuffer){
+llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<std::vector<int64_t>>& outBuffer){
     // TODO: Up to 2 buffers
     outBuffer.clear();
 
     DialectRegistry registry;
     insertSimtDialects(registry);
 
-    int64_t ntx, nty, ntz, bufferIndex;
-    if(failed(simt::test_raiser::getMainInfo(op, ntx, nty, ntz, bufferIndex))) return failure();
-    if (bufferIndex < 0) return success();
+    int64_t ntx, nty, ntz;
+    std::vector<int64_t> bufferIndicies;
+    if(failed(simt::test_raiser::getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
+    if (bufferIndicies.size() == 0) return success();
+
+    for (size_t i = 0; i < bufferIndicies.size(); i++){
+        outBuffer.push_back(std::vector<int64_t>());
+    }
 
     simt::semantics::RunOperationOptions options;
     options.entry = "main";
@@ -52,7 +57,7 @@ llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<int64_t>& outBu
     options.fillValue = 0;
 
     if (mlir::failed(simt::semantics::runOperationToBuffer(
-            *op, bufferIndex, outBuffer, options))) {
+            *op, bufferIndicies[0], outBuffer[0], options))) {
         return llvm::failure();
     }
 
@@ -66,7 +71,7 @@ inline auto transFuncCreator(RaiserTarget target){
     switch (target) {
         case GLSL:
             return [](Operation *op, raw_ostream &output) {
-                std::vector<int64_t> buf;
+                std::vector<std::vector<int64_t>> buf = {};
                 if(failed(getExpectedBuffer(op, buf))) return failure();
                 return simt::test_raiser::emitRaisedGLSL(op, output, buf);
             };
