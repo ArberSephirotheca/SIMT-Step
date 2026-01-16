@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
-#include <queue>
+#include <deque>
 #include <string>
 #include <utility>
 
@@ -28,6 +28,7 @@ struct ExecutionPolicy;
 
 using LaneId = std::uint32_t;
 using WaveId = std::uint32_t;
+using CollectiveKey = std::uint64_t;
 
 template <typename ValueT>
 class Step;
@@ -155,6 +156,7 @@ struct MergeStackEntry {
     std::uint64_t completedMask = 0;
     std::optional<LoopFrameState<ValueT>> loopFrame;
     std::optional<SwitchFrameState<ValueT>> switchFrame;
+    const mlir::Operation *ifOp = nullptr;
 };
 
 template <typename ValueT, typename StepT>
@@ -164,14 +166,14 @@ struct WaveContext {
     std::uint64_t currentMask = 0;
     llvm::DenseMap<DynamicBlockKey, DynamicBlock<ValueT, StepT>> blocks;
     llvm::SmallVector<MergeStackEntry<ValueT, StepT>, 8> mergeStack;
-    llvm::DenseMap<std::uint32_t, CollectiveSyncPoint<ValueT, StepT>> collectives;
+    llvm::DenseMap<CollectiveKey, CollectiveSyncPoint<ValueT, StepT>> collectives;
     llvm::DenseMap<std::uint32_t, SynchronizationSyncPoint<ValueT, StepT>> syncPoints;
     llvm::DenseMap<LaneId, LaneContext<ValueT, StepT>> lanes;
     std::uint32_t nextCallSeq = 1;
     std::uint32_t nextControlToken = 1;
-    llvm::DenseMap<std::uint32_t, const mlir::Operation *> controlTokenToOp;
+    llvm::DenseMap<CollectiveKey, const mlir::Operation *> controlTokenToOp;
     llvm::DenseMap<std::uint32_t, const mlir::Operation *> syncTokenToOp;
-    llvm::DenseMap<std::uint32_t, const mlir::Operation *> collectiveTokenToOp;
+    llvm::DenseMap<CollectiveKey, const mlir::Operation *> collectiveTokenToOp;
     const ExecutionPolicy *policy = nullptr;
 };
 
@@ -186,7 +188,7 @@ struct ReadyContinuation {
 template <typename ValueT, typename StepT>
 struct InterpreterState {
     llvm::DenseMap<WaveId, WaveContext<ValueT, StepT>> waves;
-    std::queue<ReadyContinuation<ValueT, StepT>> readyQueue;
+    std::deque<ReadyContinuation<ValueT, StepT>> readyQueue;
     StepT pendingStep;
 };
 
