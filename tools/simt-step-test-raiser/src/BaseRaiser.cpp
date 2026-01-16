@@ -40,23 +40,26 @@ using namespace mlir;
 
 namespace simt::test_raiser {
 
-BaseRaiser::BaseRaiser(raw_ostream& o): scopeHandler(), os(o) {
-}
-
+BaseRaiser::BaseRaiser(raw_ostream& o): scopeHandler(), os(o) {}
 BaseRaiser::~BaseRaiser(){}
 
-
 // TODO: Get and Add should be seperate for better error checking
-int BaseRaiser::getOrAddValueNumber(Value v){
-    if (value_map.contains(v)){
-        return value_map[v];
-    }
+int BaseRaiser::addValueNumber(Value v){
+    assert(!value_map.contains(v));
     return value_map[v] = value_counter++;
 }
 
+int BaseRaiser::getValueNumber(Value v){
+    assert(value_map.contains(v));
+    return value_map[v];
+}
 
-std::string BaseRaiser::getOrAddValueName(Value v){
-    return "v" + std::to_string(getOrAddValueNumber(v));
+std::string BaseRaiser::addValueName(Value v){
+    return "v" + std::to_string(addValueNumber(v));
+}
+
+std::string BaseRaiser::getValueName(Value v){
+    return "v" + std::to_string(getValueNumber(v));
 }
 
 LogicalResult BaseRaiser::emitConst(Type t, int64_t v){
@@ -99,7 +102,7 @@ LogicalResult BaseRaiser::emitConst(Type t, APFloat v){
 
 
 LogicalResult BaseRaiser::emitValueDefine(Value v){
-    std::string vname = getOrAddValueName(v);
+    std::string vname = addValueName(v);
     if (failed(emitType(v.getType()))) return failure();
     os << " " << vname << " = ";
     return success();
@@ -107,7 +110,7 @@ LogicalResult BaseRaiser::emitValueDefine(Value v){
 
 LogicalResult BaseRaiser::emitBinop(Value output, Value left, Value right, std::string op){
     if (failed(emitValueDefine(output))) return failure();
-    os << getOrAddValueName(left) << " " << op << " " << getOrAddValueName(right);
+    os << getValueName(left) << " " << op << " " << getValueName(right);
     return success();
 }
 
@@ -115,7 +118,7 @@ LogicalResult BaseRaiser::emitFuncCall(Value output, std::string fname, std::vec
     if (failed(emitValueDefine(output))) return failure();
     os << fname << "(";
     for (std::size_t i = 0; i < args.size(); i++){
-        os << getOrAddValueName(args[i]);
+        os << getValueName(args[i]);
         if (i < args.size() - 1) os << ", ";
     }
     os << ")";
@@ -218,7 +221,7 @@ LogicalResult BaseRaiser::printOp(func::FuncOp& op){
         os << " " << op.getSymName() << "(";
         for (auto arg : op.getArguments()){
             if (failed(emitType(arg.getType()))) return failure();
-            os << " " << getOrAddValueName(arg);
+            os << " " << addValueName(arg);
             if (arg.getArgNumber() < op.getNumArguments() - 1){
                 os << ", ";
             }
@@ -290,9 +293,9 @@ LogicalResult BaseRaiser::printOp(arith::CmpIOp& op){
 LogicalResult BaseRaiser::printOp(arith::CmpFOp& op){
     Value v = op.getResult();
     Value left = op->getOperand(0);
-    std::string lname = getOrAddValueName(left);
+    std::string lname = getValueName(left);
     Value right = op->getOperand(1);
-    std::string rname = getOrAddValueName(right);
+    std::string rname = getValueName(right);
     if (failed(emitValueDefine(v))) return failure();
 
     // Unordered operations return true if either operand is NaN
@@ -347,29 +350,29 @@ LogicalResult BaseRaiser::printOp(arith::CmpFOp& op){
 LogicalResult BaseRaiser::printOp(arith::NegFOp& op){
     Value v = op.getResult();
     if (failed(emitValueDefine(v))) return failure();
-    os << "-" << getOrAddValueName(op->getOperand(0));
+    os << "-" << getValueName(op->getOperand(0));
     return success();
 }
 
 LogicalResult BaseRaiser::printOp(arith::SelectOp& op){
     Value v = op.getResult();
     if (failed(emitValueDefine(v))) return failure();
-    os  << getOrAddValueName(op->getOperand(0)) << " ? " 
-        << getOrAddValueName(op->getOperand(1)) << " : "
-        << getOrAddValueName(op->getOperand(2));
+    os  << getValueName(op->getOperand(0)) << " ? " 
+        << getValueName(op->getOperand(1)) << " : "
+        << getValueName(op->getOperand(2));
     return success();
 }
 
 ///////////// 'simt_step' dialect /////////////
 LogicalResult BaseRaiser::printOp(BufferLoadOp& op) {
     if (failed(emitValueDefine(op.getResult()))) return failure();
-    os << getOrAddValueName(op.getOperand(0)) << "[" << getOrAddValueName(op.getOperand(1)) << "]";
+    os << getValueName(op.getOperand(0)) << "[" << getValueName(op.getOperand(1)) << "]";
     return success();
 }
 
 LogicalResult BaseRaiser::printOp(BufferStoreOp& op) {
-    os << getOrAddValueName(op.getOperand(0)) << "[" << getOrAddValueName(op.getOperand(1)) << "] = "
-    << getOrAddValueName(op.getOperand(2));
+    os << getValueName(op.getOperand(0)) << "[" << getValueName(op.getOperand(1)) << "] = "
+    << getValueName(op.getOperand(2));
     return success();
 }
 
@@ -378,7 +381,7 @@ LogicalResult BaseRaiser::printOp(IfOp& op){
     scopeHandler.push((BaseRaiser::ScopeHandler::Scope){vs, ScopeHandler::Scope::IF_SCOPE});
     if (failed(scopeHandler.peek().emitDeclareResults(*this))) return failure();
 
-    os << "if (" << getOrAddValueName(op.getOperand()) << ") {\n";
+    os << "if (" << getValueName(op.getOperand()) << ") {\n";
     os.indent();
     if (failed(emitRegion(op.getThenRegion()))) return failure();
     os.unindent();
@@ -418,7 +421,7 @@ LogicalResult BaseRaiser::printOp(LoopOp& op){
     for (auto& region : op->getRegions()){
         assert(region.getBlocks().size() == 1);
         for (auto arg : region.getBlocks().front().getArguments()){
-            value_map[arg] = getOrAddValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
+            value_map[arg] = getValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
         }
     }
 
@@ -436,7 +439,7 @@ LogicalResult BaseRaiser::printOp(LoopOp& op){
 LogicalResult BaseRaiser::printOp(ConditionOp& op){
     if (failed(scopeHandler.peek().emitSetResults(*this, 
         std::vector<Value>(op->getOperands().begin()+1, op->getOperands().end())))) return failure();
-    os << "if (!" << getOrAddValueName(op->getOperand(0)) << ") break;\n";
+    os << "if (!" << getValueName(op->getOperand(0)) << ") break;\n";
     return success();
 }
 
@@ -472,7 +475,7 @@ LogicalResult BaseRaiser::printOp(SwitchOp& op){
     if (failed(scopeHandler.peek().emitDeclareResults(*this))) return failure();
     if (failed(scopeHandler.peek().emitSetResults(*this, inits))) return failure();
     
-    os << "switch (" << getOrAddValueName(op->getOperand(0)) << ") {\n";
+    os << "switch (" << getValueName(op->getOperand(0)) << ") {\n";
     os.indent();
 
     size_t block_index = 0;
@@ -485,7 +488,7 @@ LogicalResult BaseRaiser::printOp(SwitchOp& op){
         os.indent();
 
         for (auto arg : block.getArguments()){
-            value_map[arg] = getOrAddValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
+            value_map[arg] = getValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
         }
 
         if (failed(emitBlock(block))) return failure();
@@ -532,7 +535,7 @@ void BaseRaiser::ScopeHandler::push(BaseRaiser::ScopeHandler::Scope v) {
 LogicalResult BaseRaiser::ScopeHandler::Scope::emitGroupSet(BaseRaiser& b, std::vector<Value> lefts, std::vector<Value> rights){
     assert(lefts.size() == rights.size());
     for (size_t i = 0; i < lefts.size(); i++){
-        b.os << b.getOrAddValueName(lefts[i]) << " = " << b.getOrAddValueName(rights[i]) << ";\n";
+        b.os << b.getValueName(lefts[i]) << " = " << b.getValueName(rights[i]) << ";\n";
     }
     return success();
 }
@@ -540,7 +543,7 @@ LogicalResult BaseRaiser::ScopeHandler::Scope::emitGroupSet(BaseRaiser& b, std::
 LogicalResult BaseRaiser::ScopeHandler::Scope::emitGroupDeclare(BaseRaiser& b, std::vector<Value> values){
     for (auto v : values){
         if (failed(b.emitType(v.getType()))) return failure();
-        b.os << " " << b.getOrAddValueName(v) << ";\n";
+        b.os << " " << b.addValueName(v) << ";\n";
     }
     return success();
 }

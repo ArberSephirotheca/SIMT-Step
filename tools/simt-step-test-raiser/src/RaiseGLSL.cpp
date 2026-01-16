@@ -27,8 +27,6 @@ LogicalResult emitHarness(Operation* op, std::vector<int64_t> expected) override
     return emitAmberHarness(*this, op, "GLSL", expected);
 }
 
-~GlslRaiser(){}
-
 private:
 LogicalResult emitMainFuncTop(func::FuncOp& f) override {
     int locs = 0;
@@ -36,7 +34,7 @@ LogicalResult emitMainFuncTop(func::FuncOp& f) override {
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
             os << "layout(set = 0, binding = " << locs++ << ") buffer Buf { ";
             if (failed(emitType(t.getElementType()))) return failure();
-            os << " " << getOrAddValueName(v) << "[" << buffer_size << "];};\n";
+            os << " " << addValueName(v) << "[" << buffer_size << "];};\n";
         }
     }
     os << "void main()";
@@ -99,7 +97,7 @@ LogicalResult emitShaderPrologue() override {
 LogicalResult emitCast(Value in, Value out) override {
     if(failed(emitValueDefine(out))) return failure();
     if(failed(emitType(out.getType()))) return failure();
-    os << "(" << getOrAddValueName(in) << ")";
+    os << "(" << getValueName(in) << ")";
     return success();
 }
 
@@ -112,14 +110,14 @@ LogicalResult printOp(arith::RemFOp &op) override {
 
 LogicalResult printOp(vector::ExtractOp &op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
-    os << getOrAddValueName(op.getOperand(0)) << "[";
+    os << getValueName(op.getOperand(0)) << "[";
     if (std::optional<int64_t> id = getConstantIntValue(op.getMixedPosition()[0])){
         if (id == vector::ExtractOp::kPoisonIndex) op->emitError("cannot handle poison indices");
         if (!id.has_value()) return failure();
         os << id.value();
     } else {
         Value v = op.getDynamicPosition()[0];
-        os << getOrAddValueName(v);
+        os << getValueName(v);
     }
     os << "]";
     return success();
@@ -141,9 +139,9 @@ LogicalResult printOp(DispatchThreadIdOp& op) override {
 LogicalResult printOp(BufferAtomicAddOp& op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
     os 
-        << "atomicAdd(" << getOrAddValueName(op->getOperand(0)) 
-        << "[" << getOrAddValueName(op->getOperand(1)) << "], "
-        << getOrAddValueName(op->getOperand(2)) << ")";
+        << "atomicAdd(" << getValueName(op->getOperand(0)) 
+        << "[" << getValueName(op->getOperand(1)) << "], "
+        << getValueName(op->getOperand(2)) << ")";
     return success();
 }
 

@@ -54,7 +54,7 @@ namespace simt::test_raiser {
             virtual ~BaseRaiser();
 
             // Emits the test harness and GPU code.
-            virtual LogicalResult emitHarness(Operation* op, std::vector<int64_t> expected){return failure();}
+            virtual LogicalResult emitHarness(Operation* op, std::vector<int64_t> expected) = 0;
         protected:
             struct ScopeHandler {
                 struct Scope {
@@ -85,32 +85,36 @@ namespace simt::test_raiser {
             int value_counter = 0;
             int buffer_size = 0;
 
-            /*
-            Creates or gets a unique number for each value, which will be used to
-            create a variable for it.
-            */
-            int getOrAddValueNumber(Value v);
+            // Adds a value to the map and returns the number associated 
+            // with it. Asserts that the value is not in the map already.
+            int addValueNumber(Value v);
 
-            /*
-            Same as `getOrAddValueNumber`, but returns string in the form
-            `"v{value number}"`
-            */
-            std::string getOrAddValueName(Value v);
+            // Gets the number of this value from the map. Asserts that 
+            // the value is in the map.
+            int getValueNumber(Value v);
+
+            // Adds a value to the map and returns the name associated 
+            // with it. Asserts that the value is not in the map already.
+            std::string addValueName(Value v);
+
+            // Gets the name of this value from the map. Asserts that 
+            // the value is in the map.
+            std::string getValueName(Value v);
 
             // Emits the language-specific type name for a Type
-            virtual LogicalResult emitType(Type type){return failure();}
+            virtual LogicalResult emitType(Type type) = 0;
 
             // Emits the language-specific prologue inside of the harness and before
             // any code is emitted.
-            virtual LogicalResult emitShaderPrologue(){return failure();}
+            virtual LogicalResult emitShaderPrologue() = 0;
 
             // Emits the language-specific main function definition, excluding the
             // body, which is handled elsewhere.
-            virtual LogicalResult emitMainFuncTop(func::FuncOp& op){return failure();}
+            virtual LogicalResult emitMainFuncTop(func::FuncOp& op) = 0;
 
             // Emits a declaration of `out`, defined as `in` being cast to the type 
             // of `out`
-            virtual LogicalResult emitCast(Value in, Value out){return failure();}
+            virtual LogicalResult emitCast(Value in, Value out) = 0;
 
             /*
             Emits an integer literal. Supports booleans, 64-bit 
@@ -146,8 +150,10 @@ namespace simt::test_raiser {
             */
             LogicalResult emitOp(Operation* op);
 
+            // Emits all instruction in a region, and adds the arguments as values
             LogicalResult emitRegion(Region& region);
 
+            // Emits all instruction in a block, and adds the arguments as values
             LogicalResult emitBlock(Block& block);
 
             LogicalResult printOp(func::FuncOp& op);
@@ -169,12 +175,10 @@ namespace simt::test_raiser {
             LogicalResult printOp(ContinueOp& op);
             LogicalResult printOp(SwitchOp& op);
 
-
-
-            virtual LogicalResult printOp(vector::ExtractOp& op){return failure();}
-            virtual LogicalResult printOp(arith::RemFOp& op){return failure();}
-            virtual LogicalResult printOp(DispatchThreadIdOp& op){return failure();}
-            virtual LogicalResult printOp(BufferAtomicAddOp& op){return failure();}
+            virtual LogicalResult printOp(vector::ExtractOp& op) = 0;
+            virtual LogicalResult printOp(arith::RemFOp& op) = 0;
+            virtual LogicalResult printOp(DispatchThreadIdOp& op) = 0;
+            virtual LogicalResult printOp(BufferAtomicAddOp& op) = 0;
 
             friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<int64_t> expected);
     };
