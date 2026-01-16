@@ -628,6 +628,9 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, s
     int64_t ntx, nty, ntz;
     std::vector<int64_t> bufferIndicies;
     if(failed(getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
+    b.ntx = ntx;
+    b.nty = nty;
+    b.ntz = ntz;
 
     for (auto buffer : buffers){
         b.buffer_sizes.push_back(buffer.size());
@@ -652,6 +655,7 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, s
         b.os << "BUFFER expected" << bnum << " DATA_TYPE int32 DATA\n  ";
         for (int i : buffer) b.os << i << " ";
         b.os << "\nEND\n";
+        bnum++;
     }
     b.os << "PIPELINE compute pipeline\n"
         "  ATTACH compute_shader\n";
@@ -659,7 +663,7 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, s
         b.os << "  BIND BUFFER actual" << i << " AS storage DESCRIPTOR_SET 0 BINDING " << i << "\n";
     }
     b.os << "END\n"
-        << "RUN pipeline " << ntx << " " << nty << " " << ntz << "\n";
+        << "RUN pipeline 1 1 1\n";
     
     for (size_t i = 0; i < buffers.size(); i++){
         b.os << "EXPECT expected" << i << " EQ_BUFFER actual" << i << "\n";

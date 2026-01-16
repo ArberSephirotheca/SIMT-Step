@@ -45,20 +45,25 @@ llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<std::vector<int
     if(failed(simt::test_raiser::getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
     if (bufferIndicies.size() == 0) return success();
 
-    for (size_t i = 0; i < bufferIndicies.size(); i++){
-        outBuffer.push_back(std::vector<int64_t>());
-    }
-
     simt::semantics::RunOperationOptions options;
     options.entry = "main";
     options.lanes = ntx;
-    options.subgroupWidth = 4;
-    options.bufferSize = 16;
-    options.fillValue = 0;
+    options.subgroupWidth = 32;
+    for (int64_t i : bufferIndicies){
+        simt::semantics::BufferOptions buf;
+        buf.argIndex = i;
+        buf.size = 16;
+        buf.fill = 0;
+        options.perBuffer.push_back(buf);
+    }
+    std::vector<simt::semantics::BufferResult> buffers;
 
-    if (mlir::failed(simt::semantics::runOperationToBuffer(
-            *op, bufferIndicies[0], outBuffer[0], options))) {
+    if (mlir::failed(simt::semantics::runOperationToBuffers(*op, {}, buffers, options))) {
         return llvm::failure();
+    }
+
+    for (auto buf : buffers){
+        outBuffer.push_back(buf.values);
     }
 
     return llvm::success();
