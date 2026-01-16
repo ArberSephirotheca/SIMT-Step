@@ -122,6 +122,16 @@ LogicalResult BaseRaiser::emitFuncCall(Value output, std::string fname, std::vec
     return success();
 }
 
+LogicalResult BaseRaiser::emitFuncCall(std::string fname, std::vector<Value> args){
+    os << fname << "(";
+    for (std::size_t i = 0; i < args.size(); i++){
+        os << getValueName(args[i]);
+        if (i < args.size() - 1) os << ", ";
+    }
+    os << ")";
+    return success();
+}
+
 /**
 Uses function overloading to choose the correct printing function for each
 operation type.
@@ -136,7 +146,7 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
     LogicalResult res = llvm::TypeSwitch<Operation&, LogicalResult>(*op)
         .Case<
             // func Operations
-            func::FuncOp, func::ReturnOp,
+            func::FuncOp, func::ReturnOp, func::CallOp,
             // builtin Operations
             ModuleOp,
             // arith Operations
@@ -147,7 +157,8 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
             // simt_step Operations
             DispatchThreadIdOp, BufferLoadOp, BufferStoreOp,
             BufferAtomicAddOp, IfOp, YieldOp, LoopOp, ConditionOp,
-            BreakOp, ContinueOp, SwitchOp
+            BreakOp, ContinueOp, SwitchOp, WaveCountBitsOp,
+            LaneIdOp, SubgroupIdOp
             >(
                 [&](auto op){return printOp(op);})
         
@@ -164,7 +175,7 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
         // Casting operations
         .Case<
             arith::ExtUIOp, arith::ExtSIOp, arith::ExtFOp,
-            arith::TruncFOp, arith::TruncIOp>(
+            arith::TruncFOp, arith::TruncIOp, arith::IndexCastOp>(
                 [&](auto op){return emitCast(op.getOperand(), op.getResult());})
 
         .Default([&](Operation &) {
@@ -229,13 +240,28 @@ LogicalResult BaseRaiser::printOp(func::FuncOp& op){
     os.indent();
     if (failed(emitRegion(op.getRegion()))) return failure();
     os.unindent();
-    os << "}";
+    os << "}\n\n";
     return success();
 }
 
 LogicalResult BaseRaiser::printOp(func::ReturnOp& op){
     os << "return";
+    if (op->getNumOperands() > 0){
+        assert(op->getNumOperands() == 1);
+        os << " " << getValueName(op->getOperand(0));
+    }
     return success();
+}
+
+LogicalResult BaseRaiser::printOp(func::CallOp& op){
+    if (op->getNumResults() > 0){
+        assert(op->getNumResults() == 1);
+        return emitFuncCall(op.getResult(0), op.getCallee().str(), 
+            std::vector<Value>(op.getArgOperands().begin(), op.getArgOperands().end()));
+    } else {
+        return emitFuncCall(op.getCallee().str(), 
+            std::vector<Value>(op.getArgOperands().begin(), op.getArgOperands().end()));
+    }
 }
 
 ///////////// 'arith' dialect /////////////
@@ -476,11 +502,13 @@ LogicalResult BaseRaiser::printOp(SwitchOp& op){
     os.indent();
 
     size_t block_index = 0;
+    bool seen_default = false;
     for (auto& block : op.getCaseBody().getBlocks()){
         if (block_index == op.getDefaultIndex()){
             os << "default:\n";
+            seen_default = true;
         } else {
-            os << "case " << op.getCaseValues()[block_index] << ":\n";
+            os << "case " << op.getCaseValues()[block_index - seen_default] << ":\n";
         }
         os.indent();
 
@@ -557,14 +585,14 @@ LogicalResult BaseRaiser::ScopeHandler::Scope::emitSetResults(BaseRaiser& b, std
 
 //////////// Other helper functions ////////////
 
-LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& ntz, int64_t& bufferIndex){
+LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& ntz, std::vector<int64_t>& bufferIndex){
     // Stolen from HlslEmitter.cpp
     if (auto mod = dyn_cast<ModuleOp>(op)){
         auto func = mod.lookupSymbol<func::FuncOp>("main");
-        bufferIndex = -1;
+        bufferIndex.clear();
         for (auto arg : func.getArguments()){
             if (auto memarg = dyn_cast<simt::dialect::ResourceType>(arg.getType())){
-                bufferIndex = arg.getArgNumber();
+                bufferIndex.push_back(arg.getArgNumber());
             }
         }
         if (auto attr = func->getAttr("simt.num_threads")) {
@@ -595,12 +623,15 @@ LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& nt
     return failure();
 }
 
-LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<int64_t> buffer){
+LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers){
 
-    int64_t ntx, nty, ntz, bufferIndex;
-    if(failed(getMainInfo(op, ntx, nty, ntz, bufferIndex))) return failure();
+    int64_t ntx, nty, ntz;
+    std::vector<int64_t> bufferIndicies;
+    if(failed(getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
 
-    b.buffer_size = buffer.size();
+    for (auto buffer : buffers){
+        b.buffer_sizes.push_back(buffer.size());
+    }
 
     b.os << "#!amber\n"
             "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"
@@ -614,22 +645,24 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, s
     }
     
     b.os << "\nEND\n";
-    if (buffer.size()){
-        b.os << "BUFFER expected DATA_TYPE int32 SIZE " << buffer.size() << " FILL 0\n";
-        b.os << "BUFFER actual DATA_TYPE int32 DATA\n  ";
+
+    int bnum = 0;
+    for (auto buffer : buffers){
+        b.os << "BUFFER actual" << bnum << " DATA_TYPE int32 SIZE " << buffer.size() << " FILL 0\n";
+        b.os << "BUFFER expected" << bnum << " DATA_TYPE int32 DATA\n  ";
         for (int i : buffer) b.os << i << " ";
         b.os << "\nEND\n";
     }
     b.os << "PIPELINE compute pipeline\n"
         "  ATTACH compute_shader\n";
-    if (buffer.size()){
-        b.os << "  BIND BUFFER expected AS storage DESCRIPTOR_SET 0 BINDING 0\n";
+    for (size_t i = 0; i < buffers.size(); i++){
+        b.os << "  BIND BUFFER actual" << i << " AS storage DESCRIPTOR_SET 0 BINDING " << i << "\n";
     }
     b.os << "END\n"
         << "RUN pipeline " << ntx << " " << nty << " " << ntz << "\n";
     
-    if (buffer.size()){
-        b.os << "EXPECT expected EQ_BUFFER actual";
+    for (size_t i = 0; i < buffers.size(); i++){
+        b.os << "EXPECT expected" << i << " EQ_BUFFER actual" << i << "\n";
     }
     return success();
 }

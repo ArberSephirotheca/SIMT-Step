@@ -3,7 +3,6 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Utils/StaticValueUtils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
-#include "mlir/IR/BuiltinTypeInterfaces.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "llvm/Support/Casting.h"
@@ -23,7 +22,7 @@ public:
 
 using BaseRaiser::BaseRaiser;
 
-LogicalResult emitHarness(Operation* op, std::vector<int64_t> expected) override {
+LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expected) override {
     return emitAmberHarness(*this, op, "GLSL", expected);
 }
 
@@ -34,9 +33,10 @@ LogicalResult emitMainFuncTop(func::FuncOp& f) override {
     int locs = 0;
     for (Value v : f.getArguments()){
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
-            os << "layout(set = 0, binding = " << locs++ << ") buffer Buf { ";
+            os << "layout(set = 0, binding = " << locs << ") buffer Buf { ";
             if (failed(emitType(t.getElementType()))) return failure();
-            os << " " << getOrAddValueName(v) << "[" << buffer_size << "];};\n";
+            os << " " << addValueName(v) << "[" << buffer_sizes[locs] << "];};\n";
+            locs++;
         }
     }
     os << "void main()";
@@ -78,6 +78,8 @@ LogicalResult emitType(Type type) override {
         }
         if (vectype.getElementType().isInteger()) os << "i";
         os << "vec" << len;
+    } else if (auto indextype = dyn_cast<mlir::IndexType>(type)){
+        os << "uint";
     } else {
         llvm_unreachable("Unsupported type");
     }
@@ -127,15 +129,19 @@ LogicalResult printOp(vector::ExtractOp &op) override {
 
 /////////////// 'simt_step' dialect ///////////////
 
-LogicalResult printOp(DispatchThreadIdOp& op) override {
-    if (failed(emitValueDefine(op.getResult()))) return failure();
-    if (failed(emitType(op->getResultTypes()[0]))) return failure();
-    os << "(gl_GlobalInvocationID";
-    if (!dyn_cast<mlir::VectorType>(op.getResult().getType())){
+LogicalResult emitConstVec(Value v, std::string name){
+    if (failed(emitValueDefine(v))) return failure();
+    if (failed(emitType(v.getType()))) return failure();
+    os << "(" << name;
+    if (!dyn_cast<mlir::VectorType>(v.getType())){
         os << ".x";
     }
     os << ")";
     return success();
+}
+
+LogicalResult printOp(DispatchThreadIdOp& op) override {
+    return emitConstVec(op.getResult(), "gl_GlobalInvocationID");
 }
 
 LogicalResult printOp(BufferAtomicAddOp& op) override {
@@ -147,12 +153,28 @@ LogicalResult printOp(BufferAtomicAddOp& op) override {
     return success();
 }
 
+LogicalResult printOp(WaveCountBitsOp& op) override {
+    if (failed(emitValueDefine(op.getResult()))) return failure();
+    if (failed(emitType(op.getResult().getType()))) return failure();
+    os << "(subgroupBallotBitCount(subgroupBallot(";
+    os << getValueName(op.getOperand());
+    os << ")))";
+    return success();
+}
+
+LogicalResult printOp(LaneIdOp& op) override {
+    return emitConstVec(op.getResult(), "gl_SubgroupInvocationID");
+}
+
+LogicalResult printOp(SubgroupIdOp& op) override {
+    return emitConstVec(op.getResult(), "gl_SubgroupID");
+}
 
 };
 
 namespace simt::test_raiser {
 
-LogicalResult emitRaisedGLSL(Operation *op, raw_ostream &o, std::vector<int64_t> expected){
+LogicalResult emitRaisedGLSL(Operation *op, raw_ostream &o, std::vector<std::vector<int64_t>> expected){
     GlslRaiser glsl(o);
     return glsl.emitHarness(op, expected);
 }
