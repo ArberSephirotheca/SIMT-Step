@@ -23,9 +23,6 @@ using namespace mlir;
 using namespace simt::dialect;
 
 /*
-mlir::arith::IndexCastOp
-mlir::func::FuncOp +
-mlir::func::ReturnOp +
 mlir::vector::InsertOp
 simt::dialect::ActiveMaskOp
 simt::dialect::BarrierOp
@@ -41,10 +38,8 @@ simt::dialect::FenceOp
 simt::dialect::GroupIdOp
 simt::dialect::GroupIndexOp
 simt::dialect::GroupThreadIdOp
-simt::dialect::LaneIdOp
 simt::dialect::WaveAllOp
 simt::dialect::WaveAnyOp
-simt::dialect::WaveCountBitsOp
 */
 
 namespace simt::test_raiser {
@@ -83,7 +78,9 @@ namespace simt::test_raiser {
             raw_indented_ostream os;
             llvm::DenseMap<Value, int> value_map;
             int value_counter = 0;
+
             std::vector<size_t> buffer_sizes;
+            int64_t ntx, nty, ntz;
 
             // Adds a value to the map and returns the number associated 
             // with it. Asserts that the value is not in the map already.

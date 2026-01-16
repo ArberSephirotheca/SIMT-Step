@@ -9,6 +9,8 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
 #include <cstdio>
+#include <memory>
+#include <string>
 #include <vector>
 
 
@@ -28,6 +30,10 @@ LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expec
 
 private:
 LogicalResult emitMainFuncTop(func::FuncOp& f) override {
+    os  << "layout(local_size_x = " << std::to_string(ntx)
+        << ", local_size_y = " << std::to_string(nty) 
+        << ", local_size_z = " << std::to_string(ntz) << ") in;\n";
+
     int locs = 0;
     for (Value v : f.getArguments()){
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
