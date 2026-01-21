@@ -9,7 +9,6 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
 #include <cstdio>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -34,9 +33,11 @@ LogicalResult emitMainFuncTop(func::FuncOp& f) override {
         << ", local_size_y = " << std::to_string(nty) 
         << ", local_size_z = " << std::to_string(ntz) << ") in;\n";
 
+    // TODO: Buffer memory semantics
     int locs = 0;
     for (Value v : f.getArguments()){
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
+            assert(t.getMemorySpace() == simt::dialect::MemorySpace::Global);
             os << "layout(set = 0, binding = " << locs << ") buffer Buf { ";
             if (failed(emitType(t.getElementType()))) return failure();
             os << " " << addValueName(v) << "[" << buffer_sizes[locs] << "];};\n";
@@ -173,6 +174,62 @@ LogicalResult printOp(LaneIdOp& op) override {
 LogicalResult printOp(SubgroupIdOp& op) override {
     return emitConstVec(op.getResult(), "gl_SubgroupID");
 }
+
+LogicalResult printOp(WaveAllOp& op) override {
+    return emitFuncCall(op.getResult(), "subgroupAll", {op.getOperand()});
+}
+
+LogicalResult printOp(WaveAnyOp& op) override {
+    return emitFuncCall(op.getResult(), "subgroupAny", {op.getOperand()});
+}
+
+LogicalResult printOp(GroupIdOp& op) override {
+    return emitConstVec(op.getResult(), "gl_WorkGroupID");
+}
+
+std::string Scope2Const(Scope s){
+    switch (s){
+        case Scope::Workgroup:
+            return "gl_ScopeWorkgroup";
+        case Scope::Subgroup:
+            return "gl_ScopeSubgroup";
+        case Scope::Thread:
+            return "gl_ScopeInvocation";
+    }
+}
+
+std::string Memsem2Const(MemorySemantics s){
+    switch (s){
+        case MemorySemantics::None:
+            return "gl_SemanticsRelaxed"; // TODO: Double check this
+        case MemorySemantics::Acquire:
+            return "gl_SemanticsAquire";
+        case MemorySemantics::Release:
+            return "gl_SemanticsRelease";
+        case MemorySemantics::AcqRel:
+            return "gl_SemanticsAquireRelease";
+    }
+}
+
+// LogicalResult printOp(BarrierOp& op) override {
+//     os << "controlBarrier(";
+//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
+//     os << ", ";
+//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
+//     os << ", gl_StorageSemanticsNone, ";
+//     os << Memsem2Const(op.getMemsem().value_or(MemorySemantics::None));
+//     os << ")";
+//     return success();
+// }
+
+// LogicalResult printOp(FenceOp& op) override {
+//     os << "memoryBarrier(";
+//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
+//     os << ", gl_StorageSemanticsNone, ";
+//     os << Memsem2Const(op.getMemsem().value_or(MemorySemantics::None));
+//     os << ")";
+//     return success();
+// }
 
 };
 
