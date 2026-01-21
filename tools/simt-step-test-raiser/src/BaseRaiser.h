@@ -23,23 +23,18 @@ using namespace mlir;
 using namespace simt::dialect;
 
 /*
-mlir::vector::InsertOp
-simt::dialect::ActiveMaskOp
-simt::dialect::BarrierOp
-simt::dialect::BufferAtomicAddOp
-simt::dialect::BufferAtomicAndOp
-simt::dialect::BufferAtomicCompareExchangeOp
-simt::dialect::BufferAtomicExchangeOp
-simt::dialect::BufferAtomicMaxOp
-simt::dialect::BufferAtomicMinOp
-simt::dialect::BufferAtomicOrOp
-simt::dialect::BufferAtomicXorOp
-simt::dialect::FenceOp
-simt::dialect::GroupIdOp
-simt::dialect::GroupIndexOp
-simt::dialect::GroupThreadIdOp
-simt::dialect::WaveAllOp
-simt::dialect::WaveAnyOp
+// mlir::vector::InsertOp
+// simt::dialect::BufferAtomicAddOp
+// simt::dialect::BufferAtomicAndOp
+// simt::dialect::BufferAtomicCompareExchangeOp
+// simt::dialect::BufferAtomicExchangeOp
+// simt::dialect::BufferAtomicMaxOp
+// simt::dialect::BufferAtomicMinOp
+// simt::dialect::BufferAtomicOrOp
+// simt::dialect::BufferAtomicXorOp
+// simt::dialect::GroupIdOp
+// simt::dialect::GroupIndexOp
+// simt::dialect::GroupThreadIdOp
 */
 
 namespace simt::test_raiser {
@@ -176,6 +171,11 @@ namespace simt::test_raiser {
             virtual LogicalResult printOp(WaveCountBitsOp& op) = 0;
             virtual LogicalResult printOp(LaneIdOp& op) = 0;
             virtual LogicalResult printOp(SubgroupIdOp& op) = 0;
+            virtual LogicalResult printOp(WaveAllOp& op) = 0;
+            virtual LogicalResult printOp(WaveAnyOp& op) = 0;
+            virtual LogicalResult printOp(GroupIdOp& op) = 0;
+            // virtual LogicalResult printOp(FenceOp& op) = 0;
+            // virtual LogicalResult printOp(BarrierOp& op) = 0;
 
             friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers);
     };

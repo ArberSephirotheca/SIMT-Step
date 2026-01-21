@@ -158,7 +158,8 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
             DispatchThreadIdOp, BufferLoadOp, BufferStoreOp,
             BufferAtomicAddOp, IfOp, YieldOp, LoopOp, ConditionOp,
             BreakOp, ContinueOp, SwitchOp, WaveCountBitsOp,
-            LaneIdOp, SubgroupIdOp
+            LaneIdOp, SubgroupIdOp, WaveAllOp, WaveAnyOp,
+            GroupIdOp
             >(
                 [&](auto op){return printOp(op);})
         
