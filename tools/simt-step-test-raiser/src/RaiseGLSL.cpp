@@ -38,7 +38,7 @@ LogicalResult emitMainFuncTop(func::FuncOp& f) override {
     for (Value v : f.getArguments()){
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
             assert(t.getMemorySpace() == simt::dialect::MemorySpace::Global);
-            os << "layout(set = 0, binding = " << locs << ") buffer Buf { ";
+            os << "layout(set = 0, binding = " << locs << ") buffer Buf" << std::to_string(locs) <<  " { ";
             if (failed(emitType(t.getElementType()))) return failure();
             os << " " << addValueName(v) << "[" << buffer_sizes[locs] << "];};\n";
             locs++;
@@ -185,6 +185,14 @@ LogicalResult printOp(WaveAnyOp& op) override {
 
 LogicalResult printOp(GroupIdOp& op) override {
     return emitConstVec(op.getResult(), "gl_WorkGroupID");
+}
+
+LogicalResult printOp(GroupThreadIdOp& op) override {
+    return emitConstVec(op.getResult(), "gl_LocalInvocationID");
+}
+
+LogicalResult printOp(GroupIndexOp& op) override {
+    return emitConstVec(op.getResult(), "gl_SubgroupInvocationID");
 }
 
 std::string Scope2Const(Scope s){

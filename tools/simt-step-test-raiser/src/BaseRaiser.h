@@ -180,6 +180,8 @@ namespace simt::test_raiser {
             virtual LogicalResult printOp(WaveAllOp& op) = 0;
             virtual LogicalResult printOp(WaveAnyOp& op) = 0;
             virtual LogicalResult printOp(GroupIdOp& op) = 0;
+            virtual LogicalResult printOp(GroupThreadIdOp& op) = 0;
+            virtual LogicalResult printOp(GroupIndexOp& op) = 0;
             // virtual LogicalResult printOp(FenceOp& op) = 0;
             // virtual LogicalResult printOp(BarrierOp& op) = 0;
 

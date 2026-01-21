@@ -1,7 +1,6 @@
 /target
 /build
 /DirectXShaderCompiler/
-/llvm-project/
 /*.pdf
 /*.txt
 /Output
@@ -11,5 +10,6 @@ Agent.md
 *.jsonl
 /ref
 /skills
-/fuzz-tests
+/build-llvm
+/llvm-install
 .cache

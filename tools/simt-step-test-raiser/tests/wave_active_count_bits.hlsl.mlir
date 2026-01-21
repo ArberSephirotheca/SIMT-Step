@@ -8,10 +8,7 @@
     %4 = "simt_step.wave_count_bits"(%3) : (i1) -> i32
     %5 = "arith.constant"() <{value = 0 : i32}> : () -> i32
     %6 = "arith.cmpi"(%4, %5) <{predicate = 0 : i64}> : (i32, i32) -> i1
-    "simt_step.if"(%6) ({
-      "func.return"() : () -> ()
-    }, {
-    }) : (i1) -> ()
+    func.return
   }) {simt.num_threads = array<i64: 1, 1, 1>} : () -> ()
 }) : () -> ()
 

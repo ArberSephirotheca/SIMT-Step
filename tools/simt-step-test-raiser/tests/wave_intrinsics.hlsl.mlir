@@ -25,9 +25,11 @@
       "simt_step.yield"(%11) : (i1) -> ()
     }) : (i1) -> i1
     "simt_step.if"(%10) ({
-      "func.return"() : () -> ()
+      "simt_step.yield"() : () -> ()
     }, {
+      "simt_step.yield"() : () -> ()
     }) : (i1) -> ()
+    func.return
   }) {simt.num_threads = array<i64: 1, 1, 1>} : () -> ()
 }) : () -> ()
 

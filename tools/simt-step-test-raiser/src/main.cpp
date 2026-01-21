@@ -52,7 +52,7 @@ llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<std::vector<int
     for (int64_t i : bufferIndicies){
         simt::semantics::BufferOptions buf;
         buf.argIndex = i;
-        buf.size = 16;
+        buf.size = 4096;
         buf.fill = 0;
         options.perBuffer.push_back(buf);
     }

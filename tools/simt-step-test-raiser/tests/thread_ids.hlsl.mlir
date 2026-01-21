@@ -13,10 +13,7 @@
     %9 = "arith.addi"(%7, %8) <{overflowFlags = #arith.overflow<none>}> : (i32, i32) -> i32
     %10 = "arith.constant"() <{value = 0 : i32}> : () -> i32
     %11 = "arith.cmpi"(%9, %10) <{predicate = 0 : i64}> : (i32, i32) -> i1
-    "simt_step.if"(%11) ({
-      "func.return"() : () -> ()
-    }, {
-    }) : (i1) -> ()
+    func.return
   }) {simt.num_threads = array<i64: 2, 3, 4>} : () -> ()
 }) : () -> ()
 
