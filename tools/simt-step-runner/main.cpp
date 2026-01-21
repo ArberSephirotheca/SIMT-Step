@@ -1,3 +1,4 @@
+#include "InitYaml.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SimpleProgram.h"
 #include "simt-step/semantics/TraceJsonWriter.h"
@@ -12,10 +13,7 @@
 
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/InitLLVM.h>
-#include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Support/YAMLTraits.h>
-
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
@@ -31,55 +29,7 @@ struct InitSpec {
     int64_t value = 0;
 };
 
-struct InitEntry {
-    int64_t index = 0;
-    int64_t value = 0;
-};
-
-struct InitBuffer {
-    std::string buffer;
-    std::optional<int64_t> size;
-    std::optional<int64_t> fill;
-    std::vector<InitEntry> entries;
-};
-
-struct InitFile {
-    std::vector<InitBuffer> buffers;
-};
-
 } // namespace
-
-LLVM_YAML_IS_SEQUENCE_VECTOR(InitEntry)
-LLVM_YAML_IS_SEQUENCE_VECTOR(InitBuffer)
-
-namespace llvm::yaml {
-
-template <>
-struct MappingTraits<InitEntry> {
-    static void mapping(IO &io, InitEntry &entry) {
-        io.mapRequired("index", entry.index);
-        io.mapRequired("value", entry.value);
-    }
-};
-
-template <>
-struct MappingTraits<InitBuffer> {
-    static void mapping(IO &io, InitBuffer &buffer) {
-        io.mapRequired("buffer", buffer.buffer);
-        io.mapOptional("size", buffer.size);
-        io.mapOptional("fill", buffer.fill);
-        io.mapOptional("entries", buffer.entries);
-    }
-};
-
-template <>
-struct MappingTraits<InitFile> {
-    static void mapping(IO &io, InitFile &file) {
-        io.mapOptional("buffers", file.buffers);
-    }
-};
-
-} // namespace llvm::yaml
 
 namespace {
 
@@ -129,22 +79,6 @@ static bool parseInitSpec(llvm::StringRef spec, InitSpec &out,
     }
     if (!parseInt64(parts[2], out.value)) {
         error = "invalid buffer value";
-        return false;
-    }
-    return true;
-}
-
-static bool loadInitFile(llvm::StringRef path, InitFile &out,
-                         std::string &error) {
-    auto fileOrErr = llvm::MemoryBuffer::getFile(path);
-    if (!fileOrErr) {
-        error = fileOrErr.getError().message();
-        return false;
-    }
-    llvm::yaml::Input yin(fileOrErr.get()->getBuffer());
-    yin >> out;
-    if (auto err = yin.error()) {
-        error = err.message();
         return false;
     }
     return true;
@@ -267,9 +201,9 @@ int main(int argc, char **argv) {
     simt::semantics::SimpleSemantics::clearMemory();
     auto &memMutable = simt::semantics::SimpleSemantics::memoryMutable();
     if (!initFile.empty()) {
-        InitFile file;
+        simt::runner::InitFile file;
         std::string error;
-        if (!loadInitFile(initFile, file, error)) {
+        if (!simt::runner::loadInitYamlFile(initFile, file, error)) {
             llvm::errs() << "failed to parse --init-file: " << error << "\n";
             return 1;
         }
