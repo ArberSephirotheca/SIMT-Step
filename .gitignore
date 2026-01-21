@@ -10,4 +10,5 @@ Agent.md
 *.jsonl
 /ref
 /skills
-/fuzz-tests
+/build-llvm
+/llvm-install

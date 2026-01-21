@@ -624,7 +624,7 @@ static void runScript(const Script &script, const Options &options) {
     CUdevice device = 0;
     checkCuda(cuDeviceGet(&device, options.deviceIndex), "cuDeviceGet");
     CUcontext context = nullptr;
-    checkCuda(cuCtxCreate(&context, 0, device), "cuCtxCreate");
+    checkCuda(cuCtxCreate(&context, nullptr, 0, device), "cuCtxCreate");
 
     nvrtcProgram program;
     checkNvrtc(nvrtcCreateProgram(&program,
