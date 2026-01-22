@@ -1,0 +1,662 @@
+BUFFER arg0 TYPE i32 SIZE 2111
+BUFFER arg1 TYPE i32 SIZE 1600
+BUFFER exp_arg0 TYPE i32 SIZE 2111
+FILL arg0 0
+FILL exp_arg0 0
+INIT exp_arg0 0 32
+INIT exp_arg0 1 32
+INIT exp_arg0 2 32
+INIT exp_arg0 3 32
+INIT exp_arg0 4 32
+INIT exp_arg0 5 32
+INIT exp_arg0 6 32
+INIT exp_arg0 7 32
+INIT exp_arg0 8 32
+INIT exp_arg0 9 32
+INIT exp_arg0 10 32
+INIT exp_arg0 11 32
+INIT exp_arg0 12 32
+INIT exp_arg0 13 32
+INIT exp_arg0 14 32
+INIT exp_arg0 15 32
+INIT exp_arg0 16 32
+INIT exp_arg0 17 32
+INIT exp_arg0 18 32
+INIT exp_arg0 19 32
+INIT exp_arg0 20 32
+INIT exp_arg0 21 32
+INIT exp_arg0 22 32
+INIT exp_arg0 23 32
+INIT exp_arg0 24 32
+INIT exp_arg0 25 32
+INIT exp_arg0 26 32
+INIT exp_arg0 27 32
+INIT exp_arg0 28 32
+INIT exp_arg0 29 32
+INIT exp_arg0 30 32
+INIT exp_arg0 31 32
+INIT exp_arg0 32 32
+INIT exp_arg0 33 32
+INIT exp_arg0 34 32
+INIT exp_arg0 35 32
+INIT exp_arg0 36 32
+INIT exp_arg0 37 32
+INIT exp_arg0 38 32
+INIT exp_arg0 39 32
+INIT exp_arg0 40 32
+INIT exp_arg0 41 32
+INIT exp_arg0 42 32
+INIT exp_arg0 43 32
+INIT exp_arg0 44 32
+INIT exp_arg0 45 32
+INIT exp_arg0 46 32
+INIT exp_arg0 47 32
+INIT exp_arg0 48 32
+INIT exp_arg0 49 32
+INIT exp_arg0 50 32
+INIT exp_arg0 51 32
+INIT exp_arg0 52 32
+INIT exp_arg0 53 32
+INIT exp_arg0 54 32
+INIT exp_arg0 55 32
+INIT exp_arg0 56 32
+INIT exp_arg0 57 32
+INIT exp_arg0 58 32
+INIT exp_arg0 59 32
+INIT exp_arg0 60 32
+INIT exp_arg0 61 32
+INIT exp_arg0 62 32
+INIT exp_arg0 63 32
+INIT exp_arg0 65 24
+INIT exp_arg0 66 24
+INIT exp_arg0 67 24
+INIT exp_arg0 69 24
+INIT exp_arg0 70 24
+INIT exp_arg0 71 24
+INIT exp_arg0 73 24
+INIT exp_arg0 74 24
+INIT exp_arg0 75 24
+INIT exp_arg0 77 24
+INIT exp_arg0 78 24
+INIT exp_arg0 79 24
+INIT exp_arg0 81 24
+INIT exp_arg0 82 24
+INIT exp_arg0 83 24
+INIT exp_arg0 85 24
+INIT exp_arg0 86 24
+INIT exp_arg0 87 24
+INIT exp_arg0 89 24
+INIT exp_arg0 90 24
+INIT exp_arg0 91 24
+INIT exp_arg0 93 24
+INIT exp_arg0 94 24
+INIT exp_arg0 95 24
+INIT exp_arg0 97 24
+INIT exp_arg0 98 24
+INIT exp_arg0 99 24
+INIT exp_arg0 101 24
+INIT exp_arg0 102 24
+INIT exp_arg0 103 24
+INIT exp_arg0 105 24
+INIT exp_arg0 106 24
+INIT exp_arg0 107 24
+INIT exp_arg0 109 24
+INIT exp_arg0 110 24
+INIT exp_arg0 111 24
+INIT exp_arg0 113 24
+INIT exp_arg0 114 24
+INIT exp_arg0 115 24
+INIT exp_arg0 117 24
+INIT exp_arg0 118 24
+INIT exp_arg0 119 24
+INIT exp_arg0 121 24
+INIT exp_arg0 122 24
+INIT exp_arg0 123 24
+INIT exp_arg0 125 24
+INIT exp_arg0 126 24
+INIT exp_arg0 127 24
+INIT exp_arg0 128 3
+INIT exp_arg0 129 0
+INIT exp_arg0 130 16
+INIT exp_arg0 131 16
+INIT exp_arg0 132 3
+INIT exp_arg0 133 0
+INIT exp_arg0 134 16
+INIT exp_arg0 135 16
+INIT exp_arg0 136 3
+INIT exp_arg0 137 0
+INIT exp_arg0 138 16
+INIT exp_arg0 139 16
+INIT exp_arg0 140 3
+INIT exp_arg0 141 0
+INIT exp_arg0 142 16
+INIT exp_arg0 143 16
+INIT exp_arg0 144 3
+INIT exp_arg0 145 0
+INIT exp_arg0 146 16
+INIT exp_arg0 147 16
+INIT exp_arg0 148 3
+INIT exp_arg0 149 0
+INIT exp_arg0 150 16
+INIT exp_arg0 151 16
+INIT exp_arg0 152 3
+INIT exp_arg0 153 0
+INIT exp_arg0 154 16
+INIT exp_arg0 155 16
+INIT exp_arg0 156 3
+INIT exp_arg0 157 0
+INIT exp_arg0 158 16
+INIT exp_arg0 159 16
+INIT exp_arg0 160 3
+INIT exp_arg0 161 0
+INIT exp_arg0 162 16
+INIT exp_arg0 163 16
+INIT exp_arg0 164 3
+INIT exp_arg0 165 0
+INIT exp_arg0 166 16
+INIT exp_arg0 167 16
+INIT exp_arg0 168 3
+INIT exp_arg0 169 0
+INIT exp_arg0 170 16
+INIT exp_arg0 171 16
+INIT exp_arg0 172 3
+INIT exp_arg0 173 0
+INIT exp_arg0 174 16
+INIT exp_arg0 175 16
+INIT exp_arg0 176 3
+INIT exp_arg0 177 0
+INIT exp_arg0 178 16
+INIT exp_arg0 179 16
+INIT exp_arg0 180 3
+INIT exp_arg0 181 0
+INIT exp_arg0 182 16
+INIT exp_arg0 183 16
+INIT exp_arg0 184 3
+INIT exp_arg0 185 0
+INIT exp_arg0 186 16
+INIT exp_arg0 187 16
+INIT exp_arg0 188 3
+INIT exp_arg0 189 0
+INIT exp_arg0 190 16
+INIT exp_arg0 191 16
+INIT exp_arg0 195 8
+INIT exp_arg0 199 8
+INIT exp_arg0 203 8
+INIT exp_arg0 207 8
+INIT exp_arg0 211 8
+INIT exp_arg0 215 8
+INIT exp_arg0 219 8
+INIT exp_arg0 223 8
+INIT exp_arg0 227 8
+INIT exp_arg0 231 8
+INIT exp_arg0 235 8
+INIT exp_arg0 239 8
+INIT exp_arg0 243 8
+INIT exp_arg0 247 8
+INIT exp_arg0 251 8
+INIT exp_arg0 255 8
+INIT exp_arg0 256 14
+INIT exp_arg0 257 14
+INIT exp_arg0 258 14
+INIT exp_arg0 259 14
+INIT exp_arg0 260 14
+INIT exp_arg0 261 14
+INIT exp_arg0 262 14
+INIT exp_arg0 263 14
+INIT exp_arg0 264 14
+INIT exp_arg0 265 14
+INIT exp_arg0 266 14
+INIT exp_arg0 267 14
+INIT exp_arg0 268 14
+INIT exp_arg0 269 14
+INIT exp_arg0 321 10
+INIT exp_arg0 322 10
+INIT exp_arg0 323 10
+INIT exp_arg0 325 10
+INIT exp_arg0 326 10
+INIT exp_arg0 327 10
+INIT exp_arg0 329 10
+INIT exp_arg0 330 10
+INIT exp_arg0 331 10
+INIT exp_arg0 333 10
+INIT exp_arg0 386 6
+INIT exp_arg0 387 6
+INIT exp_arg0 390 6
+INIT exp_arg0 391 6
+INIT exp_arg0 394 6
+INIT exp_arg0 395 6
+INIT exp_arg0 451 3
+INIT exp_arg0 455 3
+INIT exp_arg0 459 3
+INIT exp_arg0 512 32
+INIT exp_arg0 513 32
+INIT exp_arg0 514 32
+INIT exp_arg0 515 32
+INIT exp_arg0 516 32
+INIT exp_arg0 517 32
+INIT exp_arg0 518 32
+INIT exp_arg0 519 32
+INIT exp_arg0 520 32
+INIT exp_arg0 521 32
+INIT exp_arg0 522 32
+INIT exp_arg0 523 32
+INIT exp_arg0 524 32
+INIT exp_arg0 525 32
+INIT exp_arg0 526 32
+INIT exp_arg0 527 32
+INIT exp_arg0 528 32
+INIT exp_arg0 529 32
+INIT exp_arg0 530 32
+INIT exp_arg0 531 32
+INIT exp_arg0 532 32
+INIT exp_arg0 533 32
+INIT exp_arg0 534 32
+INIT exp_arg0 535 32
+INIT exp_arg0 536 32
+INIT exp_arg0 537 32
+INIT exp_arg0 538 32
+INIT exp_arg0 539 32
+INIT exp_arg0 540 32
+INIT exp_arg0 541 32
+INIT exp_arg0 542 32
+INIT exp_arg0 543 32
+INIT exp_arg0 544 32
+INIT exp_arg0 545 32
+INIT exp_arg0 546 32
+INIT exp_arg0 547 32
+INIT exp_arg0 548 32
+INIT exp_arg0 549 32
+INIT exp_arg0 550 32
+INIT exp_arg0 551 32
+INIT exp_arg0 552 32
+INIT exp_arg0 553 32
+INIT exp_arg0 554 32
+INIT exp_arg0 555 32
+INIT exp_arg0 556 32
+INIT exp_arg0 557 32
+INIT exp_arg0 558 32
+INIT exp_arg0 559 32
+INIT exp_arg0 560 32
+INIT exp_arg0 561 32
+INIT exp_arg0 562 32
+INIT exp_arg0 563 32
+INIT exp_arg0 564 32
+INIT exp_arg0 565 32
+INIT exp_arg0 566 32
+INIT exp_arg0 567 32
+INIT exp_arg0 568 32
+INIT exp_arg0 569 32
+INIT exp_arg0 570 32
+INIT exp_arg0 571 32
+INIT exp_arg0 572 32
+INIT exp_arg0 573 32
+INIT exp_arg0 574 32
+INIT exp_arg0 575 32
+INIT exp_arg0 770 5
+INIT exp_arg0 773 8
+INIT exp_arg0 776 10
+INIT exp_arg0 779 2
+INIT exp_arg0 782 5
+INIT exp_arg0 785 8
+INIT exp_arg0 788 10
+INIT exp_arg0 791 2
+INIT exp_arg0 794 5
+INIT exp_arg0 797 8
+INIT exp_arg0 800 11
+INIT exp_arg0 803 3
+INIT exp_arg0 806 6
+INIT exp_arg0 809 8
+INIT exp_arg0 812 11
+INIT exp_arg0 815 3
+INIT exp_arg0 818 6
+INIT exp_arg0 821 8
+INIT exp_arg0 824 11
+INIT exp_arg0 827 3
+INIT exp_arg0 830 6
+INIT exp_arg0 837 5
+INIT exp_arg0 843 2
+INIT exp_arg0 849 5
+INIT exp_arg0 855 2
+INIT exp_arg0 861 5
+INIT exp_arg0 867 3
+INIT exp_arg0 873 5
+INIT exp_arg0 879 3
+INIT exp_arg0 885 5
+INIT exp_arg0 891 3
+INIT exp_arg0 1026 10
+INIT exp_arg0 1029 10
+INIT exp_arg0 1032 10
+INIT exp_arg0 1035 10
+INIT exp_arg0 1038 10
+INIT exp_arg0 1041 10
+INIT exp_arg0 1044 10
+INIT exp_arg0 1047 10
+INIT exp_arg0 1050 10
+INIT exp_arg0 1053 10
+INIT exp_arg0 1056 11
+INIT exp_arg0 1059 11
+INIT exp_arg0 1062 11
+INIT exp_arg0 1065 11
+INIT exp_arg0 1068 11
+INIT exp_arg0 1071 11
+INIT exp_arg0 1074 11
+INIT exp_arg0 1077 11
+INIT exp_arg0 1080 11
+INIT exp_arg0 1083 11
+INIT exp_arg0 1086 11
+INIT exp_arg0 1090 8
+INIT exp_arg0 1093 8
+INIT exp_arg0 1099 8
+INIT exp_arg0 1102 8
+INIT exp_arg0 1105 8
+INIT exp_arg0 1111 8
+INIT exp_arg0 1114 8
+INIT exp_arg0 1117 8
+INIT exp_arg0 1123 8
+INIT exp_arg0 1126 8
+INIT exp_arg0 1129 8
+INIT exp_arg0 1135 8
+INIT exp_arg0 1138 8
+INIT exp_arg0 1141 8
+INIT exp_arg0 1147 8
+INIT exp_arg0 1150 8
+INIT exp_arg0 1154 5
+INIT exp_arg0 1163 5
+INIT exp_arg0 1166 5
+INIT exp_arg0 1175 5
+INIT exp_arg0 1178 5
+INIT exp_arg0 1187 6
+INIT exp_arg0 1190 6
+INIT exp_arg0 1199 6
+INIT exp_arg0 1202 6
+INIT exp_arg0 1211 6
+INIT exp_arg0 1214 6
+INIT exp_arg0 1227 2
+INIT exp_arg0 1239 2
+INIT exp_arg0 1251 3
+INIT exp_arg0 1263 3
+INIT exp_arg0 1275 3
+INIT exp_arg0 1282 10
+INIT exp_arg0 1285 10
+INIT exp_arg0 1288 10
+INIT exp_arg0 1291 10
+INIT exp_arg0 1294 10
+INIT exp_arg0 1297 10
+INIT exp_arg0 1300 10
+INIT exp_arg0 1303 10
+INIT exp_arg0 1306 10
+INIT exp_arg0 1309 10
+INIT exp_arg0 1312 11
+INIT exp_arg0 1315 11
+INIT exp_arg0 1318 11
+INIT exp_arg0 1321 11
+INIT exp_arg0 1324 11
+INIT exp_arg0 1327 11
+INIT exp_arg0 1330 11
+INIT exp_arg0 1333 11
+INIT exp_arg0 1336 11
+INIT exp_arg0 1339 11
+INIT exp_arg0 1342 11
+INIT exp_arg0 2049 21
+INIT exp_arg0 2050 21
+INIT exp_arg0 2052 21
+INIT exp_arg0 2053 21
+INIT exp_arg0 2055 21
+INIT exp_arg0 2056 21
+INIT exp_arg0 2058 21
+INIT exp_arg0 2059 21
+INIT exp_arg0 2061 21
+INIT exp_arg0 2062 21
+INIT exp_arg0 2064 21
+INIT exp_arg0 2065 21
+INIT exp_arg0 2067 21
+INIT exp_arg0 2068 21
+INIT exp_arg0 2070 21
+INIT exp_arg0 2071 21
+INIT exp_arg0 2073 21
+INIT exp_arg0 2074 21
+INIT exp_arg0 2076 21
+INIT exp_arg0 2077 21
+INIT exp_arg0 2079 21
+INIT exp_arg0 2080 21
+INIT exp_arg0 2082 21
+INIT exp_arg0 2083 21
+INIT exp_arg0 2085 21
+INIT exp_arg0 2086 21
+INIT exp_arg0 2088 21
+INIT exp_arg0 2089 21
+INIT exp_arg0 2091 21
+INIT exp_arg0 2092 21
+INIT exp_arg0 2094 21
+INIT exp_arg0 2095 21
+INIT exp_arg0 2097 21
+INIT exp_arg0 2098 21
+INIT exp_arg0 2100 21
+INIT exp_arg0 2101 21
+INIT exp_arg0 2103 21
+INIT exp_arg0 2104 21
+INIT exp_arg0 2106 21
+INIT exp_arg0 2107 21
+INIT exp_arg0 2109 21
+INIT exp_arg0 2110 21
+
+KERNEL simt_kernel
+#include <cuda_runtime.h>
+#define SIMT_SUBGROUP_WIDTH 32
+static __device__ __forceinline__ int simt_lane_id(int tid) {
+  return tid % SIMT_SUBGROUP_WIDTH;
+}
+static __device__ __forceinline__ int simt_subgroup_id(int tid) {
+  return tid / SIMT_SUBGROUP_WIDTH;
+}
+static __device__ __forceinline__ unsigned simt_subgroup_mask() {
+  unsigned lane = static_cast<unsigned>(threadIdx.x & 31);
+  unsigned width = SIMT_SUBGROUP_WIDTH;
+  if (width >= 32) return 0xffffffffu;
+  unsigned base = (lane / width) * width;
+  unsigned mask = ((1u << width) - 1u) << base;
+  unsigned blockMask = (blockDim.x >= 32) ? 0xffffffffu : ((1u << blockDim.x) - 1u);
+  return mask & blockMask;
+}
+static __device__ __forceinline__ int simt_wave_count_bits(bool pred) {
+  unsigned mask = simt_subgroup_mask() & __activemask();
+  return __popc(__ballot_sync(mask, pred));
+}
+
+static __device__ __forceinline__ int helper0(int arg0) {
+  int t0 = (arg0 + 3);
+  int t1 = (t0 % 4);
+  int t2 = (t1 + 0);
+  return t2;
+}
+
+extern "C" __global__ void simt_kernel(int* buf0, int* buf1) {
+  int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  int t0 = tid;
+  int t1 = helper0(t0);
+  int t2 = (128 + t0);
+  buf0[t2] = t1;
+  int t3 = 0;
+  int t4 = 0;
+  while (true) {
+    int t5 = (t4 * 64);
+    int t6 = (t5 + t0);
+    int t7 = (0 + t6);
+    int t8 = buf1[t7];
+    bool t9 = (t8 != 0);
+    if (!(t9)) break;
+    int t10 = (t3 + t4);
+    int t11 = (t4 + 1);
+    int t12 = (t4 * 64);
+    int t13 = (0 + t12);
+    int t14 = (t13 + t0);
+    int t15 = simt_wave_count_bits(true);
+    buf0[t14] = t15;
+    t3 = t10;
+    t4 = t11;
+  }
+  int t16 = (320 + t0);
+  int t17 = buf1[t16];
+  bool t18 = (t17 != 0);
+  int t19;
+  if (t18) {
+    int t20 = 0;
+    int t21 = 0;
+    while (true) {
+      int t22 = (t21 * 64);
+      int t23 = (t22 + t0);
+      int t24 = (384 + t23);
+      int t25 = buf1[t24];
+      bool t26 = (t25 != 0);
+      if (!(t26)) break;
+      int t27 = (t20 + t21);
+      int t28 = (t21 + 1);
+      int t29 = (t21 * 64);
+      int t30 = (256 + t29);
+      int t31 = (t30 + t0);
+      int t32 = simt_wave_count_bits(true);
+      buf0[t31] = t32;
+      t20 = t27;
+      t21 = t28;
+    }
+    t19 = t20;
+  } else {
+    t19 = 2;
+  }
+  int t33 = (512 + t0);
+  int t34 = simt_wave_count_bits(true);
+  buf0[t33] = t34;
+  int t35 = (704 + t0);
+  int t36 = buf1[t35];
+  int t37 = (t0 + 4);
+  int t38 = t37;
+  switch (t36) {
+    case 0:
+      {
+        int t39 = (t0 + 4);
+        t38 = t39;
+        break;
+      }
+    default:
+      {
+        int t40 = 0;
+        int t41 = 0;
+        while (true) {
+          int t42 = (t41 * 64);
+          int t43 = (t42 + t0);
+          int t44 = (768 + t43);
+          int t45 = buf1[t44];
+          bool t46 = (t45 != 0);
+          if (!(t46)) break;
+          int t47 = 0;
+          int t48 = 0;
+          while (true) {
+            int t49 = (t48 * 64);
+            int t50 = (t49 + t0);
+            int t51 = (1088 + t50);
+            int t52 = buf1[t51];
+            bool t53 = (t52 != 0);
+            if (!(t53)) break;
+            int t54 = (t47 + t48);
+            int t55 = (t48 + 1);
+            int t56 = (t48 * 64);
+            int t57 = (768 + t56);
+            int t58 = (t57 + t0);
+            int t59 = simt_wave_count_bits(true);
+            buf0[t58] = t59;
+            t47 = t54;
+            t48 = t55;
+            continue;
+          }
+          int t60 = (t40 + t47);
+          int t61 = (t41 + 1);
+          int t62 = (t41 * 64);
+          int t63 = (1024 + t62);
+          int t64 = (t63 + t0);
+          int t65 = simt_wave_count_bits(true);
+          buf0[t64] = t65;
+          t40 = t60;
+          t41 = t61;
+        }
+        int t66 = (1280 + t0);
+        int t67 = simt_wave_count_bits(true);
+        buf0[t66] = t67;
+        t38 = t40;
+      }
+    case 1:
+      {
+        int t68 = (1408 + t0);
+        int t69 = buf1[t68];
+        bool t70 = (t69 != 0);
+        int t71;
+        if (t70) {
+          int t72 = (1472 + t0);
+          int t73 = buf1[t72];
+          int t74 = simt_lane_id(tid);
+          int t75 = static_cast<int>(t74);
+          int t76 = t75;
+          switch (t73) {
+            default:
+              {
+                t76 = 3;
+                break;
+              }
+            case 0:
+              {
+                int t77 = (1536 + t0);
+                int t78 = simt_wave_count_bits(true);
+                buf0[t77] = t78;
+                t76 = 0;
+                break;
+              }
+          }
+          t71 = t76;
+        } else {
+          int t79 = (1536 + t0);
+          int t80 = buf1[t79];
+          int t81 = t0;
+          switch (t80) {
+            default:
+              {
+                int t82 = simt_subgroup_id(tid);
+                int t83 = static_cast<int>(t82);
+                int t84 = (1792 + t0);
+                int t85 = simt_wave_count_bits(true);
+                buf0[t84] = t85;
+                t81 = t83;
+              }
+            case 0:
+              {
+                int t86 = (t0 + 1);
+                t81 = t86;
+              }
+            case 1:
+              {
+                int t87 = simt_subgroup_id(tid);
+                int t88 = static_cast<int>(t87);
+                t81 = t88;
+              }
+            case 2:
+              {
+                t81 = 3;
+                break;
+              }
+          }
+          t71 = t81;
+        }
+        int t89 = (2048 + t0);
+        int t90 = simt_wave_count_bits(true);
+        buf0[t89] = t90;
+        t38 = t71;
+        break;
+      }
+  }
+}
+ENDKERNEL
+
+BIND arg0 ARG 0
+BIND arg1 ARG 1
+
+LAUNCH GRID 1 1 1 BLOCK 64 1 1
+
+EXPECT_BUFFER arg0 exp_arg0

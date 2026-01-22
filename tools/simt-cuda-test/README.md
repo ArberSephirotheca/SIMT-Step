@@ -21,6 +21,7 @@ simt-cuda-test --batch <dir> [--recursive] [--report <file>]
 - `--arch sm_80`: passed to NVRTC as `--gpu-architecture=sm_80`
 - `--dump-ptx`: print the generated PTX to stdout
 - `--init-yaml <file>`: apply buffer initialization from YAML before launch
+- `--cuda-include <dir>`: add CUDA include path for NVRTC (auto-detected if not set)
 - `--batch <dir>`: run all `.cuda` scripts in a directory
 - `--recursive`: recurse into subdirectories with `--batch`
 - `--report <file>`: write a CSV report (`status,file,error`)
@@ -41,11 +42,14 @@ Supported commands:
 - `LAUNCH GRID <x> <y> <z> BLOCK <x> <y> <z>`
 - `EXPECT <name> <index> <value> [ABS_TOL <a>] [REL_TOL <r>]`
 - `EXPECT_RANGE <name> <start> <end> <value> [ABS_TOL <a>] [REL_TOL <r>]`
+- `EXPECT_BUFFER <actual> <expected> [ABS_TOL <a>] [REL_TOL <r>]`
 
 Types:
 - `i32`, `u32`, `f32`
 
 Ranges are inclusive (start/end are both checked).
+
+`EXPECT_BUFFER` compares all indices of two buffers (sizes/types must match).
 
 ### Kernel rules
 - The code inside `KERNEL` is passed to NVRTC verbatim (raw code only).
@@ -68,6 +72,35 @@ buffers:
       - { index: 3, value: 42 }
 ```
 `buffer` must match a `BUFFER` name in the script.
+
+## Generating CUDA scripts from MLIR
+
+`tools/simt-cuda-test/generate_cuda_tests.py` will:
+- raise each MLIR file to CUDA with `simt-step-raise`,
+- run `simt-step-runner` to collect expected buffer values,
+- write a `.cuda` script plus a manifest in the output directory.
+
+The generator treats buffers mentioned in the YAML init file as inputs and
+creates `exp_argN` buffers for the remaining outputs, then emits
+`EXPECT_BUFFER argN exp_argN`.
+If the raised CUDA kernel is named `main`, the generator renames it to
+`simt_kernel` to avoid NVRTC's special handling of `main`.
+
+Example:
+```
+python3 tools/simt-cuda-test/generate_cuda_tests.py \
+  --mlir-dir fuzz-tests \
+  --out-dir cuda-tests
+```
+
+Then batch run:
+```
+build/tools/simt-cuda-test/simt-cuda-test \
+  --batch cuda-tests \
+  --report cuda-tests/report.csv \
+  --init-yaml-auto \
+  --arch sm_80 --device 0
+```
 BUFFER buf0 TYPE i32 SIZE 16
 FILL buf0 0
 INIT buf0 3 42

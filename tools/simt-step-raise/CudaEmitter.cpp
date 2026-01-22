@@ -638,7 +638,7 @@ LogicalResult emitModuleAsCuda(ModuleOp module, llvm::raw_ostream &os) {
     os << "  return mask & blockMask;\n";
     os << "}\n";
     os << "static __device__ __forceinline__ int simt_wave_count_bits(bool pred) {\n";
-    os << "  unsigned mask = simt_subgroup_mask();\n";
+    os << "  unsigned mask = simt_subgroup_mask() & __activemask();\n";
     os << "  return __popc(__ballot_sync(mask, pred));\n";
     os << "}\n\n";
 
