@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cmake --build build
+cmake --build build -t simt-step-test-raiser
 if [ $? -ne 0 ]; then
     exit
 fi

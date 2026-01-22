@@ -17,7 +17,13 @@ for testfile in $1; do
         outfile=testout.amber
     fi
     set +f
-    ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-glsl-amber $testfile -o $outfile
+    noext="${testfile%.*}"
+    echo $noext
+    if [ ! -f $noext.yaml ]; then
+        ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-glsl-amber $testfile -o $outfile
+    else
+        ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-glsl-amber $testfile -o $outfile --buffer-init-yaml $noext.yaml
+    fi 
     errcode=$?
     if [ $errcode -ne 0 ]; then
         echo "There was an error: " $errcode
