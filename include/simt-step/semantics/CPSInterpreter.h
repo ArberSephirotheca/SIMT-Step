@@ -1995,7 +1995,7 @@ private:
             llvm::report_fatal_error("handleLoopContinue: missing wave context");
         auto &waveCtx = waveIt->second;
         auto *blockCtx = getBlock(waveCtx, key);
-        if (!blockCtx || !blockCtx->isLoopBody || !blockCtx->loopOp)
+        if (!blockCtx || !blockCtx->loopOp)
             llvm::report_fatal_error("handleLoopContinue: invalid block context");
         if ((blockCtx->activeMask & (1ull << lane)) == 0)
             llvm::report_fatal_error("handleLoopContinue: invalid active mask");
@@ -2013,6 +2013,37 @@ private:
         if (!entry || !entry->loopFrame)
             llvm::report_fatal_error("handleLoopContinue: missing loop frame");
         auto &loopFrame = *entry->loopFrame;
+        // Continuing from a nested region still targets the loop's next prepare/body.
+        if (!blockCtx->isLoopBody) {
+            if (EnableCPSDebugLogs) {
+                cpsDebugStream() << "[CPS] handleLoopContinue non-body lane=" << lane
+                             << " block=" << key.block << " seq=" << key.sequenceId
+                             << "\n";
+            }
+            // Drop pending continuations for control-split parents within this loop.
+            auto parentKey = blockCtx->parentKey;
+            while (parentKey) {
+                auto parentIt = waveCtx.blocks.find(*parentKey);
+                if (parentIt == waveCtx.blocks.end())
+                    break;
+                if (parentIt->second.loopOp != blockCtx->loopOp)
+                    break;
+                parentIt->second.continuations.erase(lane);
+                if (parentIt->second.kind == DynamicBlockKind::IfThen ||
+                    parentIt->second.kind == DynamicBlockKind::IfElse ||
+                    parentIt->second.kind == DynamicBlockKind::SwitchCase ||
+                    parentIt->second.kind == DynamicBlockKind::SwitchDefault) {
+                    markMergeCompletion(wave, waveCtx, *parentKey, lane);
+                }
+                parentKey = parentIt->second.parentKey;
+            }
+            if (blockCtx->kind == DynamicBlockKind::IfThen ||
+                blockCtx->kind == DynamicBlockKind::IfElse ||
+                blockCtx->kind == DynamicBlockKind::SwitchCase ||
+                blockCtx->kind == DynamicBlockKind::SwitchDefault) {
+                markMergeCompletion(wave, waveCtx, key, lane);
+            }
+        }
         std::uint64_t laneBit = 1ull << lane;
 
         llvm::SmallVector<ValueType, 4> nextCarried;
