@@ -225,9 +225,42 @@ struct HlslEmitter {
         emitIndent();
         os << "while (true) {\n";
         indent += "  ";
+        for (auto &op : prep) {
+            if (isa<simt::dialect::ConditionOp>(op))
+                continue;
+            if (failed(emitOp(&op)))
+                return failure();
+        }
         std::string condExpr = emitValue(cond.getCondition());
+        auto forwarded = cond.getForwarded();
+        if (forwarded.size() != 2)
+            return failure();
+        std::string nextAccExpr = emitValue(forwarded[0]);
+        std::string nextIExpr = emitValue(forwarded[1]);
+        std::string nextAccName = accName;
+        std::string nextIName = iName;
+        if (nextAccExpr != accName) {
+            nextAccName = makeTmp();
+            emitIndent();
+            os << emitType(loop.getInits()[0].getType()) << " " << nextAccName
+               << " = " << nextAccExpr << ";\n";
+        }
+        if (nextIExpr != iName) {
+            nextIName = makeTmp();
+            emitIndent();
+            os << emitType(loop.getInits()[1].getType()) << " " << nextIName
+               << " = " << nextIExpr << ";\n";
+        }
         emitIndent();
         os << "if (!(" << condExpr << ")) break;\n";
+        if (nextAccName != accName) {
+            emitIndent();
+            os << accName << " = " << nextAccName << ";\n";
+        }
+        if (nextIName != iName) {
+            emitIndent();
+            os << iName << " = " << nextIName << ";\n";
+        }
 
         auto &body = loop.getBodyRegion().front();
         names[body.getArgument(0)] = accName;

@@ -46,82 +46,92 @@ extern "C" __global__ void main(int* buf0, int* buf1) {
       int t11 = 0;
       int t12 = 0;
       while (true) {
-        if (!((<unsupported> != 0))) break;
-        int t13 = (t11 + t12);
-        int t14 = (t12 + 1);
-        int t15 = (t12 * 64);
-        int t16 = (0 + t15);
-        int t17 = (t16 + t0);
-        int t18 = simt_wave_count_bits(true);
-        buf0[t17] = t18;
-        t11 = t13;
-        t12 = t14;
+        int t13 = (t12 * 64);
+        int t14 = (t13 + t0);
+        int t15 = (128 + t14);
+        int t16 = buf1[t15];
+        bool t17 = (t16 != 0);
+        if (!(t17)) break;
+        int t18 = (t11 + t12);
+        int t19 = (t12 + 1);
+        int t20 = (t12 * 64);
+        int t21 = (0 + t20);
+        int t22 = (t21 + t0);
+        int t23 = simt_wave_count_bits(true);
+        buf0[t22] = t23;
+        t11 = t18;
+        t12 = t19;
       }
       t10 = t11;
     } else {
-      int t19 = (448 + t0);
-      int t20 = buf1[t19];
-      bool t21 = (t20 != 0);
-      int t22;
-      if (t21) {
-        int t23 = simt_subgroup_id(tid);
-        int t24 = static_cast<int>(t23);
-        t22 = t24;
+      int t24 = (448 + t0);
+      int t25 = buf1[t24];
+      bool t26 = (t25 != 0);
+      int t27;
+      if (t26) {
+        int t28 = simt_subgroup_id(tid);
+        int t29 = static_cast<int>(t28);
+        t27 = t29;
       } else {
-        int t25 = (t0 + 1);
-        t22 = t25;
+        int t30 = (t0 + 1);
+        t27 = t30;
       }
-      int t26 = (256 + t0);
-      int t27 = simt_wave_count_bits(true);
-      buf0[t26] = t27;
-      t10 = t22;
+      int t31 = (256 + t0);
+      int t32 = simt_wave_count_bits(true);
+      buf0[t31] = t32;
+      t10 = t27;
     }
-    int t28 = (512 + t0);
-    int t29 = simt_wave_count_bits(true);
-    buf0[t28] = t29;
+    int t33 = (512 + t0);
+    int t34 = simt_wave_count_bits(true);
+    buf0[t33] = t34;
     t6 = t10;
   } else {
-    int t30 = (512 + t0);
-    int t31 = buf1[t30];
-    bool t32 = (t31 != 0);
-    int t33;
-    if (t32) {
-      int t34 = (576 + t0);
-      int t35 = buf1[t34];
-      bool t36 = (t35 != 0);
-      int t37;
-      if (t36) {
-        t37 = 0;
+    int t35 = (512 + t0);
+    int t36 = buf1[t35];
+    bool t37 = (t36 != 0);
+    int t38;
+    if (t37) {
+      int t39 = (576 + t0);
+      int t40 = buf1[t39];
+      bool t41 = (t40 != 0);
+      int t42;
+      if (t41) {
+        t42 = 0;
       } else {
-        t37 = 3;
+        t42 = 3;
       }
-      int t38 = (768 + t0);
-      int t39 = simt_wave_count_bits(true);
-      buf0[t38] = t39;
-      t33 = t37;
+      int t43 = (768 + t0);
+      int t44 = simt_wave_count_bits(true);
+      buf0[t43] = t44;
+      t38 = t42;
     } else {
-      int t40 = 0;
-      int t41 = 0;
+      int t45 = 0;
+      int t46 = 0;
       while (true) {
-        if (!((<unsupported> != 0))) break;
-        int t42 = (t40 + t41);
-        int t43 = (t41 + 1);
-        int t44 = (t41 * 64);
-        int t45 = (1024 + t44);
-        int t46 = (t45 + t0);
-        int t47 = simt_wave_count_bits(true);
-        buf0[t46] = t47;
-        t40 = t42;
-        t41 = t43;
+        int t47 = (t46 * 64);
+        int t48 = (t47 + t0);
+        int t49 = (640 + t48);
+        int t50 = buf1[t49];
+        bool t51 = (t50 != 0);
+        if (!(t51)) break;
+        int t52 = (t45 + t46);
+        int t53 = (t46 + 1);
+        int t54 = (t46 * 64);
+        int t55 = (1024 + t54);
+        int t56 = (t55 + t0);
+        int t57 = simt_wave_count_bits(true);
+        buf0[t56] = t57;
+        t45 = t52;
+        t46 = t53;
       }
-      t33 = t40;
+      t38 = t45;
     }
-    int t48 = (1280 + t0);
-    int t49 = simt_wave_count_bits(true);
-    buf0[t48] = t49;
-    t6 = t33;
+    int t58 = (1280 + t0);
+    int t59 = simt_wave_count_bits(true);
+    buf0[t58] = t59;
+    t6 = t38;
   }
-  int t50 = (1536 + t0);
-  int t51 = simt_wave_count_bits(true);
-  buf0[t50] = t51;
+  int t60 = (1536 + t0);
+  int t61 = simt_wave_count_bits(true);
+  buf0[t60] = t61;
 }
