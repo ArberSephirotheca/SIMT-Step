@@ -25,6 +25,14 @@ struct RNG {
         return dist(eng);
     }
     bool coin() { return pick(0, 1) == 1; }
+    bool chance(double p) {
+        if (p <= 0.0)
+            return false;
+        if (p >= 1.0)
+            return true;
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
+        return dist(eng) < p;
+    }
 };
 
 struct BuildState {
@@ -388,7 +396,12 @@ static Value buildLoop(OpBuilder &b, Location loc, BuildState &st, unsigned dept
         Value nextIdx = bb.create<arith::AddIOp>(loc, idx, one);
         emitWaveCount(bb, loc, st, makeBool(bb, loc, true), idx);
         // Optionally emit a structured continue/break to exercise loop control.
-        bool emitCtrl = st.rng.coin();
+        bool emitCtrl = false;
+        if (st.cfg.breakContinueRate < 0.0) {
+            emitCtrl = st.rng.coin();
+        } else {
+            emitCtrl = st.rng.chance(st.cfg.breakContinueRate);
+        }
         bool doBreak = st.rng.coin();
         if (emitCtrl && doBreak) {
             // Break out with the current accum/next index.
