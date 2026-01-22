@@ -42,6 +42,12 @@ def main():
         help="Base schedule seed for randomized scheduling",
     )
     parser.add_argument(
+        "--break-continue-rate",
+        type=float,
+        default=None,
+        help="Probability in [0,1] to emit break/continue in loops",
+    )
+    parser.add_argument(
         "--predicate-buffer",
         action="store_true",
         help="Emit predicate buffer and YAML per test",
@@ -88,6 +94,10 @@ def main():
                 f"--schedule-seed={args.schedule_seed}",
                 "--random-schedule",
             ]
+            if args.break_continue_rate is not None:
+                validate_cmd.append(
+                    f"--break-continue-rate={args.break_continue_rate}"
+                )
             if args.predicate_buffer:
                 validate_cmd.append("--predicate-buffer")
             validate = run(validate_cmd)
@@ -102,6 +112,8 @@ def main():
                 f"--subgroup-width={args.subgroup_width}",
                 "--print-ir",
             ]
+            if args.break_continue_rate is not None:
+                gen_cmd.append(f"--break-continue-rate={args.break_continue_rate}")
             predicate_yaml = ""
             if args.predicate_buffer:
                 predicate_yaml = f"{out_dir}/test_{count:03d}_seed_{seed}.yaml"
@@ -123,6 +135,8 @@ def main():
                 "trials": args.trials,
                 "schedule_seed": args.schedule_seed,
             }
+            if args.break_continue_rate is not None:
+                record["break_continue_rate"] = args.break_continue_rate
             if predicate_yaml:
                 record["predicate_yaml"] = Path(predicate_yaml).name
             manifest.write(json.dumps(record) + "\n")

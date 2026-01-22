@@ -212,6 +212,11 @@ int main(int argc, char **argv) {
         "schedule-seed",
         llvm::cl::desc("Seed for randomized scheduler (0 = deterministic order)"),
         llvm::cl::init(0));
+    llvm::cl::opt<double> breakContinueRate(
+        "break-continue-rate",
+        llvm::cl::desc("Probability in [0,1] to emit break/continue in loops; "
+                       "negative uses default RNG coin"),
+        llvm::cl::init(-1.0));
     llvm::cl::opt<bool> randomSchedule(
         "random-schedule",
         llvm::cl::desc("Randomize scheduler order"),
@@ -245,6 +250,11 @@ int main(int argc, char **argv) {
         llvm::cl::init(""));
     llvm::cl::ParseCommandLineOptions(argc, argv, "simt-step fuzz driver\n");
 
+    if (breakContinueRate > 1.0) {
+        llvm::errs() << "error: --break-continue-rate must be <= 1.0\n";
+        return 1;
+    }
+
     mlir::DialectRegistry registry;
     simt::dialect::registerSimtStepDialect(registry);
     registry.insert<arith::ArithDialect, func::FuncDialect>();
@@ -258,6 +268,7 @@ int main(int argc, char **argv) {
     cfg.numThreads = {static_cast<std::int64_t>(numLanes), 1, 1};
     cfg.subgroupWidth = std::max<unsigned>(1, subgroupWidth);
     cfg.seed = seedOpt;
+    cfg.breakContinueRate = breakContinueRate;
     bool usePredicateBuffer = predicateBuffer || !predicateYaml.empty();
     cfg.predicateBuffer = usePredicateBuffer;
     cfg.predicateBufferArgIndex = 1;

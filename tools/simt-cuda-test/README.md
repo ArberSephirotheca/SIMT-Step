@@ -12,12 +12,19 @@ building it, configure with `-DSIMT_STEP_BUILD_CUDA_TEST=OFF`.
 ## Usage
 
 ```
-simt-cuda-test <script.cuda> [--device N] [--arch sm_80] [--dump-ptx]
+simt-cuda-test <script.cuda> [--device N] [--arch sm_80] [--dump-ptx] [--init-yaml <file>]
+simt-cuda-test --batch <dir> [--recursive] [--report <file>]
+               [--device N] [--arch sm_80] [--init-yaml <file>] [--init-yaml-auto]
 ```
 
 - `--device N`: CUDA device index (default: 0)
 - `--arch sm_80`: passed to NVRTC as `--gpu-architecture=sm_80`
 - `--dump-ptx`: print the generated PTX to stdout
+- `--init-yaml <file>`: apply buffer initialization from YAML before launch
+- `--batch <dir>`: run all `.cuda` scripts in a directory
+- `--recursive`: recurse into subdirectories with `--batch`
+- `--report <file>`: write a CSV report (`status,file,error`)
+- `--init-yaml-auto`: for each script, load `<script>.yaml` if it exists
 
 ## Script format (v0)
 
@@ -50,6 +57,17 @@ Ranges are inclusive (start/end are both checked).
 ### Example
 
 ```
+
+### YAML init format
+```
+buffers:
+  - buffer: buf0
+    size: 16
+    fill: 0
+    entries:
+      - { index: 3, value: 42 }
+```
+`buffer` must match a `BUFFER` name in the script.
 BUFFER buf0 TYPE i32 SIZE 16
 FILL buf0 0
 INIT buf0 3 42

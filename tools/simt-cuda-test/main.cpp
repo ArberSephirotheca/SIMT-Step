@@ -7,14 +7,19 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "simt-step/Runner/InitYaml.h"
 
 namespace {
 
@@ -43,6 +48,7 @@ struct BufferDef {
     std::size_t size = 0;
     bool hasFill = false;
     ScalarValue fill;
+    std::optional<std::size_t> fillSize;
     std::unordered_map<std::size_t, ScalarValue> inits;
 };
 
@@ -100,6 +106,11 @@ struct BufferRuntime {
 
 struct Options {
     std::string scriptPath;
+    std::string batchDir;
+    bool batchRecursive = false;
+    std::string reportPath;
+    std::string initYamlPath;
+    bool initYamlAuto = false;
     int deviceIndex = 0;
     std::string arch;
     bool dumpPtx = false;
@@ -132,9 +143,12 @@ static std::vector<std::string> splitTokens(const std::string &line) {
     return tokens;
 }
 
-static void failLine(int line, const std::string &message) {
-    std::cerr << "error: line " << line << ": " << message << "\n";
-    std::exit(1);
+[[noreturn]] static void failLine(int line, const std::string &message) {
+    throw std::runtime_error("error: line " + std::to_string(line) + ": " + message);
+}
+
+[[noreturn]] static void failError(const std::string &message) {
+    throw std::runtime_error("error: " + message);
 }
 
 static ScalarType parseType(const std::string &token, int line) {
@@ -214,6 +228,47 @@ static ScalarValue parseValue(const std::string &token, ScalarType type, int lin
     return value;
 }
 
+static std::string scalarToString(const ScalarValue &value) {
+    std::ostringstream os;
+    switch (value.type) {
+        case ScalarType::I32:
+            os << value.i32;
+            break;
+        case ScalarType::U32:
+            os << value.u32;
+            break;
+        case ScalarType::F32:
+            os << std::setprecision(9) << value.f32;
+            break;
+    }
+    return os.str();
+}
+
+static ScalarValue castInitValue(ScalarType type, int64_t value,
+                                 const std::string &bufferName) {
+    ScalarValue out;
+    out.type = type;
+    switch (type) {
+        case ScalarType::I32:
+            if (value < std::numeric_limits<int32_t>::min() ||
+                value > std::numeric_limits<int32_t>::max()) {
+                failError("init-yaml buffer '" + bufferName + "': i32 out of range");
+            }
+            out.i32 = static_cast<int32_t>(value);
+            break;
+        case ScalarType::U32:
+            if (value < 0 || value > std::numeric_limits<uint32_t>::max()) {
+                failError("init-yaml buffer '" + bufferName + "': u32 out of range");
+            }
+            out.u32 = static_cast<uint32_t>(value);
+            break;
+        case ScalarType::F32:
+            out.f32 = static_cast<float>(value);
+            break;
+    }
+    return out;
+}
+
 static void checkCuda(CUresult result, const char *what) {
     if (result == CUDA_SUCCESS)
         return;
@@ -221,33 +276,34 @@ static void checkCuda(CUresult result, const char *what) {
     const char *desc = nullptr;
     cuGetErrorName(result, &name);
     cuGetErrorString(result, &desc);
-    std::cerr << "CUDA error: " << what;
+    std::ostringstream message;
+    message << "CUDA error: " << what;
     if (name)
-        std::cerr << " (" << name << ")";
+        message << " (" << name << ")";
     if (desc)
-        std::cerr << ": " << desc;
-    std::cerr << "\n";
-    std::exit(1);
+        message << ": " << desc;
+    throw std::runtime_error(message.str());
 }
 
 static void checkNvrtc(nvrtcResult result, const char *what, nvrtcProgram program) {
     if (result == NVRTC_SUCCESS)
         return;
-    std::cerr << "NVRTC error: " << what << ": " << nvrtcGetErrorString(result) << "\n";
+    std::ostringstream message;
+    message << "NVRTC error: " << what << ": " << nvrtcGetErrorString(result);
     size_t logSize = 0;
     if (nvrtcGetProgramLogSize(program, &logSize) == NVRTC_SUCCESS && logSize > 1) {
         std::string log(logSize, '\0');
-        if (nvrtcGetProgramLog(program, log.data()) == NVRTC_SUCCESS)
-            std::cerr << log << "\n";
+        if (nvrtcGetProgramLog(program, log.data()) == NVRTC_SUCCESS) {
+            message << "\n" << log;
+        }
     }
-    std::exit(1);
+    throw std::runtime_error(message.str());
 }
 
 static void parseScript(const std::string &path, Script &script) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        std::cerr << "error: failed to open script '" << path << "'\n";
-        std::exit(1);
+        throw std::runtime_error("error: failed to open script '" + path + "'");
     }
 
     std::string line;
@@ -302,6 +358,7 @@ static void parseScript(const std::string &path, Script &script) {
                 failLine(lineNumber, "FILL already set for buffer: " + def.name);
             def.fill = parseValue(tokens[2], def.type, lineNumber);
             def.hasFill = true;
+            def.fillSize = def.size;
             continue;
         }
 
@@ -481,16 +538,68 @@ static void parseScript(const std::string &path, Script &script) {
     }
 }
 
+static void applyInitYaml(Script &script, const std::string &path) {
+    simt::runner::InitFile init;
+    std::string error;
+    if (!simt::runner::loadInitYamlFile(path, init, error)) {
+        failError("failed to parse init YAML '" + path + "': " + error);
+    }
+    for (const auto &buffer : init.buffers) {
+        auto it = script.buffers.find(buffer.buffer);
+        if (it == script.buffers.end()) {
+            failError("init-yaml buffer not found: " + buffer.buffer);
+        }
+        BufferDef &def = it->second;
+        if (buffer.fill) {
+            if (!buffer.size) {
+                failError("init-yaml buffer '" + buffer.buffer + "': fill requires size");
+            }
+            if (*buffer.size < 0) {
+                failError("init-yaml buffer '" + buffer.buffer + "': size must be >= 0");
+            }
+            if (static_cast<std::uint64_t>(*buffer.size) > def.size) {
+                failError("init-yaml buffer '" + buffer.buffer + "': size exceeds buffer");
+            }
+            def.hasFill = true;
+            def.fill = castInitValue(def.type, *buffer.fill, buffer.buffer);
+            def.fillSize = static_cast<std::size_t>(*buffer.size);
+        }
+        for (const auto &entry : buffer.entries) {
+            if (entry.index < 0) {
+                failError("init-yaml buffer '" + buffer.buffer + "': index must be >= 0");
+            }
+            std::size_t index = static_cast<std::size_t>(entry.index);
+            if (index >= def.size) {
+                failError("init-yaml buffer '" + buffer.buffer + "': index out of range");
+            }
+            def.inits[index] = castInitValue(def.type, entry.value, buffer.buffer);
+        }
+    }
+}
+
 static void applyFill(BufferRuntime &runtime) {
+    std::size_t fillCount = 0;
+    if (runtime.def.hasFill) {
+        fillCount = runtime.def.fillSize.value_or(runtime.def.size);
+    }
     switch (runtime.def.type) {
         case ScalarType::I32:
-            runtime.i32.assign(runtime.def.size, runtime.def.hasFill ? runtime.def.fill.i32 : 0);
+            runtime.i32.assign(runtime.def.size, 0);
+            if (runtime.def.hasFill && fillCount > 0) {
+                std::fill_n(runtime.i32.begin(), fillCount, runtime.def.fill.i32);
+            }
             break;
         case ScalarType::U32:
-            runtime.u32.assign(runtime.def.size, runtime.def.hasFill ? runtime.def.fill.u32 : 0u);
+            runtime.u32.assign(runtime.def.size, 0u);
+            if (runtime.def.hasFill && fillCount > 0) {
+                std::fill_n(runtime.u32.begin(), fillCount, runtime.def.fill.u32);
+            }
             break;
         case ScalarType::F32:
-            runtime.f32.assign(runtime.def.size, runtime.def.hasFill ? runtime.def.fill.f32 : 0.0f);
+            runtime.f32.assign(runtime.def.size, 0.0f);
+            if (runtime.def.hasFill && fillCount > 0) {
+                std::fill_n(runtime.f32.begin(), fillCount, runtime.def.fill.f32);
+            }
             break;
     }
 }
@@ -562,14 +671,18 @@ static bool checkFloat(float actual, float expected, float absTol, float relTol)
 
 static void verifyExpect(const BufferRuntime &runtime, const ExpectEntry &expect) {
     bool ok = false;
+    ScalarValue actual;
+    actual.type = runtime.def.type;
     switch (runtime.def.type) {
         case ScalarType::I32:
             ok = (runtime.i32[expect.index] == expect.expected.i32);
+            actual.i32 = runtime.i32[expect.index];
             if (expect.absTol || expect.relTol)
                 failLine(expect.line, "tolerances are not allowed for integer EXPECT");
             break;
         case ScalarType::U32:
             ok = (runtime.u32[expect.index] == expect.expected.u32);
+            actual.u32 = runtime.u32[expect.index];
             if (expect.absTol || expect.relTol)
                 failLine(expect.line, "tolerances are not allowed for integer EXPECT");
             break;
@@ -577,13 +690,17 @@ static void verifyExpect(const BufferRuntime &runtime, const ExpectEntry &expect
             float absTol = expect.absTol.value_or(0.0f);
             float relTol = expect.relTol.value_or(0.0f);
             ok = checkFloat(runtime.f32[expect.index], expect.expected.f32, absTol, relTol);
+            actual.f32 = runtime.f32[expect.index];
             break;
         }
     }
     if (!ok) {
-        std::cerr << "EXPECT failed: buffer=" << runtime.def.name
-                  << " index=" << expect.index << "\n";
-        std::exit(1);
+        std::ostringstream message;
+        message << "EXPECT failed: buffer=" << runtime.def.name
+                << " index=" << expect.index
+                << " expected=" << scalarToString(expect.expected)
+                << " actual=" << scalarToString(actual);
+        failLine(expect.line, message.str());
     }
 }
 
@@ -612,9 +729,25 @@ static void verifyExpectRange(const BufferRuntime &runtime, const ExpectRangeEnt
                 break;
         }
         if (!ok) {
-            std::cerr << "EXPECT_RANGE failed: buffer=" << runtime.def.name
-                      << " index=" << i << "\n";
-            std::exit(1);
+            ScalarValue actual;
+            actual.type = runtime.def.type;
+            switch (runtime.def.type) {
+                case ScalarType::I32:
+                    actual.i32 = runtime.i32[i];
+                    break;
+                case ScalarType::U32:
+                    actual.u32 = runtime.u32[i];
+                    break;
+                case ScalarType::F32:
+                    actual.f32 = runtime.f32[i];
+                    break;
+            }
+            std::ostringstream message;
+            message << "EXPECT_RANGE failed: buffer=" << runtime.def.name
+                    << " index=" << i
+                    << " expected=" << scalarToString(expect.expected)
+                    << " actual=" << scalarToString(actual);
+            failLine(expect.line, message.str());
         }
     }
 }
@@ -768,32 +901,36 @@ static void runScript(const Script &script, const Options &options) {
     checkCuda(cuCtxDestroy(context), "cuCtxDestroy");
 }
 
+static const char kUsage[] =
+    "usage: simt-cuda-test <script.cuda> [--device N] [--arch sm_80] [--dump-ptx]\n"
+    "                       [--init-yaml <file>]\n"
+    "       simt-cuda-test --batch <dir> [--recursive] [--report <file>]\n"
+    "                       [--device N] [--arch sm_80] [--init-yaml <file>]\n"
+    "                       [--init-yaml-auto]\n";
+
+[[noreturn]] static void failUsage(const std::string &message) {
+    throw std::runtime_error("error: " + message + "\n" + kUsage);
+}
+
 static Options parseOptions(int argc, char **argv) {
     Options options;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--device") {
-            if (i + 1 >= argc) {
-                std::cerr << "error: --device requires a value\n";
-                std::exit(1);
-            }
+            if (i + 1 >= argc)
+                failUsage("--device requires a value");
             try {
                 options.deviceIndex = std::stoi(argv[++i]);
             } catch (const std::exception &) {
-                std::cerr << "error: invalid --device value\n";
-                std::exit(1);
+                failUsage("invalid --device value");
             }
-            if (options.deviceIndex < 0) {
-                std::cerr << "error: --device must be >= 0\n";
-                std::exit(1);
-            }
+            if (options.deviceIndex < 0)
+                failUsage("--device must be >= 0");
             continue;
         }
         if (arg == "--arch") {
-            if (i + 1 >= argc) {
-                std::cerr << "error: --arch requires a value\n";
-                std::exit(1);
-            }
+            if (i + 1 >= argc)
+                failUsage("--arch requires a value");
             options.arch = argv[++i];
             continue;
         }
@@ -801,33 +938,175 @@ static Options parseOptions(int argc, char **argv) {
             options.dumpPtx = true;
             continue;
         }
-        if (!arg.empty() && arg[0] == '-') {
-            std::cerr << "error: unknown option '" << arg << "'\n";
-            std::exit(1);
+        if (arg == "--batch") {
+            if (i + 1 >= argc)
+                failUsage("--batch requires a directory");
+            options.batchDir = argv[++i];
+            continue;
         }
-        if (!options.scriptPath.empty()) {
-            std::cerr << "error: multiple script paths provided\n";
-            std::exit(1);
+        if (arg == "--recursive") {
+            options.batchRecursive = true;
+            continue;
         }
+        if (arg == "--report") {
+            if (i + 1 >= argc)
+                failUsage("--report requires a file path");
+            options.reportPath = argv[++i];
+            continue;
+        }
+        if (arg == "--init-yaml") {
+            if (i + 1 >= argc)
+                failUsage("--init-yaml requires a file path");
+            options.initYamlPath = argv[++i];
+            continue;
+        }
+        if (arg == "--init-yaml-auto") {
+            options.initYamlAuto = true;
+            continue;
+        }
+        if (!arg.empty() && arg[0] == '-')
+            failUsage("unknown option '" + arg + "'");
+        if (!options.scriptPath.empty())
+            failUsage("multiple script paths provided");
         options.scriptPath = arg;
     }
 
-    if (options.scriptPath.empty()) {
-        std::cerr << "usage: simt-cuda-test <script.cuda> [--device N] [--arch sm_80] [--dump-ptx]\n";
-        std::exit(1);
-    }
+    if (!options.batchDir.empty() && !options.scriptPath.empty())
+        failUsage("cannot combine --batch with a script path");
+    if (options.batchDir.empty() && options.scriptPath.empty())
+        failUsage("missing script path or --batch");
+    if (!options.batchDir.empty() && options.dumpPtx)
+        failUsage("--dump-ptx is only supported for single scripts");
 
     return options;
+}
+
+static std::string escapeCsv(const std::string &text) {
+    std::string out;
+    out.reserve(text.size() + 2);
+    out.push_back('"');
+    for (char ch : text) {
+        if (ch == '"')
+            out.append("\"\"");
+        else
+            out.push_back(ch);
+    }
+    out.push_back('"');
+    return out;
+}
+
+static std::string selectInitYamlPath(const std::filesystem::path &scriptPath,
+                                      const Options &options) {
+    if (!options.initYamlPath.empty())
+        return options.initYamlPath;
+    if (options.initYamlAuto) {
+        std::filesystem::path yamlPath = scriptPath;
+        yamlPath.replace_extension(".yaml");
+        if (std::filesystem::exists(yamlPath))
+            return yamlPath.string();
+    }
+    return "";
+}
+
+static bool runSingle(const std::string &scriptPath, const Options &options,
+                      std::string &error) {
+    try {
+        Script script;
+        parseScript(scriptPath, script);
+        std::string initYaml = selectInitYamlPath(scriptPath, options);
+        if (!initYaml.empty())
+            applyInitYaml(script, initYaml);
+        runScript(script, options);
+        return true;
+    } catch (const std::exception &ex) {
+        error = ex.what();
+        return false;
+    }
+}
+
+static std::vector<std::filesystem::path>
+collectBatchScripts(const Options &options) {
+    std::filesystem::path root(options.batchDir);
+    if (!std::filesystem::exists(root)) {
+        failError("batch directory does not exist: " + options.batchDir);
+    }
+    if (!std::filesystem::is_directory(root)) {
+        failError("batch path is not a directory: " + options.batchDir);
+    }
+
+    std::vector<std::filesystem::path> scripts;
+    if (options.batchRecursive) {
+        for (const auto &entry :
+             std::filesystem::recursive_directory_iterator(root)) {
+            if (!entry.is_regular_file())
+                continue;
+            if (entry.path().extension() == ".cuda")
+                scripts.push_back(entry.path());
+        }
+    } else {
+        for (const auto &entry : std::filesystem::directory_iterator(root)) {
+            if (!entry.is_regular_file())
+                continue;
+            if (entry.path().extension() == ".cuda")
+                scripts.push_back(entry.path());
+        }
+    }
+
+    std::sort(scripts.begin(), scripts.end());
+    if (scripts.empty())
+        failError("no .cuda scripts found in " + options.batchDir);
+    return scripts;
+}
+
+static int runBatch(const Options &options) {
+    std::vector<std::filesystem::path> scripts = collectBatchScripts(options);
+    std::ofstream report;
+    if (!options.reportPath.empty()) {
+        report.open(options.reportPath, std::ios::out | std::ios::trunc);
+        if (!report.is_open())
+            failError("failed to open report file: " + options.reportPath);
+        report << "status,file,error\n";
+    }
+
+    std::size_t pass = 0;
+    std::size_t fail = 0;
+    for (const auto &scriptPath : scripts) {
+        std::string error;
+        bool ok = runSingle(scriptPath.string(), options, error);
+        if (ok) {
+            ++pass;
+            std::cout << "PASS " << scriptPath.string() << "\n";
+        } else {
+            ++fail;
+            std::cout << "FAIL " << scriptPath.string() << "\n";
+            std::cout << "  " << error << "\n";
+        }
+        if (report.is_open()) {
+            report << (ok ? "pass" : "fail") << ","
+                   << escapeCsv(scriptPath.string()) << ","
+                   << escapeCsv(error) << "\n";
+        }
+    }
+
+    std::cout << "summary: pass=" << pass << " fail=" << fail << "\n";
+    return fail == 0 ? 0 : 1;
 }
 
 } // namespace
 
 int main(int argc, char **argv) {
-    Options options = parseOptions(argc, argv);
-
-    Script script;
-    parseScript(options.scriptPath, script);
-    runScript(script, options);
-
-    return 0;
+    try {
+        Options options = parseOptions(argc, argv);
+        if (!options.batchDir.empty())
+            return runBatch(options);
+        std::string error;
+        if (!runSingle(options.scriptPath, options, error)) {
+            std::cerr << error << "\n";
+            return 1;
+        }
+        return 0;
+    } catch (const std::exception &ex) {
+        std::cerr << ex.what() << "\n";
+        return 1;
+    }
 }

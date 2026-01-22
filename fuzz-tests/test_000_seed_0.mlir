@@ -53,7 +53,7 @@ module {
           %true_8 = arith.constant true
           %21 = "simt_step.wave_count_bits"(%true_8) : (i1) -> i32
           "simt_step.buffer.store"(%arg0, %20, %21) : (!simt_step.resource<Global, i32>, i32, i32) -> ()
-          "simt_step.continue"(%16, %17) : (i32, i32) -> ()
+          "simt_step.yield"(%16, %17) : (i32, i32) -> ()
         }) : (i32, i32) -> (i32, i32)
         "simt_step.yield"(%15#0) : (i32) -> ()
       }, {
@@ -137,7 +137,7 @@ module {
           %true_6 = arith.constant true
           %21 = "simt_step.wave_count_bits"(%true_6) : (i1) -> i32
           "simt_step.buffer.store"(%arg0, %20, %21) : (!simt_step.resource<Global, i32>, i32, i32) -> ()
-          "simt_step.continue"(%16, %17) : (i32, i32) -> ()
+          "simt_step.yield"(%16, %17) : (i32, i32) -> ()
         }) : (i32, i32) -> (i32, i32)
         "simt_step.yield"(%15#0) : (i32) -> ()
       }) : (i1) -> i32

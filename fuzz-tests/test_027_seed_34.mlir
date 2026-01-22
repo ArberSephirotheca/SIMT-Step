@@ -133,7 +133,7 @@ module {
         %true_7 = arith.constant true
         %22 = "simt_step.wave_count_bits"(%true_7) : (i1) -> i32
         "simt_step.buffer.store"(%arg0, %21, %22) : (!simt_step.resource<Global, i32>, i32, i32) -> ()
-        "simt_step.continue"(%17, %18) : (i32, i32) -> ()
+        "simt_step.yield"(%17, %18) : (i32, i32) -> ()
       }) : (i32, i32) -> (i32, i32)
       "simt_step.yield"(%15#0) : (i32) -> ()
     }, {
