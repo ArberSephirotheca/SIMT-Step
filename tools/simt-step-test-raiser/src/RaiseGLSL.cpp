@@ -23,8 +23,8 @@ public:
 
 using BaseRaiser::BaseRaiser;
 
-LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expected) override {
-    return emitAmberHarness(*this, op, "GLSL", expected);
+LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expected, std::vector<std::vector<int64_t>> input) override {
+    return emitAmberHarness(*this, op, "GLSL", expected, input);
 }
 
 private:
@@ -117,20 +117,6 @@ LogicalResult printOp(arith::RemFOp &op) override {
 
 /////////////// 'vector' dialect ///////////////
 
-LogicalResult printOp(vector::ExtractOp &op) override {
-    if (failed(emitValueDefine(op.getResult()))) return failure();
-    os << getValueName(op.getOperand(0)) << "[";
-    if (std::optional<int64_t> id = getConstantIntValue(op.getMixedPosition()[0])){
-        if (id == vector::ExtractOp::kPoisonIndex) op->emitError("cannot handle poison indices");
-        if (!id.has_value()) return failure();
-        os << id.value();
-    } else {
-        Value v = op.getDynamicPosition()[0];
-        os << getValueName(v);
-    }
-    os << "]";
-    return success();
-}
 
 /////////////// 'simt_step' dialect ///////////////
 
@@ -243,9 +229,9 @@ std::string Memsem2Const(MemorySemantics s){
 
 namespace simt::test_raiser {
 
-LogicalResult emitRaisedGLSL(Operation *op, raw_ostream &o, std::vector<std::vector<int64_t>> expected){
+LogicalResult emitRaisedGLSL(Operation *op, raw_ostream &o, std::vector<std::vector<int64_t>> expected, std::vector<std::vector<int64_t>> input){
     GlslRaiser glsl(o);
-    return glsl.emitHarness(op, expected);
+    return glsl.emitHarness(op, expected, input);
 }
 
 }
