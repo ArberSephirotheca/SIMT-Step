@@ -1,5 +1,6 @@
 #include "BaseRaiser.h"
 #include "RaiseGLSL.h"
+#include "RaiseCUDA.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SimpleProgram.h"
@@ -37,9 +38,13 @@ void insertSimtDialects(DialectRegistry &registry){
         vector::VectorDialect>();
 }
 
-llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<std::vector<int64_t>>& outBuffer, std::string path = ""){
-    // TODO: Up to 2 buffers
-    outBuffer.clear();
+llvm::LogicalResult getExpectedBuffer(
+        Operation* op, 
+        std::vector<std::vector<int64_t>>& expectedBuffer, 
+        std::vector<std::vector<int64_t>>& inputBuffer, 
+        std::string path = "",
+        unsigned subgroupWidth = 32){
+    expectedBuffer.clear();
 
     DialectRegistry registry;
     insertSimtDialects(registry);
@@ -52,7 +57,9 @@ llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<std::vector<int
     simt::semantics::RunOperationOptions options;
     options.entry = "main";
     options.lanes = ntx;
-    options.subgroupWidth = 32;
+    options.subgroupWidth = subgroupWidth;
+
+    std::vector<simt::semantics::BufferInitEntry> init_entries = {};
 
     if (path.empty()){
         for (int64_t i : bufferIndicies){
@@ -76,17 +83,25 @@ llvm::LogicalResult getExpectedBuffer(Operation* op, std::vector<std::vector<int
             }
             bufopt.size = buf.size;
             bufopt.fill = buf.fill;
+            for (auto &ientry : buf.entries){
+                init_entries.push_back({bufopt.argIndex, ientry.index, ientry.value});
+            }
             options.perBuffer.push_back(bufopt);
         }
     }
     std::vector<simt::semantics::BufferResult> buffers;
 
-    if (mlir::failed(simt::semantics::runOperationToBuffers(*op, {}, buffers, options))) {
+    if (mlir::failed(simt::semantics::runOperationToBuffers(*op, {}, buffers, options, init_entries))) {
         return llvm::failure();
     }
 
-    for (auto buf : buffers){
-        outBuffer.push_back(buf.values);
+    for (auto [i, buf] : llvm::enumerate(buffers)){
+        expectedBuffer.push_back(buf.values);
+        inputBuffer.push_back(std::vector<int64_t>(buf.values.size(), 0));
+    }
+
+    for (auto entry : init_entries){
+        inputBuffer[entry.argIndex][entry.index] = entry.value;
     }
 
     return llvm::success();
@@ -100,12 +115,24 @@ int main(int argc, char** argv){
           "Path to YAML file with buffer initalization information. If not provided, buffer will start with default intialization."),
       llvm::cl::init(""));
 
-    TranslateFromMLIRRegistration t(
+    TranslateFromMLIRRegistration t_glsl(
         "mlir-to-glsl-amber", "translate mlir to GLSL with Amber harness",
         [&bufferInitYaml](Operation *op, raw_ostream &output) {
-                std::vector<std::vector<int64_t>> buf = {};
-                if(failed(getExpectedBuffer(op, buf, bufferInitYaml))) return failure();
-                return simt::test_raiser::emitRaisedGLSL(op, output, buf);
+                std::vector<std::vector<int64_t>> expbuf = {};
+                std::vector<std::vector<int64_t>> inbuf = {};
+                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml))) return failure();
+                return simt::test_raiser::emitRaisedGLSL(op, output, expbuf, inbuf);
+        },
+        insertSimtDialects
+    );
+
+    TranslateFromMLIRRegistration t_cuda(
+        "mlir-to-cuda", "translate mlir to CUDA with a CUDA test harness",
+        [&bufferInitYaml](Operation *op, raw_ostream &output) {
+                std::vector<std::vector<int64_t>> expbuf = {};
+                std::vector<std::vector<int64_t>> inbuf = {};
+                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml))) return failure();
+                return simt::test_raiser::emitRaisedCUDA(op, output, expbuf, inbuf, 32);
         },
         insertSimtDialects
     );

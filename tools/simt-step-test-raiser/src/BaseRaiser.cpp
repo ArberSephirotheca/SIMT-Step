@@ -387,6 +387,25 @@ LogicalResult BaseRaiser::printOp(arith::SelectOp& op){
     return success();
 }
 
+///////////// 'vector' dialect ////////////////
+LogicalResult BaseRaiser::printOp(vector::ExtractOp &op) {
+    if (failed(emitValueDefine(op.getResult()))) return failure();
+    os << getValueName(op.getOperand(0));
+    if (std::optional<int64_t> id = getConstantIntValue(op.getMixedPosition()[0])){
+        if (id == vector::ExtractOp::kPoisonIndex) op->emitError("cannot handle poison indices");
+        if (!id.has_value()) return failure();
+        if (id.value() <= 4){
+            os << "." << "xyzw"[id.value()];
+        } else {
+            os << "[" << id.value() << "]";
+        }
+    } else {
+        Value v = op.getDynamicPosition()[0];
+        os << "[" + getValueName(v) + "]";
+    }
+    return success();
+}
+
 ///////////// 'simt_step' dialect /////////////
 LogicalResult BaseRaiser::printOp(BufferLoadOp& op) {
     if (failed(emitValueDefine(op.getResult()))) return failure();
@@ -624,7 +643,12 @@ LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& nt
     return failure();
 }
 
-LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers){
+LogicalResult emitAmberHarness(
+        BaseRaiser& b, 
+        Operation* op, 
+        std::string lang, 
+        std::vector<std::vector<int64_t>> expected,
+        std::vector<std::vector<int64_t>> input){
 
     int64_t ntx, nty, ntz;
     std::vector<int64_t> bufferIndicies;
@@ -633,7 +657,7 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, s
     b.nty = nty;
     b.ntz = ntz;
 
-    for (auto buffer : buffers){
+    for (auto buffer : expected){
         b.buffer_sizes.push_back(buffer.size());
     }
 
@@ -651,22 +675,23 @@ LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, s
     b.os << "\nEND\n";
 
     int bnum = 0;
-    for (auto buffer : buffers){
-        b.os << "BUFFER actual" << bnum << " DATA_TYPE int32 SIZE " << buffer.size() << " FILL 0\n";
-        b.os << "BUFFER expected" << bnum << " DATA_TYPE int32 DATA\n  ";
-        for (int i : buffer) b.os << i << " ";
+    for (auto [outbuffer, inbuffer] : llvm::zip(expected, input)){
+        b.os << "BUFFER actual" << bnum << " DATA_TYPE int32 DATA\n  ";
+        for (int i : inbuffer) b.os << i << " ";
+        b.os << "\nEND\nBUFFER expected" << bnum << " DATA_TYPE int32 DATA\n  ";
+        for (int i : outbuffer) b.os << i << " ";
         b.os << "\nEND\n";
         bnum++;
     }
     b.os << "PIPELINE compute pipeline\n"
         "  ATTACH compute_shader\n";
-    for (size_t i = 0; i < buffers.size(); i++){
+    for (size_t i = 0; i < expected.size(); i++){
         b.os << "  BIND BUFFER actual" << i << " AS storage DESCRIPTOR_SET 0 BINDING " << i << "\n";
     }
     b.os << "END\n"
         << "RUN pipeline 1 1 1\n";
     
-    for (size_t i = 0; i < buffers.size(); i++){
+    for (size_t i = 0; i < expected.size(); i++){
         b.os << "EXPECT expected" << i << " EQ_BUFFER actual" << i << "\n";
     }
     return success();

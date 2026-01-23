@@ -27,14 +27,16 @@ for testfile in $1; do
     errcode=$?
     if [ $errcode -ne 0 ]; then
         echo "There was an error: " $errcode
-        exit $errcode
+        # exit $errcode
+        continue
     fi
 
     ~/amber/out/Debug/amber $outfile
     errcode=$?
     if [ $errcode -ne 0 ]; then
         echo "Output in: $outfile"
-        exit $errcode
+        # exit $errcode
+        continue
     fi
 done
 

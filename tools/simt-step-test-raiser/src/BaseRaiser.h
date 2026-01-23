@@ -44,7 +44,7 @@ namespace simt::test_raiser {
             virtual ~BaseRaiser();
 
             // Emits the test harness and GPU code.
-            virtual LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expected) = 0;
+            virtual LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expected, std::vector<std::vector<int64_t>> actual) = 0;
         protected:
             struct ScopeHandler {
                 struct Scope {
@@ -113,7 +113,7 @@ namespace simt::test_raiser {
             /*
             Emits a floating point literal. Supports single and double precision.
             */
-            LogicalResult emitConst(Type t, APFloat v);
+            virtual LogicalResult emitConst(Type t, APFloat v);
 
             /*
             Helper function that emits the RHS of the variable declaration
@@ -143,7 +143,6 @@ namespace simt::test_raiser {
 
             LogicalResult emitBlock(Block& block);
 
-            LogicalResult printOp(func::FuncOp& op);
             LogicalResult printOp(func::ReturnOp& op);
             LogicalResult printOp(func::CallOp& op);
             LogicalResult printOp(mlir::ModuleOp& op);
@@ -154,6 +153,7 @@ namespace simt::test_raiser {
             LogicalResult printOp(arith::SelectOp& op);
             LogicalResult printOp(arith::ExtUIOp& op);
             LogicalResult printOp(arith::IndexCastOp& op);
+            LogicalResult printOp(vector::ExtractOp& op);
             LogicalResult printOp(BufferLoadOp& op);
             LogicalResult printOp(BufferStoreOp& op);
             LogicalResult printOp(IfOp& op);
@@ -164,7 +164,8 @@ namespace simt::test_raiser {
             LogicalResult printOp(ContinueOp& op);
             LogicalResult printOp(SwitchOp& op);
 
-            virtual LogicalResult printOp(vector::ExtractOp& op) = 0;
+            virtual LogicalResult printOp(func::FuncOp& op);
+            
             virtual LogicalResult printOp(arith::RemFOp& op) = 0;
             virtual LogicalResult printOp(DispatchThreadIdOp& op) = 0;
             virtual LogicalResult printOp(BufferAtomicAddOp& op) = 0;
@@ -177,14 +178,14 @@ namespace simt::test_raiser {
             // virtual LogicalResult printOp(FenceOp& op) = 0;
             // virtual LogicalResult printOp(BarrierOp& op) = 0;
 
-            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers);
+            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers, std::vector<std::vector<int64_t>>);
     };
 
     /*
     Emits and Amber test harness that wraps the GPU code. Can be used as
     `emitHarness` for languages Amber supports.
     */
-    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers);
+    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers, std::vector<std::vector<int64_t>>);
 
     /*
     Gets the thread dimensions from the main function and the argument index of the buffer 
