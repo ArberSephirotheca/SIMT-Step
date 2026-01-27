@@ -16,6 +16,10 @@ struct GeneratorConfig {
     std::uint64_t seed = 0; // 0 = deterministic default
     std::uint32_t maxTripCount = 4;
     std::uint32_t minControlOps = 4;
+    bool complexHelper = false;
+    bool helperUsesSubgroupIds = false;
+    std::uint32_t helperMaxDepth = 3;
+    std::uint32_t helperMinControlOps = 3;
     double breakContinueRate = -1.0; // < 0 => default RNG coin, [0,1] => rate
     bool predicateBuffer = false;
     unsigned predicateBufferArgIndex = 1;

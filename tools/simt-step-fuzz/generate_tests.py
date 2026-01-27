@@ -48,6 +48,28 @@ def main():
         help="Probability in [0,1] to emit break/continue in loops",
     )
     parser.add_argument(
+        "--complex-helper",
+        action="store_true",
+        help="Generate a complex helper function with control flow and wave ops",
+    )
+    parser.add_argument(
+        "--helper-subgroup-ids",
+        action="store_true",
+        help="Allow lane_id/subgroup_id ops inside helper function",
+    )
+    parser.add_argument(
+        "--helper-max-depth",
+        type=int,
+        default=None,
+        help="Max recursion depth for helper pattern generation",
+    )
+    parser.add_argument(
+        "--helper-min-control-ops",
+        type=int,
+        default=None,
+        help="Minimum number of control-flow ops in helper function",
+    )
+    parser.add_argument(
         "--predicate-buffer",
         action="store_true",
         help="Emit predicate buffer and YAML per test",
@@ -98,6 +120,16 @@ def main():
                 validate_cmd.append(
                     f"--break-continue-rate={args.break_continue_rate}"
                 )
+            if args.complex_helper:
+                validate_cmd.append("--complex-helper")
+            if args.helper_subgroup_ids:
+                validate_cmd.append("--helper-subgroup-ids")
+            if args.helper_max_depth is not None:
+                validate_cmd.append(f"--helper-max-depth={args.helper_max_depth}")
+            if args.helper_min_control_ops is not None:
+                validate_cmd.append(
+                    f"--helper-min-control-ops={args.helper_min_control_ops}"
+                )
             if args.predicate_buffer:
                 validate_cmd.append("--predicate-buffer")
             validate = run(validate_cmd)
@@ -114,6 +146,16 @@ def main():
             ]
             if args.break_continue_rate is not None:
                 gen_cmd.append(f"--break-continue-rate={args.break_continue_rate}")
+            if args.complex_helper:
+                gen_cmd.append("--complex-helper")
+            if args.helper_subgroup_ids:
+                gen_cmd.append("--helper-subgroup-ids")
+            if args.helper_max_depth is not None:
+                gen_cmd.append(f"--helper-max-depth={args.helper_max_depth}")
+            if args.helper_min_control_ops is not None:
+                gen_cmd.append(
+                    f"--helper-min-control-ops={args.helper_min_control_ops}"
+                )
             predicate_yaml = ""
             if args.predicate_buffer:
                 predicate_yaml = f"{out_dir}/test_{count:03d}_seed_{seed}.yaml"
@@ -137,6 +179,14 @@ def main():
             }
             if args.break_continue_rate is not None:
                 record["break_continue_rate"] = args.break_continue_rate
+            if args.complex_helper:
+                record["complex_helper"] = True
+            if args.helper_subgroup_ids:
+                record["helper_subgroup_ids"] = True
+            if args.helper_max_depth is not None:
+                record["helper_max_depth"] = args.helper_max_depth
+            if args.helper_min_control_ops is not None:
+                record["helper_min_control_ops"] = args.helper_min_control_ops
             if predicate_yaml:
                 record["predicate_yaml"] = Path(predicate_yaml).name
             manifest.write(json.dumps(record) + "\n")

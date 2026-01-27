@@ -212,6 +212,22 @@ int main(int argc, char **argv) {
         "schedule-seed",
         llvm::cl::desc("Seed for randomized scheduler (0 = deterministic order)"),
         llvm::cl::init(0));
+    llvm::cl::opt<bool> complexHelper(
+        "complex-helper",
+        llvm::cl::desc("Generate a complex helper function with control flow and wave ops"),
+        llvm::cl::init(false));
+    llvm::cl::opt<bool> helperSubgroupIds(
+        "helper-subgroup-ids",
+        llvm::cl::desc("Allow lane_id/subgroup_id in helper function (requires raiser support)"),
+        llvm::cl::init(false));
+    llvm::cl::opt<unsigned> helperMaxDepth(
+        "helper-max-depth",
+        llvm::cl::desc("Max recursion depth for helper pattern generation"),
+        llvm::cl::init(3));
+    llvm::cl::opt<unsigned> helperMinControlOps(
+        "helper-min-control-ops",
+        llvm::cl::desc("Minimum number of control-flow ops in helper function"),
+        llvm::cl::init(3));
     llvm::cl::opt<double> breakContinueRate(
         "break-continue-rate",
         llvm::cl::desc("Probability in [0,1] to emit break/continue in loops; "
@@ -254,6 +270,10 @@ int main(int argc, char **argv) {
         llvm::errs() << "error: --break-continue-rate must be <= 1.0\n";
         return 1;
     }
+    if (helperMaxDepth < 1) {
+        llvm::errs() << "error: --helper-max-depth must be >= 1\n";
+        return 1;
+    }
 
     mlir::DialectRegistry registry;
     simt::dialect::registerSimtStepDialect(registry);
@@ -268,6 +288,10 @@ int main(int argc, char **argv) {
     cfg.numThreads = {static_cast<std::int64_t>(numLanes), 1, 1};
     cfg.subgroupWidth = std::max<unsigned>(1, subgroupWidth);
     cfg.seed = seedOpt;
+    cfg.complexHelper = complexHelper || helperSubgroupIds;
+    cfg.helperUsesSubgroupIds = helperSubgroupIds;
+    cfg.helperMaxDepth = helperMaxDepth;
+    cfg.helperMinControlOps = helperMinControlOps;
     cfg.breakContinueRate = breakContinueRate;
     bool usePredicateBuffer = predicateBuffer || !predicateYaml.empty();
     cfg.predicateBuffer = usePredicateBuffer;

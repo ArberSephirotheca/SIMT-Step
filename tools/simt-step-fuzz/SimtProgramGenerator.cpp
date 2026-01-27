@@ -115,6 +115,258 @@ static func::FuncOp buildScalarHelper(OpBuilder &b, Location loc,
 }
 
 static Value makeNonUniformCond(OpBuilder &b, Location loc, RNG &rng,
+                                const GeneratorConfig &cfg, Value tid);
+
+static Value makeNonUniformBound(OpBuilder &b, Location loc, RNG &rng,
+                                 const GeneratorConfig &cfg, Value tid,
+                                 int fallback);
+
+struct HelperBuildState {
+    const GeneratorConfig &cfg;
+    RNG &rng;
+    Value tid;
+    unsigned controlOps = 0;
+    unsigned waveOps = 0;
+    bool usesSubgroupIds = false;
+};
+
+static Value emitHelperWaveCount(OpBuilder &b, Location loc, HelperBuildState &st) {
+    st.waveOps++;
+    return b.create<simt::dialect::WaveCountBitsOp>(loc, b.getI32Type(),
+                                                    makeBool(b, loc, true));
+}
+
+static Value buildHelperValue(OpBuilder &b, Location loc, HelperBuildState &st) {
+    int choiceMax = st.usesSubgroupIds ? 4 : 2;
+    int choice = st.rng.pick(0, choiceMax);
+    if (choice == 0)
+        return makeI32(b, loc, st.rng.pick(0, 4));
+    if (choice == 1)
+        return st.tid;
+    if (choice == 2) {
+        Value c = makeI32(b, loc, st.rng.pick(0, 4));
+        return b.create<arith::AddIOp>(loc, st.tid, c);
+    }
+    if (choice == 3)
+        return makeLaneIdI32(b, loc);
+    if (choice == 4)
+        return makeSubgroupIdI32(b, loc);
+    return st.tid;
+}
+
+static Value buildHelperPattern(OpBuilder &b, Location loc, HelperBuildState &st,
+                               unsigned depth, unsigned maxDepth);
+
+static Value buildHelperSwitch(OpBuilder &b, Location loc, HelperBuildState &st,
+                               unsigned depth, unsigned maxDepth) {
+    st.controlOps++;
+    int numCases = st.rng.pick(2, 4);
+    bool includeDefault = st.rng.coin();
+    bool allowFallthrough = st.rng.coin();
+    int defaultIndex = st.rng.pick(0, numCases - 1);
+
+    llvm::SmallVector<bool, 4> fallthroughCase;
+    fallthroughCase.reserve(numCases);
+    for (int i = 0; i < numCases; ++i) {
+        bool fall = allowFallthrough && (i + 1) < numCases && st.rng.coin();
+        fallthroughCase.push_back(fall);
+    }
+
+    int selectorMod = includeDefault ? numCases : (numCases - 1);
+    Value selector = st.tid;
+    if (selectorMod > 1) {
+        Value mod = makeI32(b, loc, selectorMod);
+        selector = b.create<arith::RemSIOp>(loc, selector, mod);
+    }
+
+    Value initVal = buildHelperValue(b, loc, st);
+
+    llvm::SmallVector<int64_t, 4> caseValues;
+    caseValues.reserve(numCases - 1);
+    int nextCaseValue = 0;
+    for (int i = 0; i < numCases; ++i) {
+        if (i == defaultIndex)
+            continue;
+        caseValues.push_back(nextCaseValue++);
+    }
+
+    auto switchOp = b.create<simt::dialect::SwitchOp>(
+        loc, TypeRange{b.getI32Type()}, selector, ValueRange{initVal}, caseValues,
+        defaultIndex);
+
+    auto &region = switchOp.getCaseBody();
+    while (static_cast<int>(region.getBlocks().size()) < numCases) {
+        auto *blk = new Block();
+        blk->addArguments({b.getI32Type()}, SmallVector<Location>{loc});
+        region.push_back(blk);
+    }
+
+    int caseIdx = 0;
+    for (auto &blk : region) {
+        if (caseIdx >= numCases)
+            break;
+        if (blk.getNumArguments() == 0) {
+            blk.addArguments({b.getI32Type()}, SmallVector<Location>{loc});
+        }
+        OpBuilder cb(&blk, blk.begin());
+        Value bodyVal = buildHelperPattern(cb, loc, st, depth + 1, maxDepth);
+        Value wave = emitHelperWaveCount(cb, loc, st);
+        Value combined = cb.create<arith::AddIOp>(loc, bodyVal, wave);
+        auto yield = cb.create<simt::dialect::YieldOp>(loc, ValueRange{combined});
+        yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
+        ++caseIdx;
+    }
+    return switchOp.getResult(0);
+}
+
+static Value buildHelperIf(OpBuilder &b, Location loc, HelperBuildState &st,
+                           unsigned depth, unsigned maxDepth) {
+    st.controlOps++;
+    Value cond = makeNonUniformCond(b, loc, st.rng, st.cfg, st.tid);
+    auto ifOp = b.create<simt::dialect::IfOp>(loc, TypeRange{b.getI32Type()}, cond,
+                                             /*withElseRegion=*/true);
+    if (ifOp.getThenRegion().empty())
+        ifOp.getThenRegion().push_back(new Block());
+    if (ifOp.getElseRegion().empty())
+        ifOp.getElseRegion().push_back(new Block());
+
+    {
+        auto &thenBlock = ifOp.getThenRegion().front();
+        OpBuilder tb(&thenBlock, thenBlock.begin());
+        Value v = buildHelperPattern(tb, loc, st, depth + 1, maxDepth);
+        Value wave = emitHelperWaveCount(tb, loc, st);
+        Value res = tb.create<arith::AddIOp>(loc, v, wave);
+        tb.create<simt::dialect::YieldOp>(loc, ValueRange{res});
+    }
+    {
+        auto &elseBlock = ifOp.getElseRegion().front();
+        OpBuilder eb(&elseBlock, elseBlock.begin());
+        Value v = buildHelperPattern(eb, loc, st, depth + 1, maxDepth);
+        Value wave = emitHelperWaveCount(eb, loc, st);
+        Value res = eb.create<arith::SubIOp>(loc, v, wave);
+        eb.create<simt::dialect::YieldOp>(loc, ValueRange{res});
+    }
+    return ifOp.getResult(0);
+}
+
+static Value buildHelperLoop(OpBuilder &b, Location loc, HelperBuildState &st,
+                             unsigned depth, unsigned maxDepth) {
+    st.controlOps++;
+    int trip = std::max(1, st.rng.pick(1, static_cast<int>(st.cfg.maxTripCount)));
+
+    Value zero = makeI32(b, loc, 0);
+    Value initI = makeI32(b, loc, 0);
+    auto loop = b.create<simt::dialect::LoopOp>(
+        loc, TypeRange{b.getI32Type(), b.getI32Type()}, ValueRange{zero, initI});
+    if (loop.getPrepareRegion().empty()) {
+        auto *prep = new Block();
+        prep->addArguments({b.getI32Type(), b.getI32Type()},
+                           SmallVector<Location>{loc, loc});
+        loop.getPrepareRegion().push_back(prep);
+    }
+    if (loop.getBodyRegion().empty()) {
+        auto *body = new Block();
+        body->addArguments({b.getI32Type(), b.getI32Type()},
+                           SmallVector<Location>{loc, loc});
+        loop.getBodyRegion().push_back(body);
+    }
+    {
+        auto &prep = loop.getPrepareRegion().front();
+        OpBuilder pb(&prep, prep.begin());
+        Value acc = prep.getArgument(0);
+        Value idx = prep.getArgument(1);
+        (void)acc;
+        Value bound = makeNonUniformBound(pb, loc, st.rng, st.cfg, st.tid, trip);
+        Value cond =
+            pb.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, idx, bound);
+        pb.create<simt::dialect::ConditionOp>(loc, cond, ValueRange{acc, idx});
+    }
+    {
+        auto &body = loop.getBodyRegion().front();
+        OpBuilder bb(&body, body.begin());
+        Value acc = body.getArgument(0);
+        Value idx = body.getArgument(1);
+
+        Value inner = (depth + 1 < maxDepth && st.rng.coin())
+                          ? buildHelperPattern(bb, loc, st, depth + 1, maxDepth)
+                          : idx;
+        Value sum = bb.create<arith::AddIOp>(loc, acc, inner);
+        Value wave = emitHelperWaveCount(bb, loc, st);
+        Value sum2 = bb.create<arith::AddIOp>(loc, sum, wave);
+        Value one = makeI32(bb, loc, 1);
+        Value nextIdx = bb.create<arith::AddIOp>(loc, idx, one);
+
+        bool emitCtrl = false;
+        if (st.cfg.breakContinueRate < 0.0) {
+            emitCtrl = st.rng.coin();
+        } else {
+            emitCtrl = st.rng.chance(st.cfg.breakContinueRate);
+        }
+        bool doBreak = st.rng.coin();
+        if (emitCtrl && doBreak) {
+            bb.create<simt::dialect::BreakOp>(loc, ValueRange{sum2, nextIdx});
+        } else if (emitCtrl) {
+            bb.create<simt::dialect::ContinueOp>(loc, ValueRange{sum2, nextIdx});
+        } else {
+            bb.create<simt::dialect::YieldOp>(loc, ValueRange{sum2, nextIdx});
+        }
+    }
+    return loop.getResult(0);
+}
+
+static Value buildHelperPattern(OpBuilder &b, Location loc, HelperBuildState &st,
+                               unsigned depth, unsigned maxDepth) {
+    if (depth >= maxDepth)
+        return buildHelperValue(b, loc, st);
+    int choice = st.rng.pick(0, 3); // 0 leaf, 1 if, 2 loop, 3 switch
+    if (choice == 0)
+        return buildHelperValue(b, loc, st);
+    if (choice == 1)
+        return buildHelperIf(b, loc, st, depth, maxDepth);
+    if (choice == 2)
+        return buildHelperLoop(b, loc, st, depth, maxDepth);
+    return buildHelperSwitch(b, loc, st, depth, maxDepth);
+}
+
+static Value buildHelperControlPattern(OpBuilder &b, Location loc,
+                                      HelperBuildState &st, unsigned depth,
+                                      unsigned maxDepth) {
+    int choice = st.rng.pick(1, 3); // 1 if, 2 loop, 3 switch
+    if (choice == 1)
+        return buildHelperIf(b, loc, st, depth, maxDepth);
+    if (choice == 2)
+        return buildHelperLoop(b, loc, st, depth, maxDepth);
+    return buildHelperSwitch(b, loc, st, depth, maxDepth);
+}
+
+static func::FuncOp buildComplexHelper(OpBuilder &b, Location loc,
+                                      llvm::StringRef name, RNG &rng,
+                                      const GeneratorConfig &cfg) {
+    auto i32 = b.getI32Type();
+    auto funcType = b.getFunctionType({i32}, {i32});
+    auto func = b.create<func::FuncOp>(loc, name, funcType);
+    auto *entry = func.addEntryBlock();
+    OpBuilder fb(entry, entry->begin());
+    Value tid = entry->getArgument(0);
+
+    HelperBuildState st{cfg, rng, tid, /*controlOps=*/0, /*waveOps=*/0,
+                        cfg.helperUsesSubgroupIds};
+    unsigned maxDepth = std::max<unsigned>(1, cfg.helperMaxDepth);
+
+    Value acc = buildHelperPattern(fb, loc, st, /*depth=*/0, maxDepth);
+    while (st.controlOps < cfg.helperMinControlOps) {
+        Value v = buildHelperControlPattern(fb, loc, st, /*depth=*/0, maxDepth);
+        acc = fb.create<arith::AddIOp>(loc, acc, v);
+    }
+    if (st.waveOps == 0) {
+        Value wave = emitHelperWaveCount(fb, loc, st);
+        acc = fb.create<arith::AddIOp>(loc, acc, wave);
+    }
+    fb.create<func::ReturnOp>(loc, ValueRange{acc});
+    return func;
+}
+
+static Value makeNonUniformCond(OpBuilder &b, Location loc, RNG &rng,
                                 const GeneratorConfig &cfg, Value tid) {
     int lanes = static_cast<int>(cfg.numThreads[0]);
     if (lanes < 2)
@@ -455,7 +707,9 @@ createDeterministicIfLoopModule(mlir::MLIRContext &context,
         &context, simt::dialect::MemorySpace::Global, builder.getI32Type());
     llvm::errs() << "[fuzz-gen] resource type ready\n";
 
-    auto helper = buildScalarHelper(builder, loc, "helper0", nullptr);
+    RNG helperRng(1);
+    auto helper = cfg.complexHelper ? buildComplexHelper(builder, loc, "helper0", helperRng, cfg)
+                                    : buildScalarHelper(builder, loc, "helper0", nullptr);
 
     auto funcType = builder.getFunctionType({resTy}, {});
     auto func = builder.create<func::FuncOp>(loc, "main", funcType);
@@ -596,7 +850,8 @@ createRandomizedModule(mlir::MLIRContext &context,
 
     auto resTy = simt::dialect::ResourceType::get(
         &context, simt::dialect::MemorySpace::Global, builder.getI32Type());
-    auto helper = buildScalarHelper(builder, loc, "helper0", &rng);
+    auto helper = cfg.complexHelper ? buildComplexHelper(builder, loc, "helper0", rng, cfg)
+                                    : buildScalarHelper(builder, loc, "helper0", &rng);
     llvm::SmallVector<Type, 2> argTypes;
     argTypes.push_back(resTy);
     if (cfg.predicateBuffer)
@@ -716,7 +971,8 @@ createRicherRandomModule(mlir::MLIRContext &context,
 
     auto resTy = simt::dialect::ResourceType::get(
         &context, simt::dialect::MemorySpace::Global, builder.getI32Type());
-    auto helper = buildScalarHelper(builder, loc, "helper0", &rng);
+    auto helper = cfg.complexHelper ? buildComplexHelper(builder, loc, "helper0", rng, cfg)
+                                    : buildScalarHelper(builder, loc, "helper0", &rng);
     llvm::SmallVector<Type, 2> argTypes;
     argTypes.push_back(resTy);
     if (cfg.predicateBuffer)

@@ -543,6 +543,12 @@ static LogicalResult emitHelperFunction(func::FuncOp func,
     }
     os << ") {\n";
     emitter.indent = "  ";
+    if (!func.getArguments().empty()) {
+        mlir::Type arg0Ty = func.getArgument(0).getType();
+        if (mlir::isa<mlir::IntegerType, mlir::IndexType>(arg0Ty)) {
+            os << "  int3 tid = int3(arg0, 0, 0);\n";
+        }
+    }
 
     auto &entry = func.getBody().front();
     for (auto &op : entry) {
