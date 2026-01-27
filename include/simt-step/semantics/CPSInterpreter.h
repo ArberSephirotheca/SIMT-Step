@@ -1911,14 +1911,30 @@ private:
         if (nextPrep.sequenceId >= loopFrame.prepareKey.sequenceId)
             loopIteration =
                 (nextPrep.sequenceId - loopFrame.prepareKey.sequenceId) / 2;
+        bool prepExists = waveCtx.blocks.contains(nextPrep);
+        bool bodyExists = waveCtx.blocks.contains(nextBody);
+        std::uint64_t nextExpected = entry->expectedMask
+                                         ? entry->expectedMask
+                                         : (blockCtx->expectedMask
+                                                ? blockCtx->expectedMask
+                                                : (blockCtx->activeMask | laneBit));
+
         auto &prepCtx = waveCtx.blocks[nextPrep];
-        prepCtx.block = nextPrep.block;
-        prepCtx.sequenceId = nextPrep.sequenceId;
-        prepCtx.parentKey = key;
-        prepCtx.expectedMask =
-            blockCtx->expectedMask ? blockCtx->expectedMask : blockCtx->activeMask;
+        if (!prepExists) {
+            prepCtx.block = nextPrep.block;
+            prepCtx.sequenceId = nextPrep.sequenceId;
+            prepCtx.parentKey = key;
+            prepCtx.expectedMask = nextExpected;
+            prepCtx.activeMask = 0;
+            prepCtx.completedMask = 0;
+        } else {
+            if (!prepCtx.parentKey)
+                prepCtx.parentKey = key;
+            if (prepCtx.expectedMask == 0)
+                prepCtx.expectedMask = nextExpected;
+        }
         prepCtx.activeMask |= laneBit;
-        prepCtx.completedMask = 0;
+        prepCtx.completedMask &= ~laneBit;
         prepCtx.loopOp = blockCtx->loopOp;
         prepCtx.switchOp = nullptr;
         prepCtx.ifOp = nullptr;
@@ -1928,13 +1944,21 @@ private:
         prepCtx.kind = DynamicBlockKind::LoopPrepare;
 
         auto &bodyCtx = waveCtx.blocks[nextBody];
-        bodyCtx.block = nextBody.block;
-        bodyCtx.sequenceId = nextBody.sequenceId;
-        bodyCtx.parentKey = nextPrep;
-        bodyCtx.expectedMask =
-            blockCtx->expectedMask ? blockCtx->expectedMask : blockCtx->activeMask;
-        bodyCtx.activeMask = 0;
-        bodyCtx.completedMask = 0;
+        if (!bodyExists) {
+            bodyCtx.block = nextBody.block;
+            bodyCtx.sequenceId = nextBody.sequenceId;
+            bodyCtx.parentKey = nextPrep;
+            bodyCtx.expectedMask = nextExpected;
+            bodyCtx.activeMask = 0;
+            bodyCtx.completedMask = 0;
+        } else {
+            if (!bodyCtx.parentKey)
+                bodyCtx.parentKey = nextPrep;
+            if (bodyCtx.expectedMask == 0)
+                bodyCtx.expectedMask = nextExpected;
+        }
+        bodyCtx.activeMask &= ~laneBit;
+        bodyCtx.completedMask &= ~laneBit;
         bodyCtx.loopOp = blockCtx->loopOp;
         bodyCtx.switchOp = nullptr;
         bodyCtx.ifOp = nullptr;
@@ -1942,17 +1966,17 @@ private:
         bodyCtx.isLoopBody = true;
         bodyCtx.loopIteration = loopIteration;
         bodyCtx.kind = DynamicBlockKind::LoopBody;
+
         assert(!(prepCtx.loopOp && prepCtx.switchOp) &&
                "dynamic block cannot have both loopOp and switchOp");
         assert(!(bodyCtx.loopOp && bodyCtx.switchOp) &&
                "dynamic block cannot have both loopOp and switchOp");
 
-        bool nextExists = waveCtx.blocks.contains(nextPrep);
-        if (!nextExists && !llvm::is_contained(entry->pendingChildren, nextPrep)) {
+        if (!prepExists && !llvm::is_contained(entry->pendingChildren, nextPrep)) {
             entry->pendingChildren.push_back(nextPrep);
             entry->childMasks.push_back(prepCtx.activeMask);
         }
-        if (!nextExists && !llvm::is_contained(entry->pendingChildren, nextBody)) {
+        if (!bodyExists && !llvm::is_contained(entry->pendingChildren, nextBody)) {
             entry->pendingChildren.push_back(nextBody);
             entry->childMasks.push_back(bodyCtx.activeMask);
         }
@@ -2072,16 +2096,30 @@ private:
         if (nextPrep.sequenceId >= loopFrame.prepareKey.sequenceId)
             loopIteration =
                 (nextPrep.sequenceId - loopFrame.prepareKey.sequenceId) / 2;
-        bool nextExists = waveCtx.blocks.contains(nextPrep);
+        bool prepExists = waveCtx.blocks.contains(nextPrep);
+        bool bodyExists = waveCtx.blocks.contains(nextBody);
+        std::uint64_t nextExpected = entry->expectedMask
+                                         ? entry->expectedMask
+                                         : (blockCtx->expectedMask
+                                                ? blockCtx->expectedMask
+                                                : (blockCtx->activeMask | laneBit));
 
         auto &prepCtx = waveCtx.blocks[nextPrep];
-        prepCtx.block = nextPrep.block;
-        prepCtx.sequenceId = nextPrep.sequenceId;
-        prepCtx.parentKey = key;
-        prepCtx.expectedMask =
-            blockCtx->expectedMask ? blockCtx->expectedMask : blockCtx->activeMask;
+        if (!prepExists) {
+            prepCtx.block = nextPrep.block;
+            prepCtx.sequenceId = nextPrep.sequenceId;
+            prepCtx.parentKey = key;
+            prepCtx.expectedMask = nextExpected;
+            prepCtx.activeMask = 0;
+            prepCtx.completedMask = 0;
+        } else {
+            if (!prepCtx.parentKey)
+                prepCtx.parentKey = key;
+            if (prepCtx.expectedMask == 0)
+                prepCtx.expectedMask = nextExpected;
+        }
         prepCtx.activeMask |= laneBit;
-        prepCtx.completedMask = 0;
+        prepCtx.completedMask &= ~laneBit;
         prepCtx.loopOp = blockCtx->loopOp;
         prepCtx.ifOp = nullptr;
         prepCtx.isLoopPrepare = true;
@@ -2090,13 +2128,21 @@ private:
         prepCtx.kind = DynamicBlockKind::LoopPrepare;
 
         auto &bodyCtx = waveCtx.blocks[nextBody];
-        bodyCtx.block = nextBody.block;
-        bodyCtx.sequenceId = nextBody.sequenceId;
-        bodyCtx.parentKey = nextPrep;
-        bodyCtx.expectedMask =
-            blockCtx->expectedMask ? blockCtx->expectedMask : blockCtx->activeMask;
-        bodyCtx.activeMask = 0;
-        bodyCtx.completedMask = 0;
+        if (!bodyExists) {
+            bodyCtx.block = nextBody.block;
+            bodyCtx.sequenceId = nextBody.sequenceId;
+            bodyCtx.parentKey = nextPrep;
+            bodyCtx.expectedMask = nextExpected;
+            bodyCtx.activeMask = 0;
+            bodyCtx.completedMask = 0;
+        } else {
+            if (!bodyCtx.parentKey)
+                bodyCtx.parentKey = nextPrep;
+            if (bodyCtx.expectedMask == 0)
+                bodyCtx.expectedMask = nextExpected;
+        }
+        bodyCtx.activeMask &= ~laneBit;
+        bodyCtx.completedMask &= ~laneBit;
         bodyCtx.loopOp = blockCtx->loopOp;
         bodyCtx.ifOp = nullptr;
         bodyCtx.isLoopPrepare = false;
@@ -2104,11 +2150,11 @@ private:
         bodyCtx.loopIteration = loopIteration;
         bodyCtx.kind = DynamicBlockKind::LoopBody;
 
-        if (!nextExists && !llvm::is_contained(entry->pendingChildren, nextPrep)) {
+        if (!prepExists && !llvm::is_contained(entry->pendingChildren, nextPrep)) {
             entry->pendingChildren.push_back(nextPrep);
             entry->childMasks.push_back(prepCtx.activeMask);
         }
-        if (!nextExists && !llvm::is_contained(entry->pendingChildren, nextBody)) {
+        if (!bodyExists && !llvm::is_contained(entry->pendingChildren, nextBody)) {
             entry->pendingChildren.push_back(nextBody);
             entry->childMasks.push_back(bodyCtx.activeMask);
         }
