@@ -4,6 +4,7 @@
 #include "simt-step/semantics/ExecutionState.h"
 #include "simt-step/semantics/SemanticsContext.h"
 #include "simt-step/semantics/Trace.h"
+#include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 
 #include <algorithm>
 #include <bit>
@@ -3085,6 +3086,8 @@ private:
             if (it != laneIt->second.values.end())
                 return it->second;
         }
+        if (mlir::isa<simt::dialect::ResourceType>(value.getType()))
+            return SemValue::fromResource(value);
         // If the value has a defining op, ask the semantics to evaluate it.
         if (auto *defOp = value.getDefiningOp()) {
             if (llvm::isa<mlir::func::CallOp>(defOp)) {
@@ -3170,7 +3173,9 @@ private:
                                 LaneContext<ValueType, StepType>::Phase::Completed;
                 laneCtx.hasReturned = laneCtx.hasReturned || terminal;
                 laneCtx.returnValue = std::move(prod.value);
-                if (auto *blockCtx = getBlock(waveCtx, item.block)) {
+                const DynamicBlockKey &currentKey =
+                    laneCtx.currentBlock ? *laneCtx.currentBlock : item.block;
+                if (auto *blockCtx = getBlock(waveCtx, currentKey)) {
                     std::uint64_t laneBit = 1ull << item.lane;
                     blockCtx->activeMask &= ~laneBit;
                     blockCtx->completedMask |= laneBit;
@@ -3191,7 +3196,9 @@ private:
                                  << " seq=" << item.block.sequenceId
                                  << " (continuation exhausted)\n";
                 }
-                if (auto *blockCtx = getBlock(waveCtx, item.block)) {
+                const DynamicBlockKey &currentKey =
+                    laneCtx.currentBlock ? *laneCtx.currentBlock : item.block;
+                if (auto *blockCtx = getBlock(waveCtx, currentKey)) {
                     if (blockCtx->kind == DynamicBlockKind::IfThen ||
                         blockCtx->kind == DynamicBlockKind::IfElse ||
                         blockCtx->kind == DynamicBlockKind::SwitchCase ||
@@ -3221,9 +3228,11 @@ private:
                         shrinkExpectedForLane(item.wave, waveCtx, item.lane);
                     // Account for completion and allow reconvergence unless this was
                     // a terminal return for the lane.
-                    markMergeCompletion(item.wave, waveCtx, item.block, item.lane);
+                    markMergeCompletion(item.wave, waveCtx, currentKey,
+                                       item.lane);
                     if (!terminal) {
-                        handleReconvergence(item.wave, waveCtx, item.block, item.lane);
+                        handleReconvergence(item.wave, waveCtx, currentKey,
+                                            item.lane);
                     }
                 }
                 return llvm::Error::success();
@@ -3232,7 +3241,9 @@ private:
             if (std::holds_alternative<typename StepType::Suspend>(stateVariant)) {
                 auto susp =
                     std::get<typename StepType::Suspend>(std::move(stateVariant));
-                return handleSuspend(item.wave, item.block, item.lane,
+                const DynamicBlockKey &currentKey =
+                    laneCtx.currentBlock ? *laneCtx.currentBlock : item.block;
+                return handleSuspend(item.wave, currentKey, item.lane,
                                      std::move(susp));
             }
 
