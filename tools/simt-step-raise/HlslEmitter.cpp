@@ -44,6 +44,8 @@ struct HlslEmitter {
     std::string makeTmp() { return "t" + std::to_string(tmpId++); }
 
     std::string emitType(Type ty) const {
+        if (mlir::isa<simt::dialect::ResourceType>(ty))
+            return "RWStructuredBuffer<int>";
         if (auto it = mlir::dyn_cast<IntegerType>(ty)) {
             unsigned w = it.getWidth();
             if (w == 1)
@@ -113,6 +115,11 @@ struct HlslEmitter {
             default: pred = "/*cmp*/"; break;
             }
             return "(" + emitValue(cmp.getLhs()) + " " + pred + " " + emitValue(cmp.getRhs()) + ")";
+        }
+        if (auto sel = dyn_cast<arith::SelectOp>(op)) {
+            return "(" + emitValue(sel.getCondition()) + " ? " +
+                   emitValue(sel.getTrueValue()) + " : " +
+                   emitValue(sel.getFalseValue()) + ")";
         }
         if (isa<simt::dialect::DispatchThreadIdOp>(op)) {
             return "tid.x";
@@ -445,7 +452,8 @@ struct HlslEmitter {
         }
         if (isa<arith::AddIOp, arith::RemSIOp, arith::CmpIOp,
                 arith::SubIOp, arith::MulIOp, arith::AndIOp, arith::OrIOp,
-                arith::ShLIOp, arith::ShRSIOp, simt::dialect::WaveCountBitsOp>(op)) {
+                arith::ShLIOp, arith::ShRSIOp, arith::SelectOp,
+                simt::dialect::WaveCountBitsOp>(op)) {
             std::string tmp = makeTmp();
             names[op->getResult(0)] = tmp;
             emitIndent();
@@ -469,15 +477,13 @@ struct HlslEmitter {
             names[load.getResult()] = tmp;
             emitIndent();
             os << emitType(load.getResult().getType()) << " " << tmp << " = "
-               << "buf"
-               << mlir::cast<BlockArgument>(load.getResource()).getArgNumber()
-               << "[" << get(load.getIndex()) << "];\n";
+               << get(load.getResource()) << "[" << get(load.getIndex()) << "];\n";
             return success();
         }
         if (auto store = dyn_cast<simt::dialect::BufferStoreOp>(op)) {
             emitIndent();
-            os << "buf" << mlir::cast<BlockArgument>(store.getResource()).getArgNumber()
-               << "[" << get(store.getIndex()) << "] = " << get(store.getValue()) << ";\n";
+            os << get(store.getResource()) << "[" << get(store.getIndex())
+               << "] = " << get(store.getValue()) << ";\n";
             return success();
         }
         if (auto call = dyn_cast<func::CallOp>(op)) {
@@ -538,8 +544,13 @@ static LogicalResult emitHelperFunction(func::FuncOp func,
         if (!first)
             os << ", ";
         first = false;
-        os << emitter.emitType(arg.getType()) << " arg" << arg.getArgNumber();
-        emitter.names[arg] = "arg" + std::to_string(arg.getArgNumber());
+        if (mlir::isa<simt::dialect::ResourceType>(arg.getType())) {
+            os << emitter.emitType(arg.getType()) << " buf" << arg.getArgNumber();
+            emitter.names[arg] = "buf" + std::to_string(arg.getArgNumber());
+        } else {
+            os << emitter.emitType(arg.getType()) << " arg" << arg.getArgNumber();
+            emitter.names[arg] = "arg" + std::to_string(arg.getArgNumber());
+        }
     }
     os << ") {\n";
     emitter.indent = "  ";

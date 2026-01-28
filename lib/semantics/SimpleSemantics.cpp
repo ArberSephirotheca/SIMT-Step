@@ -262,6 +262,8 @@ SimpleSemantics::evaluateValue(mlir::Value value,
             llvm::errs() << v.asInt64();
         else if (v.isFloat32())
             llvm::errs() << v.asFloat32();
+        else if (v.isResource())
+            llvm::errs() << "<resource>";
         else
             llvm::errs() << "<none>";
         llvm::errs() << "\n";
@@ -272,6 +274,12 @@ SimpleSemantics::evaluateValue(mlir::Value value,
             logVal(it->second);
             return it->second;
         }
+    }
+
+    if (mlir::isa<simt::dialect::ResourceType>(value.getType())) {
+        auto v = SemValue::fromResource(value);
+        logVal(v);
+        return v;
     }
 
     if (auto constOp = value.getDefiningOp<mlir::arith::ConstantOp>()) {
@@ -576,6 +584,13 @@ auto SimpleSemantics::handleBufferStore(mlir::Operation *op,
         effect.token = token;
         return StepType::suspend(effect, std::move(deferStore));
     }
+    auto resOrErr = evaluateValue(op->getOperand(0), context);
+    if (!resOrErr) {
+        llvm::consumeError(resOrErr.takeError());
+        return StepType::halt();
+    }
+    if (!resOrErr->isResource())
+        llvm::report_fatal_error("buffer.store: resource operand is not a resource");
     auto idxOrErr = evaluateValue(op->getOperand(1), context);
     if (!idxOrErr) {
         llvm::consumeError(idxOrErr.takeError());
@@ -587,7 +602,7 @@ auto SimpleSemantics::handleBufferStore(mlir::Operation *op,
         return StepType::halt();
     }
     int64_t idx = idxOrErr->asInt64();
-    mlir::Value res = op->getOperand(0);
+    mlir::Value res = resOrErr->asResource();
     SemValue val = *valOrErr;
     auto doStore = [res, idx, val]() -> StepType {
         globalMemory()[res][idx] = val;
@@ -630,13 +645,20 @@ auto SimpleSemantics::handleBufferLoad(mlir::Operation *op,
         effect.token = token;
         return StepType::suspend(effect, std::move(deferLoad));
     }
+    auto resOrErr = evaluateValue(op->getOperand(0), context);
+    if (!resOrErr) {
+        llvm::consumeError(resOrErr.takeError());
+        return StepType::halt();
+    }
+    if (!resOrErr->isResource())
+        llvm::report_fatal_error("buffer.load: resource operand is not a resource");
     auto idxOrErr = evaluateValue(op->getOperand(1), context);
     if (!idxOrErr) {
         llvm::consumeError(idxOrErr.takeError());
         return StepType::halt();
     }
     int64_t idx = idxOrErr->asInt64();
-    mlir::Value res = op->getOperand(0);
+    mlir::Value res = resOrErr->asResource();
     auto doLoad = [res, idx]() -> StepType {
         auto resIt = globalMemory().find(res);
         if (resIt == globalMemory().end())

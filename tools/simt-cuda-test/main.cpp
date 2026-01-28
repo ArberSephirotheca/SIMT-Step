@@ -94,7 +94,7 @@ struct ExpectBufferEntry {
 struct Script {
     std::unordered_map<std::string, BufferDef> buffers;
     bool hasKernel = false;
-    std::string kernelName = "main";
+    std::string kernelName = "simt_kernel";
     std::string kernelSource;
     std::unordered_map<unsigned, Binding> bindings;
     bool hasLaunch = false;

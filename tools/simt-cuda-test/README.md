@@ -53,7 +53,7 @@ Ranges are inclusive (start/end are both checked).
 
 ### Kernel rules
 - The code inside `KERNEL` is passed to NVRTC verbatim (raw code only).
-- If `KERNEL` has no name, the kernel name is `main`.
+- If `KERNEL` has no name, the kernel name is `simt_kernel`.
 - The kernel signature must match the `BIND` list, ordered by `ARG` index.
   - `BUFFER` binds become pointer arguments of the declared element type.
   - `CONST` binds become scalar arguments of the declared type.

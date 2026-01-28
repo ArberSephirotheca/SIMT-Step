@@ -39,7 +39,7 @@ Types (v0):
 Ranges are inclusive (start/end are both checked).
 
 ### Kernel rules
-- If `KERNEL` has no name, the kernel name is `main`.
+- If `KERNEL` has no name, the kernel name is `simt_kernel`.
 - If `KERNEL <name>` is provided, that name is used.
 - The code block is passed to NVRTC verbatim (raw code only). No wrapper is
   injected by the runner.
@@ -54,7 +54,7 @@ FILL buf0 0
 INIT buf0 3 42
 
 KERNEL
-extern "C" __global__ void main(int* buf0, int n) {
+extern "C" __global__ void simt_kernel(int* buf0, int n) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < n) buf0[tid] += 1;
 }
