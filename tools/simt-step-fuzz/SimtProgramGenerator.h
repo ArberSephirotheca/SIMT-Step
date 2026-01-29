@@ -18,6 +18,7 @@ struct GeneratorConfig {
     std::uint32_t minControlOps = 4;
     bool complexHelper = false;
     bool helperUsesSubgroupIds = false;
+    bool noSubgroupOpsInSwitch = false;
     std::uint32_t helperMaxDepth = 3;
     std::uint32_t helperMinControlOps = 3;
     double breakContinueRate = -1.0; // < 0 => default RNG coin, [0,1] => rate

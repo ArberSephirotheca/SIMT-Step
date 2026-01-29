@@ -220,6 +220,10 @@ int main(int argc, char **argv) {
         "helper-subgroup-ids",
         llvm::cl::desc("Allow lane_id/subgroup_id in helper function (requires raiser support)"),
         llvm::cl::init(false));
+    llvm::cl::opt<bool> noSubgroupOpsInSwitch(
+        "no-subgroup-in-switch",
+        llvm::cl::desc("Do not emit subgroup ops (wave/lane_id/subgroup_id) inside switch cases"),
+        llvm::cl::init(false));
     llvm::cl::opt<unsigned> helperMaxDepth(
         "helper-max-depth",
         llvm::cl::desc("Max recursion depth for helper pattern generation"),
@@ -290,6 +294,7 @@ int main(int argc, char **argv) {
     cfg.seed = seedOpt;
     cfg.complexHelper = complexHelper || helperSubgroupIds;
     cfg.helperUsesSubgroupIds = helperSubgroupIds;
+    cfg.noSubgroupOpsInSwitch = noSubgroupOpsInSwitch;
     cfg.helperMaxDepth = helperMaxDepth;
     cfg.helperMinControlOps = helperMinControlOps;
     cfg.breakContinueRate = breakContinueRate;

@@ -70,6 +70,11 @@ def main():
         help="Minimum number of control-flow ops in helper function",
     )
     parser.add_argument(
+        "--no-subgroup-in-switch",
+        action="store_true",
+        help="Do not emit subgroup ops (wave/lane_id/subgroup_id) inside switch cases",
+    )
+    parser.add_argument(
         "--predicate-buffer",
         action="store_true",
         help="Emit predicate buffer and YAML per test",
@@ -130,6 +135,8 @@ def main():
                 validate_cmd.append(
                     f"--helper-min-control-ops={args.helper_min_control_ops}"
                 )
+            if args.no_subgroup_in_switch:
+                validate_cmd.append("--no-subgroup-in-switch")
             if args.predicate_buffer:
                 validate_cmd.append("--predicate-buffer")
             validate = run(validate_cmd)
@@ -156,6 +163,8 @@ def main():
                 gen_cmd.append(
                     f"--helper-min-control-ops={args.helper_min_control_ops}"
                 )
+            if args.no_subgroup_in_switch:
+                gen_cmd.append("--no-subgroup-in-switch")
             predicate_yaml = ""
             if args.predicate_buffer:
                 predicate_yaml = f"{out_dir}/test_{count:03d}_seed_{seed}.yaml"
@@ -187,6 +196,8 @@ def main():
                 record["helper_max_depth"] = args.helper_max_depth
             if args.helper_min_control_ops is not None:
                 record["helper_min_control_ops"] = args.helper_min_control_ops
+            if args.no_subgroup_in_switch:
+                record["no_subgroup_in_switch"] = True
             if predicate_yaml:
                 record["predicate_yaml"] = Path(predicate_yaml).name
             manifest.write(json.dumps(record) + "\n")

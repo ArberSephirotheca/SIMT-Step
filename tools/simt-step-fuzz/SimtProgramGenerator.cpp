@@ -46,6 +46,7 @@ struct BuildState {
     std::vector<int64_t> *predValues = nullptr;
     Value tid;
     Value outWave;
+    unsigned switchDepth = 0;
 };
 
 static Value makeI32(OpBuilder &b, Location loc, int v) {
@@ -149,9 +150,14 @@ struct HelperBuildState {
     Value outWave;
     int *waveId = nullptr;
     llvm::SmallVector<Value, 4> loopIters;
+    unsigned switchDepth = 0;
 };
 
+static Value buildHelperValue(OpBuilder &b, Location loc, HelperBuildState &st);
+
 static Value emitHelperWaveCount(OpBuilder &b, Location loc, HelperBuildState &st) {
+    if (st.cfg.noSubgroupOpsInSwitch && st.switchDepth > 0)
+        return buildHelperValue(b, loc, st);
     st.waveOps++;
     Value count = b.create<simt::dialect::WaveCountBitsOp>(loc, b.getI32Type(),
                                                            makeBool(b, loc, true));
@@ -173,7 +179,10 @@ static Value emitHelperWaveCount(OpBuilder &b, Location loc, HelperBuildState &s
 }
 
 static Value buildHelperValue(OpBuilder &b, Location loc, HelperBuildState &st) {
-    int choiceMax = st.usesSubgroupIds ? 4 : 2;
+    bool allowSubgroupIds = st.usesSubgroupIds;
+    if (st.cfg.noSubgroupOpsInSwitch && st.switchDepth > 0)
+        allowSubgroupIds = false;
+    int choiceMax = allowSubgroupIds ? 4 : 2;
     int choice = st.rng.pick(0, choiceMax);
     if (choice == 0)
         return makeI32(b, loc, st.rng.pick(0, 4));
@@ -248,7 +257,9 @@ static Value buildHelperSwitch(OpBuilder &b, Location loc, HelperBuildState &st,
             blk.addArguments({b.getI32Type()}, SmallVector<Location>{loc});
         }
         OpBuilder cb(&blk, blk.begin());
+        st.switchDepth++;
         Value bodyVal = buildHelperPattern(cb, loc, st, depth + 1, maxDepth);
+        st.switchDepth--;
         auto yield = cb.create<simt::dialect::YieldOp>(loc, ValueRange{bodyVal});
         yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
         ++caseIdx;
@@ -500,6 +511,8 @@ static Value makeNonUniformBound(OpBuilder &b, Location loc, RNG &rng,
 
 static void emitWaveCount(OpBuilder &b, Location loc, BuildState &st,
                           Value predicate, Value iteration = nullptr) {
+    if (st.cfg.noSubgroupOpsInSwitch && st.switchDepth > 0)
+        return;
     (void)predicate; // ignore caller-provided predicate; always count active lanes.
     int lanes = static_cast<int>(st.cfg.numThreads[0]);
     int stride = std::max<int>(1, st.cfg.maxTripCount * lanes);
@@ -518,7 +531,10 @@ static void emitWaveCount(OpBuilder &b, Location loc, BuildState &st,
 }
 
 static Value buildValue(OpBuilder &b, Location loc, BuildState &st) {
-    int choice = st.rng.pick(0, 4); // 0 const, 1 tid, 2 tid + const, 3 lane, 4 subgroup
+    int maxChoice = 4;
+    if (st.cfg.noSubgroupOpsInSwitch && st.switchDepth > 0)
+        maxChoice = 2;
+    int choice = st.rng.pick(0, maxChoice); // 0 const, 1 tid, 2 tid + const, 3 lane, 4 subgroup
     if (choice == 0)
         return makeI32(b, loc, st.rng.pick(0, 4));
     if (choice == 1)
@@ -546,19 +562,21 @@ static Value buildSwitch(OpBuilder &b, Location loc, BuildState &st,
     bool allowFallthrough = st.rng.coin();
     int defaultIndex = st.rng.pick(0, numCases - 1);
     llvm::SmallVector<bool, 4> emitWaveInCase;
-    emitWaveInCase.reserve(numCases);
-    bool anyWave = false;
-    bool allWave = true;
-    for (int i = 0; i < numCases; ++i) {
-        bool pick = st.rng.coin();
-        emitWaveInCase.push_back(pick);
-        anyWave |= pick;
-        allWave &= pick;
+    emitWaveInCase.assign(numCases, false);
+    if (!st.cfg.noSubgroupOpsInSwitch) {
+        bool anyWave = false;
+        bool allWave = true;
+        for (int i = 0; i < numCases; ++i) {
+            bool pick = st.rng.coin();
+            emitWaveInCase[i] = pick;
+            anyWave |= pick;
+            allWave &= pick;
+        }
+        if (!anyWave)
+            emitWaveInCase[st.rng.pick(0, numCases - 1)] = true;
+        if (allWave)
+            emitWaveInCase[st.rng.pick(0, numCases - 1)] = false;
     }
-    if (!anyWave)
-        emitWaveInCase[st.rng.pick(0, numCases - 1)] = true;
-    if (allWave)
-        emitWaveInCase[st.rng.pick(0, numCases - 1)] = false;
 
     llvm::SmallVector<bool, 4> fallthroughCase;
     fallthroughCase.reserve(numCases);
@@ -619,9 +637,11 @@ static Value buildSwitch(OpBuilder &b, Location loc, BuildState &st,
             blk.addArguments({b.getI32Type()}, SmallVector<Location>{loc});
         }
         OpBuilder cb(&blk, blk.begin());
+        st.switchDepth++;
         Value bodyVal = buildPattern(cb, loc, st, depth + 1, maxDepth);
         if (emitWaveInCase[caseIdx])
             emitWaveCount(cb, loc, st, makeBool(cb, loc, true));
+        st.switchDepth--;
         auto yield = cb.create<simt::dialect::YieldOp>(loc, ValueRange{bodyVal});
         yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
         ++caseIdx;
