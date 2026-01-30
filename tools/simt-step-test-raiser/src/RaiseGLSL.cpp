@@ -23,8 +23,8 @@ public:
 
 using BaseRaiser::BaseRaiser;
 
-LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expected, std::vector<std::vector<int64_t>> input) override {
-    return emitAmberHarness(*this, op, "GLSL", expected, input);
+LogicalResult emitHarness(Operation* op, HarnessProps props) override {
+    return emitAmberHarness(*this, op, "GLSL", props);
 }
 
 ~GlslRaiser(){}
@@ -223,9 +223,9 @@ std::string Memsem2Const(MemorySemantics s){
 
 namespace simt::test_raiser {
 
-LogicalResult emitRaisedGLSL(Operation *op, raw_ostream &o, std::vector<std::vector<int64_t>> expected, std::vector<std::vector<int64_t>> input){
+LogicalResult emitRaisedGLSL(Operation *op, raw_ostream &o, HarnessProps props){
     GlslRaiser glsl(o);
-    return glsl.emitHarness(op, expected, input);
+    return glsl.emitHarness(op, props);
 }
 
 }

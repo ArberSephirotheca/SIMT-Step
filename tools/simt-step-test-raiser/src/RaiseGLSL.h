@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BaseRaiser.h"
 #include "mlir/IR/Operation.h"
 #include "llvm/Support/LogicalResult.h"
 #include "llvm/Support/raw_ostream.h"
@@ -7,6 +8,6 @@
 
 namespace simt::test_raiser {
 
-    llvm::LogicalResult emitRaisedGLSL(mlir::Operation* op, llvm::raw_ostream& o, std::vector<std::vector<int64_t>> expected, std::vector<std::vector<int64_t>> input);
+    llvm::LogicalResult emitRaisedGLSL(mlir::Operation* op, llvm::raw_ostream& o, HarnessProps props);
     
 }

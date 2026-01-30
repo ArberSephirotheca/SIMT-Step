@@ -27,30 +27,28 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
     set +f
 
     noext="${testfile%.*}"
-    if [ $lang == "glsl" ]; then
-        if [ ! -f $noext.yaml ]; then
-            ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-glsl-amber $testfile -o $outfile
-        else
-            ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-glsl-amber $testfile -o $outfile --buffer-init-yaml $noext.yaml
-        fi 
-    else
-        if [ ! -f $noext.yaml ]; then
-            ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-cuda $testfile -o $outfile
-        else
-            ./build/tools/simt-step-test-raiser/simt-step-test-raiser --mlir-to-cuda $testfile -o $outfile --buffer-init-yaml $noext.yaml
-        fi 
-    fi
+    targetflag=$(
+        case $lang in
+            "glsl")
+                echo "--mlir-to-glsl-amber" ;;
+            "cuda")
+                echo "--mlir-to-cuda" ;;
+        esac
+    )
+    yamlflag=$( [ ! -f $noext.yaml ] || echo "--buffer-init-yaml $noext.yaml" || echo )
+    ./build/tools/simt-step-test-raiser/simt-step-test-raiser $testfile -o $outfile $targetflag $yamlflag
     if [ $? -ne 0 ]; then
         continue
     fi
 
     if [ $lang == "glsl" ]; then
-        ~/amber/out/Debug/amber $outfile
+        scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.amber
+        ssh skagle@waterthrush.be.ucsc.edu -tt sudo /home/skagle/amber/out/Debug/amber -D 0 testout.amber
     else
         nvcc -w $outfile && ./a.out
     fi
     if [ $? -ne 0 ]; then
         echo "Output in: $outfile"
-        continue
+        exit
     fi
 done
