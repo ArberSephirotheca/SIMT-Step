@@ -43,7 +43,6 @@ namespace simt::test_raiser {
 BaseRaiser::BaseRaiser(raw_ostream& o): scopeHandler(), os(o) {}
 BaseRaiser::~BaseRaiser(){}
 
-// TODO: Get and Add should be seperate for better error checking
 int BaseRaiser::addValueNumber(Value v){
     assert(!value_map.contains(v));
     return value_map[v] = value_counter++;
@@ -650,8 +649,7 @@ LogicalResult emitAmberHarness(
         BaseRaiser& b, 
         Operation* op, 
         std::string lang, 
-        std::vector<std::vector<int64_t>> expected,
-        std::vector<std::vector<int64_t>> input){
+        HarnessProps props){
 
     int64_t ntx, nty, ntz;
     std::vector<int64_t> bufferIndicies;
@@ -660,15 +658,15 @@ LogicalResult emitAmberHarness(
     b.nty = nty;
     b.ntz = ntz;
 
-    for (auto buffer : expected){
+    for (auto buffer : props.expected){
         b.buffer_sizes.push_back(buffer.size());
     }
 
     b.os << "#!amber\n"
             "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"
-            "DEVICE_FEATURE shaderInt64\n"
-            "DEVICE_FEATURE shaderFloat64\n"
-            "SET ENGINE_DATA fence_timeout_ms 10000\n"
+            "DEVICE_FEATURE shaderInt64\n";
+    if (!props.noF64) b.os << "DEVICE_FEATURE shaderFloat64\n";
+    b.os << "SET ENGINE_DATA fence_timeout_ms 10000\n"
             "SHADER compute compute_shader " << lang << " TARGET_ENV vulkan1.1\n";
     
     if (failed(b.emitShaderPrologue()) || failed(b.emitOp(op))) {
@@ -678,7 +676,7 @@ LogicalResult emitAmberHarness(
     b.os << "\nEND\n";
 
     int bnum = 0;
-    for (auto [outbuffer, inbuffer] : llvm::zip(expected, input)){
+    for (auto [outbuffer, inbuffer] : llvm::zip(props.expected, props.input)){
         b.os << "BUFFER actual" << bnum << " DATA_TYPE int32 DATA\n  ";
         for (int i : inbuffer) b.os << i << " ";
         b.os << "\nEND\nBUFFER expected" << bnum << " DATA_TYPE int32 DATA\n  ";
@@ -688,13 +686,16 @@ LogicalResult emitAmberHarness(
     }
     b.os << "PIPELINE compute pipeline\n"
         "  ATTACH compute_shader\n";
-    for (size_t i = 0; i < expected.size(); i++){
+    for (size_t i = 0; i < props.expected.size(); i++){
         b.os << "  BIND BUFFER actual" << i << " AS storage DESCRIPTOR_SET 0 BINDING " << i << "\n";
     }
+    b.os << "SUBGROUP compute_shader\n";
+    b.os.indent() << "REQUIRED_SIZE " << props.subgroupWidth << "\n";
+    b.os.unindent() << "END\n";
     b.os << "END\n"
         << "RUN pipeline 1 1 1\n";
     
-    for (size_t i = 0; i < expected.size(); i++){
+    for (size_t i = 0; i < props.expected.size(); i++){
         b.os << "EXPECT expected" << i << " EQ_BUFFER actual" << i << "\n";
     }
     return success();

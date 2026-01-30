@@ -43,7 +43,7 @@ llvm::LogicalResult getExpectedBuffer(
         std::vector<std::vector<int64_t>>& expectedBuffer, 
         std::vector<std::vector<int64_t>>& inputBuffer, 
         std::string path = "",
-        unsigned subgroupWidth = 32){
+        unsigned subgroupWidth = 32){ // TODO: Find subgroup width of machine
     expectedBuffer.clear();
 
     DialectRegistry registry;
@@ -114,25 +114,51 @@ int main(int argc, char** argv){
       llvm::cl::desc(
           "Path to YAML file with buffer initalization information. If not provided, buffer will start with default intialization."),
       llvm::cl::init(""));
+    
+    llvm::cl::opt<int> subgroupWidth(
+        "subgroup-width",
+        llvm::cl::desc("Width of subgroup"),
+        llvm::cl::init(32)
+    );
+
+    llvm::cl::opt<bool> noFloat64(
+        "no-f64",
+        llvm::cl::desc(
+            "Does not require device to support 64-bit (double precision) floats. "
+            "Scripts that use them will not work."),
+        llvm::cl::init(false)
+    );
 
     TranslateFromMLIRRegistration t_glsl(
         "mlir-to-glsl-amber", "translate mlir to GLSL with Amber harness",
-        [&bufferInitYaml](Operation *op, raw_ostream &output) {
+        [&bufferInitYaml, &subgroupWidth, &noFloat64](Operation *op, raw_ostream &output) {
                 std::vector<std::vector<int64_t>> expbuf = {};
                 std::vector<std::vector<int64_t>> inbuf = {};
-                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml))) return failure();
-                return simt::test_raiser::emitRaisedGLSL(op, output, expbuf, inbuf);
+                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml, subgroupWidth))) return failure();
+                simt::test_raiser::HarnessProps props {
+                    .expected = expbuf,
+                    .input = inbuf,
+                    .subgroupWidth = subgroupWidth,
+                    .noF64 = noFloat64
+                };
+                return simt::test_raiser::emitRaisedGLSL(op, output, props);
         },
         insertSimtDialects
     );
 
     TranslateFromMLIRRegistration t_cuda(
         "mlir-to-cuda", "translate mlir to CUDA with a CUDA test harness",
-        [&bufferInitYaml](Operation *op, raw_ostream &output) {
+        [&bufferInitYaml, &subgroupWidth](Operation *op, raw_ostream &output) {
                 std::vector<std::vector<int64_t>> expbuf = {};
                 std::vector<std::vector<int64_t>> inbuf = {};
                 if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml))) return failure();
-                return simt::test_raiser::emitRaisedCUDA(op, output, expbuf, inbuf, 32);
+                simt::test_raiser::HarnessProps props {
+                    .expected = expbuf,
+                    .input = inbuf,
+                    .subgroupWidth = subgroupWidth,
+                    .noF64 = false
+                };
+                return simt::test_raiser::emitRaisedCUDA(op, output, props);
         },
         insertSimtDialects
     );

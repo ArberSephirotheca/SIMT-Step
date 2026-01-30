@@ -38,13 +38,21 @@ using namespace simt::dialect;
 */
 
 namespace simt::test_raiser {
+
+    struct HarnessProps {
+        std::vector<std::vector<int64_t>> expected;
+        std::vector<std::vector<int64_t>> input;
+        int subgroupWidth;
+        bool noF64;
+    };
+
     class BaseRaiser {
         public:
             explicit BaseRaiser(raw_ostream &o);
             virtual ~BaseRaiser();
 
             // Emits the test harness and GPU code.
-            virtual LogicalResult emitHarness(Operation* op, std::vector<std::vector<int64_t>> expected, std::vector<std::vector<int64_t>> actual) = 0;
+            virtual LogicalResult emitHarness(Operation* op, HarnessProps props) = 0;
         protected:
             struct ScopeHandler {
                 struct Scope {
@@ -186,14 +194,15 @@ namespace simt::test_raiser {
             // virtual LogicalResult printOp(FenceOp& op) = 0;
             // virtual LogicalResult printOp(BarrierOp& op) = 0;
 
-            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers, std::vector<std::vector<int64_t>>);
+            friend LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, HarnessProps props);
+
     };
 
     /*
     Emits and Amber test harness that wraps the GPU code. Can be used as
     `emitHarness` for languages Amber supports.
     */
-    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, std::vector<std::vector<int64_t>> buffers, std::vector<std::vector<int64_t>>);
+    LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, HarnessProps props);
 
     /*
     Gets the thread dimensions from the main function and the argument index of the buffer 

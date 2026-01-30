@@ -32,13 +32,12 @@ using BaseRaiser::BaseRaiser;
 
 LogicalResult emitHarness(
     Operation* op, 
-    std::vector<std::vector<int64_t>> expected, 
-    std::vector<std::vector<int64_t>> input) override {
+    HarnessProps props) override {
 
     std::vector<int64_t> bufferIndicies;
     if(failed(getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
 
-    os << "#include <assert.h>\n";
+    os << "#include <assert.h>\n#include <cstdio>\n";
     os << "__device__ __forceinline__ int3 make_int3(uint3 v){ return make_int3(v.x, v.y, v.z); }\n";
 
     if (failed(emitOp(op))) return failure();
@@ -46,7 +45,7 @@ LogicalResult emitHarness(
     os << "int main(){\n";
     os.indent();
     
-    for (auto [i, ebuf] : llvm::enumerate(expected)){
+    for (auto [i, ebuf] : llvm::enumerate(props.expected)){
         os << "int expected" << i << "[] = {";
         for (auto [j, v] : llvm::enumerate(ebuf)){
             os << v;
@@ -56,7 +55,7 @@ LogicalResult emitHarness(
     }
 
 
-    for (auto [i, abuf] : llvm::enumerate(input)){
+    for (auto [i, abuf] : llvm::enumerate(props.input)){
         os << "int host_actual" << i << "[] = {";
         for (auto [j, v] : llvm::enumerate(abuf)){
             os << v;
@@ -70,22 +69,23 @@ LogicalResult emitHarness(
 
     os << "dim3 thread_dim(" << ntx << ", " << nty << ", " << ntz << ");\n";
     os << "kernel_main<<<1, thread_dim>>>(";
-    for (size_t i = 0; i < input.size(); i++){
+    for (size_t i = 0; i < props.input.size(); i++){
         os << "dev_actual" << i;
-        if (i < input.size() - 1) os << ", ";
+        if (i < props.input.size() - 1) os << ", ";
     }
     os << ");\n";
 
-    for (size_t i = 0; i < input.size(); i++){
+    for (size_t i = 0; i < props.input.size(); i++){
         os << "cudaMemcpy(host_actual" << i << ", dev_actual" << i << ", sizeof(host_actual" << i << "), cudaMemcpyDeviceToHost);\n";
-        os << "for (int i = 0; i < " << expected[i].size() << "; i++){\n";
-        os.indent() << "assert(expected" << i << "[i] == host_actual" << i << "[i]);\n"; // TODO: Add more useful assertion
-        os.unindent();
-        os << "}\n";
+        os << "for (int i = 0; i < " << props.expected[i].size() << "; i++){\n";
+        os.indent() << "if (expected" << i << "[i] != host_actual" << i << "[i]){\n";
+        os.indent() << "printf(\"[%d]: expected=%d actual=%d\\n\", i, expected" << i << "[i], host_actual" << i << "[i]);\n";
+        os << "assert(expected" << i << "[i] == host_actual" << i << "[i]);\n";
+        os.unindent() << "}\n";
+        os.unindent() << "}\n";
     }
 
-    os.unindent();
-    os << "}";
+    os.unindent() << "}";
 
     return success();
 }
@@ -227,7 +227,7 @@ LogicalResult printOp(BufferAtomicAddOp& op) override {
 
 LogicalResult printOp(WaveCountBitsOp& op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
-    os << "__popc(__ballot(" << getValueName(op.getOperand()) << "))";
+    os << "__popc(__ballot_sync(__activemask(), " << getValueName(op.getOperand()) << "))";
     return success();
 }
 
@@ -263,50 +263,6 @@ LogicalResult printOp(GroupIndexOp& op) override {
     return emitConstVec(op.getResult(), "make_int3(blockIdx)");
 }
 
-std::string Scope2Const(Scope s){
-    switch (s){
-        case Scope::Workgroup:
-            return "gl_ScopeWorkgroup";
-        case Scope::Subgroup:
-            return "gl_ScopeSubgroup";
-        case Scope::Thread:
-            return "gl_ScopeInvocation";
-    }
-}
-
-std::string Memsem2Const(MemorySemantics s){
-    switch (s){
-        case MemorySemantics::None:
-            return "gl_SemanticsRelaxed"; // TODO: Double check this
-        case MemorySemantics::Acquire:
-            return "gl_SemanticsAquire";
-        case MemorySemantics::Release:
-            return "gl_SemanticsRelease";
-        case MemorySemantics::AcqRel:
-            return "gl_SemanticsAquireRelease";
-    }
-}
-
-// LogicalResult printOp(BarrierOp& op) override {
-//     os << "controlBarrier(";
-//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
-//     os << ", ";
-//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
-//     os << ", gl_StorageSemanticsNone, ";
-//     os << Memsem2Const(op.getMemsem().value_or(MemorySemantics::None));
-//     os << ")";
-//     return success();
-// }
-
-// LogicalResult printOp(FenceOp& op) override {
-//     os << "memoryBarrier(";
-//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
-//     os << ", gl_StorageSemanticsNone, ";
-//     os << Memsem2Const(op.getMemsem().value_or(MemorySemantics::None));
-//     os << ")";
-//     return success();
-// }
-
 };
 
 namespace simt::test_raiser {
@@ -314,14 +270,12 @@ namespace simt::test_raiser {
 LogicalResult emitRaisedCUDA(
     Operation *op, 
     raw_ostream &o, 
-    std::vector<std::vector<int64_t>> expected, 
-    std::vector<std::vector<int64_t>> inputs,
-    unsigned subgroupWidth){
+    HarnessProps props){
 
     CudaRaiser cuda(o);
-    cuda.subgroupWidth = subgroupWidth;
+    cuda.subgroupWidth = props.subgroupWidth;
 
-    return cuda.emitHarness(op, expected, inputs);
+    return cuda.emitHarness(op, props);
 }
 
 }
