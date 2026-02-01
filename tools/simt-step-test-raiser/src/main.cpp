@@ -1,17 +1,20 @@
 #include "BaseRaiser.h"
 #include "RaiseGLSL.h"
 #include "RaiseCUDA.h"
+#include "RaiseHIP.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SimpleProgram.h"
 #include "../tools/simt-step-runner/InitYaml.h"
 
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <llvm/Support/CommandLine.h>
 #include <mlir/Tools/mlir-translate/Translation.h>
 #include <mlir/Tools/mlir-translate/MlirTranslateMain.h>
 #include "llvm/Support/LogicalResult.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "mlir/IR/DialectRegistry.h"
 #include "mlir/Support/LLVM.h"
@@ -39,11 +42,11 @@ void insertSimtDialects(DialectRegistry &registry){
 }
 
 llvm::LogicalResult getExpectedBuffer(
-        Operation* op, 
-        std::vector<std::vector<int64_t>>& expectedBuffer, 
-        std::vector<std::vector<int64_t>>& inputBuffer, 
-        std::string path = "",
-        unsigned subgroupWidth = 32){ // TODO: Find subgroup width of machine
+    Operation* op, 
+    std::vector<std::vector<int64_t>>& expectedBuffer, 
+    std::vector<std::vector<int64_t>>& inputBuffer, 
+    std::string path = "",
+    unsigned subgroupWidth = 32){ // TODO: Find subgroup width of machine
     expectedBuffer.clear();
 
     DialectRegistry registry;
@@ -107,6 +110,25 @@ llvm::LogicalResult getExpectedBuffer(
     return llvm::success();
 }
 
+auto makeTranslateFunction(
+    LogicalResult func(Operation*, raw_ostream&, simt::test_raiser::HarnessProps),
+    llvm::cl::opt<std::string>& bufferInitYaml,
+    llvm::cl::opt<int>& subgroupWidth,
+    llvm::cl::opt<bool>& noFloat64){
+    return [&bufferInitYaml, &subgroupWidth, &noFloat64, func](Operation *op, raw_ostream &output) {
+                std::vector<std::vector<int64_t>> expbuf = {};
+                std::vector<std::vector<int64_t>> inbuf = {};
+                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml, subgroupWidth))) return failure();
+                simt::test_raiser::HarnessProps props {
+                    .expected = expbuf,
+                    .input = inbuf,
+                    .subgroupWidth = subgroupWidth,
+                    .noF64 = noFloat64
+                };
+                return func(op, output, props);
+        };
+}
+
 int main(int argc, char** argv){
 
     llvm::cl::opt<std::string> bufferInitYaml(
@@ -131,35 +153,25 @@ int main(int argc, char** argv){
 
     TranslateFromMLIRRegistration t_glsl(
         "mlir-to-glsl-amber", "translate mlir to GLSL with Amber harness",
-        [&bufferInitYaml, &subgroupWidth, &noFloat64](Operation *op, raw_ostream &output) {
-                std::vector<std::vector<int64_t>> expbuf = {};
-                std::vector<std::vector<int64_t>> inbuf = {};
-                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml, subgroupWidth))) return failure();
-                simt::test_raiser::HarnessProps props {
-                    .expected = expbuf,
-                    .input = inbuf,
-                    .subgroupWidth = subgroupWidth,
-                    .noF64 = noFloat64
-                };
-                return simt::test_raiser::emitRaisedGLSL(op, output, props);
-        },
+        makeTranslateFunction(
+            simt::test_raiser::emitRaisedGLSL, 
+            bufferInitYaml, subgroupWidth, noFloat64),
         insertSimtDialects
     );
 
     TranslateFromMLIRRegistration t_cuda(
         "mlir-to-cuda", "translate mlir to CUDA with a CUDA test harness",
-        [&bufferInitYaml, &subgroupWidth](Operation *op, raw_ostream &output) {
-                std::vector<std::vector<int64_t>> expbuf = {};
-                std::vector<std::vector<int64_t>> inbuf = {};
-                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml))) return failure();
-                simt::test_raiser::HarnessProps props {
-                    .expected = expbuf,
-                    .input = inbuf,
-                    .subgroupWidth = subgroupWidth,
-                    .noF64 = false
-                };
-                return simt::test_raiser::emitRaisedCUDA(op, output, props);
-        },
+        makeTranslateFunction(
+            simt::test_raiser::emitRaisedCUDA, 
+            bufferInitYaml, subgroupWidth, noFloat64),
+        insertSimtDialects
+    );
+
+    TranslateFromMLIRRegistration t_hip(
+        "mlir-to-hip", "translate mlir to HIP with a HIP test harness",
+        makeTranslateFunction(
+            simt::test_raiser::emitRaisedHIP, 
+            bufferInitYaml, subgroupWidth, noFloat64),
         insertSimtDialects
     );
 

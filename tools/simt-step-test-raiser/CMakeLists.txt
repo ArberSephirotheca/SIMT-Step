@@ -5,6 +5,7 @@ add_executable(simt-step-test-raiser
     src/BaseRaiser.cpp
     src/RaiseGLSL.cpp
     src/RaiseCUDA.cpp
+    src/RaiseHIP.cpp
 )
 
 llvm_update_compile_flags(simt-step-test-raiser)

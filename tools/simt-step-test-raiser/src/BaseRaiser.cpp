@@ -189,7 +189,7 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
         return failure();
     }
     
-    if (!isa<func::FuncOp, ModuleOp, IfOp, YieldOp, LoopOp, ConditionOp>(op)){
+    if (!isa<func::FuncOp, ModuleOp, IfOp, YieldOp, LoopOp, ConditionOp, SwitchOp>(op)){
         os << ";\n";
     }
 
@@ -532,7 +532,7 @@ LogicalResult BaseRaiser::printOp(SwitchOp& op){
         } else {
             os << "case " << op.getCaseValues()[block_index - seen_default] << ":\n";
         }
-        os.indent();
+        os.indent() << "{\n";
 
         for (auto arg : block.getArguments()){
             value_map[arg] = getValueNumber(scopeHandler.peek().results[arg.getArgNumber()]);
@@ -540,7 +540,7 @@ LogicalResult BaseRaiser::printOp(SwitchOp& op){
 
         if (failed(emitBlock(block))) return failure();
 
-        os.unindent();
+        os.unindent() << "}\n";
         block_index++;
     }
 
