@@ -81,6 +81,12 @@ def main():
         help="Probability in [0,1] to emit a wave op immediately after a switch",
     )
     parser.add_argument(
+        "--non-uniform-helper-call-rate",
+        type=float,
+        default=None,
+        help="Probability in [0,1] to call helper under non-uniform control flow",
+    )
+    parser.add_argument(
         "--predicate-buffer",
         action="store_true",
         help="Emit predicate buffer and YAML per test",
@@ -147,6 +153,10 @@ def main():
                 validate_cmd.append(
                     f"--post-switch-wave-op-rate={args.post_switch_wave_op_rate}"
                 )
+            if args.non_uniform_helper_call_rate is not None:
+                validate_cmd.append(
+                    f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
+                )
             if args.predicate_buffer:
                 validate_cmd.append("--predicate-buffer")
             validate = run(validate_cmd)
@@ -178,6 +188,10 @@ def main():
             if args.post_switch_wave_op_rate is not None:
                 gen_cmd.append(
                     f"--post-switch-wave-op-rate={args.post_switch_wave_op_rate}"
+                )
+            if args.non_uniform_helper_call_rate is not None:
+                gen_cmd.append(
+                    f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
                 )
             predicate_yaml = ""
             if args.predicate_buffer:
@@ -214,6 +228,8 @@ def main():
                 record["no_subgroup_in_switch"] = True
             if args.post_switch_wave_op_rate is not None:
                 record["post_switch_wave_op_rate"] = args.post_switch_wave_op_rate
+            if args.non_uniform_helper_call_rate is not None:
+                record["non_uniform_helper_call_rate"] = args.non_uniform_helper_call_rate
             if predicate_yaml:
                 record["predicate_yaml"] = Path(predicate_yaml).name
             manifest.write(json.dumps(record) + "\n")

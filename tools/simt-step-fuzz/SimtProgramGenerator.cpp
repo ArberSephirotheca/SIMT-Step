@@ -1154,7 +1154,42 @@ createRicherRandomModule(mlir::MLIRContext &context,
                 loadPredicateI32(builder, loc, st, valueBase, st.tid));
         }
     }
-    builder.create<func::CallOp>(loc, helper, helperArgs);
+    bool wrapHelper = cfg.nonUniformHelperCallRate > 0.0 &&
+                      st.rng.chance(cfg.nonUniformHelperCallRate);
+    if (!wrapHelper) {
+        builder.create<func::CallOp>(loc, helper, helperArgs);
+    } else {
+        Value cond;
+        if (helperPredicateArgs) {
+            Value pred = helperArgs[2];
+            Value zero = makeI32(builder, loc, 0);
+            cond = builder.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, pred,
+                                                 zero);
+        } else {
+            cond = makeNonUniformCond(builder, loc, st.rng, st.cfg, st.tid);
+        }
+
+        auto ifOp = builder.create<simt::dialect::IfOp>(loc, TypeRange{}, cond,
+                                                       /*withElseRegion=*/true);
+        if (ifOp.getThenRegion().empty())
+            ifOp.getThenRegion().push_back(new Block());
+        if (ifOp.getElseRegion().empty())
+            ifOp.getElseRegion().push_back(new Block());
+
+        {
+            auto &thenBlock = ifOp.getThenRegion().front();
+            OpBuilder thenB(&thenBlock, thenBlock.begin());
+            thenB.create<func::CallOp>(loc, helper, helperArgs);
+            thenB.create<simt::dialect::YieldOp>(loc, ValueRange{});
+        }
+        {
+            auto &elseBlock = ifOp.getElseRegion().front();
+            OpBuilder elseB(&elseBlock, elseBlock.begin());
+            elseB.create<func::CallOp>(loc, helper, helperArgs);
+            elseB.create<simt::dialect::YieldOp>(loc, ValueRange{});
+        }
+        builder.setInsertionPointAfter(ifOp);
+    }
 
     int roots = rng.pick(1, 3);
     for (int r = 0; r < roots; ++r) {

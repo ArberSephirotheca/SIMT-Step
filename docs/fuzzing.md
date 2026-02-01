@@ -82,6 +82,7 @@ This script is a “corpus builder”: it keeps trying seeds until it finds prog
 - `--break-continue-rate p`: probability in `[0,1]` to emit `break`/`continue` in loops.
 - `--no-subgroup-in-switch`: do not emit subgroup ops inside switch cases (useful to isolate “switch reconvergence” from subgroup semantics).
 - `--post-switch-wave-op-rate p`: probability in `[0,1]` to emit a `wave_count_bits(true)` *immediately after* a `switch` (stresses reconvergence-after-switch).
+- `--non-uniform-helper-call-rate p`: probability in `[0,1]` to call `helper0` under a non-uniform `if` so wave ops inside the helper see the branch active mask.
 
 ### Predicate buffer / YAML
 - `--predicate-buffer`: make `@main` take a predicate buffer and write `test_*.yaml`.

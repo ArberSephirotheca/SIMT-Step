@@ -228,6 +228,10 @@ int main(int argc, char **argv) {
         "post-switch-wave-op-rate",
         llvm::cl::desc("Probability in [0,1] to emit a wave op immediately after a switch"),
         llvm::cl::init(0.0));
+    llvm::cl::opt<double> nonUniformHelperCallRate(
+        "non-uniform-helper-call-rate",
+        llvm::cl::desc("Probability in [0,1] to call helper under non-uniform control flow"),
+        llvm::cl::init(0.0));
     llvm::cl::opt<unsigned> helperMaxDepth(
         "helper-max-depth",
         llvm::cl::desc("Max recursion depth for helper pattern generation"),
@@ -282,6 +286,10 @@ int main(int argc, char **argv) {
         llvm::errs() << "error: --post-switch-wave-op-rate must be <= 1.0\n";
         return 1;
     }
+    if (nonUniformHelperCallRate > 1.0) {
+        llvm::errs() << "error: --non-uniform-helper-call-rate must be <= 1.0\n";
+        return 1;
+    }
     if (helperMaxDepth < 1) {
         llvm::errs() << "error: --helper-max-depth must be >= 1\n";
         return 1;
@@ -304,6 +312,7 @@ int main(int argc, char **argv) {
     cfg.helperUsesSubgroupIds = helperSubgroupIds;
     cfg.noSubgroupOpsInSwitch = noSubgroupOpsInSwitch;
     cfg.postSwitchWaveOpRate = postSwitchWaveOpRate;
+    cfg.nonUniformHelperCallRate = nonUniformHelperCallRate;
     cfg.helperMaxDepth = helperMaxDepth;
     cfg.helperMinControlOps = helperMinControlOps;
     cfg.breakContinueRate = breakContinueRate;
