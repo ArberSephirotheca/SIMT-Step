@@ -96,6 +96,9 @@ auto SimpleSemantics::evalOperation(mlir::Operation *op,
     if (auto cmpOp = llvm::dyn_cast<mlir::arith::CmpIOp>(op))
         return handleCmpIOp(cmpOp, context);
 
+    if (auto selectOp = llvm::dyn_cast<mlir::arith::SelectOp>(op))
+        return handleSelectOp(selectOp, context);
+
     if (llvm::isa<simt::dialect::LaneIdOp>(op))
         return handleLaneId(context);
 
@@ -503,6 +506,19 @@ auto SimpleSemantics::handleCmpIOp(mlir::arith::CmpIOp op,
     }
 
     return StepType::produce(SemValue::fromBool(result));
+}
+
+auto SimpleSemantics::handleSelectOp(mlir::arith::SelectOp op,
+                                     SemanticsContext &context) -> StepType {
+    auto condOrErr = evaluateValue(op.getCondition(), context);
+    if (!condOrErr)
+        return StepType::halt();
+    mlir::Value selected =
+        condOrErr->asBool() ? op.getTrueValue() : op.getFalseValue();
+    auto valueOrErr = evaluateValue(selected, context);
+    if (!valueOrErr)
+        return StepType::halt();
+    return StepType::produce(std::move(*valueOrErr));
 }
 
 auto SimpleSemantics::handleDispatchThreadId(SemanticsContext &context)

@@ -1703,10 +1703,21 @@ private:
 
     MergeStackEntry<ValueType, StepType> *
     findLoopEntry(WaveContext<ValueType, StepType> &waveCtx,
+                  const DynamicBlockKey &key,
                   const mlir::Operation *loopOp) {
         for (auto it = waveCtx.mergeStack.rbegin();
              it != waveCtx.mergeStack.rend(); ++it) {
-            if (it->loopFrame && it->loopFrame->loopOp == loopOp)
+            if (!it->loopFrame)
+                continue;
+            if (it->loopFrame->loopOp != loopOp)
+                continue;
+            const auto &frame = *it->loopFrame;
+            // Disambiguate multiple dynamic instances of the same loop op (e.g.,
+            // when the loop is nested under another loop/switch and lanes are in
+            // different iterations): pick the frame whose prepare/body subtree
+            // contains the current dynamic block key.
+            if (isDynamicDescendant(waveCtx, key, frame.prepareKey) ||
+                isDynamicDescendant(waveCtx, key, frame.bodyKey))
                 return &*it;
         }
         return nullptr;
@@ -1731,7 +1742,7 @@ private:
             llvm::report_fatal_error("handleLoopPrepareTerminator: invalid active mask");
         }
 
-        auto *entry = findLoopEntry(waveCtx, blockCtx->loopOp);
+        auto *entry = findLoopEntry(waveCtx, key, blockCtx->loopOp);
         if (!entry || !entry->loopFrame) {
             cpsDebugStream() << "[CPS] handleLoopPrepareTerminator missing loop frame "
                          << "lane=" << lane << " key=" << key.block
@@ -1861,7 +1872,7 @@ private:
         }
         shrinkExpectedForLoopLane(wave, waveCtx, blockCtx->loopOp, lane);
         handleReconvergence(wave, waveCtx, key, lane);
-        auto *finalEntry = findLoopEntry(waveCtx, blockCtx->loopOp);
+        auto *finalEntry = findLoopEntry(waveCtx, key, blockCtx->loopOp);
         if (finalEntry && finalEntry->loopFrame) {
             bool loopDone =
                 finalEntry->expectedMask != 0
@@ -1915,7 +1926,7 @@ private:
                          << "\n";
         }
 
-        auto *entry = findLoopEntry(waveCtx, blockCtx->loopOp);
+        auto *entry = findLoopEntry(waveCtx, key, blockCtx->loopOp);
         if (!entry || !entry->loopFrame)
             llvm::report_fatal_error("handleLoopYield: missing loop frame");
         auto &loopFrame = *entry->loopFrame;
@@ -2119,7 +2130,7 @@ private:
                          << "\n";
         }
 
-        auto *entry = findLoopEntry(waveCtx, blockCtx->loopOp);
+        auto *entry = findLoopEntry(waveCtx, key, blockCtx->loopOp);
         if (!entry || !entry->loopFrame)
             llvm::report_fatal_error("handleLoopContinue: missing loop frame");
         auto &loopFrame = *entry->loopFrame;
@@ -2289,22 +2300,37 @@ private:
         auto *blockCtx = getBlock(waveCtx, key);
         if (!blockCtx)
             llvm::report_fatal_error("handleBreak: missing block context");
-        assert(!(blockCtx->loopOp && blockCtx->switchOp) &&
-               "dynamic block cannot have both loopOp and switchOp");
         if ((blockCtx->activeMask & (1ull << lane)) == 0)
             llvm::report_fatal_error("handleBreak: invalid active mask");
-        // Find nearest enclosing loop (preferred) or switch merge entry that matches this block.
+        // Find the nearest enclosing loop or switch merge entry that contains this
+        // dynamic block key. This must disambiguate multiple dynamic instances of
+        // the same op (e.g., a loop/switch executed in different iterations).
         MergeStackEntry<ValueType, StepType> *entry = nullptr;
         for (auto it = waveCtx.mergeStack.rbegin(); it != waveCtx.mergeStack.rend(); ++it) {
-            if (blockCtx->loopOp && it->loopFrame &&
-                it->loopFrame->loopOp == blockCtx->loopOp) {
-                entry = &*it;
-                break;
+            if (it->ifOp)
+                continue;
+            if (it->loopFrame) {
+                const auto &frame = *it->loopFrame;
+                if (isDynamicDescendant(waveCtx, key, frame.prepareKey) ||
+                    isDynamicDescendant(waveCtx, key, frame.bodyKey)) {
+                    entry = &*it;
+                    break;
+                }
+                continue;
             }
-            if (blockCtx->switchOp && !it->loopFrame) {
-                auto parentIt = waveCtx.blocks.find(it->parent);
-                if (parentIt != waveCtx.blocks.end() &&
-                    parentIt->second.switchOp == blockCtx->switchOp) {
+            if (it->switchFrame) {
+                const auto &frame = *it->switchFrame;
+                bool inSwitch = false;
+                for (std::size_t idx = 0; idx < frame.caseBlocks.size(); ++idx) {
+                    DynamicBlockKey caseKey{
+                        frame.caseBlocks[idx],
+                        static_cast<std::uint32_t>(frame.baseSeq + idx)};
+                    if (isDynamicDescendant(waveCtx, key, caseKey)) {
+                        inSwitch = true;
+                        break;
+                    }
+                }
+                if (inSwitch) {
                     entry = &*it;
                     break;
                 }
@@ -2376,21 +2402,38 @@ private:
             values.push_back(*valOrErr);
         }
 
+        // Match the merge entry for this dynamic instance of the switch.
+        //
+        // IMPORTANT: a single simt_step.switch op can execute multiple times (e.g.
+        // inside a simt_step.loop), so matching by switchOp alone is ambiguous.
+        // Prefer the parent dynamic block key when available.
         MergeStackEntry<ValueType, StepType> *entry = nullptr;
-        for (auto it = waveCtx.mergeStack.rbegin(); it != waveCtx.mergeStack.rend(); ++it) {
-            if (!it->loopFrame && !it->ifOp && it->switchFrame &&
-                it->switchFrame->switchOp == blockCtx->switchOp) {
-                entry = &*it;
-                break;
-            }
-        }
-        if (!entry && blockCtx->parentKey) {
+        if (blockCtx->parentKey) {
             for (auto it = waveCtx.mergeStack.rbegin();
                  it != waveCtx.mergeStack.rend(); ++it) {
                 if (it->loopFrame || it->ifOp || it->parent != *blockCtx->parentKey)
                     continue;
                 if (it->switchFrame &&
                     it->switchFrame->switchOp != blockCtx->switchOp)
+                    continue;
+                entry = &*it;
+                break;
+            }
+        }
+        if (!entry) {
+            for (auto it = waveCtx.mergeStack.rbegin();
+                 it != waveCtx.mergeStack.rend(); ++it) {
+                if (it->loopFrame || it->ifOp || !it->switchFrame)
+                    continue;
+                if (it->switchFrame->switchOp != blockCtx->switchOp)
+                    continue;
+                // Disambiguate multiple dynamic instances by sequence range.
+                std::uint32_t baseSeq = it->switchFrame->baseSeq;
+                std::size_t numCases = it->switchFrame->caseBlocks.size();
+                if (key.sequenceId < baseSeq)
+                    continue;
+                std::uint32_t caseIdx = key.sequenceId - baseSeq;
+                if (caseIdx >= numCases)
                     continue;
                 entry = &*it;
                 break;
@@ -2571,8 +2614,6 @@ private:
         auto *blockCtx = getBlock(waveCtx, key);
         if (!blockCtx)
             llvm::report_fatal_error("handleIfYield: missing block context");
-        assert(!(blockCtx->loopOp && blockCtx->switchOp) &&
-               "dynamic block cannot have both loopOp and switchOp");
         if (!blockCtx->parentKey || !blockCtx->ifOp)
             return std::nullopt;
         std::uint64_t laneBit = 1ull << lane;
