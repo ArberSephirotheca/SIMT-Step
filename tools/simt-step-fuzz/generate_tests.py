@@ -143,6 +143,25 @@ def main():
         parser.error("--collective-cf conflicts with --sync-cf")
     if args.collective_mem and args.sync_mem:
         parser.error("--collective-mem conflicts with --sync-mem")
+    if (
+        args.helper_call_nest_loop_rate is not None
+        and args.helper_call_max_depth is None
+    ):
+        sys.stderr.write(
+            "note: --helper-call-nest-loop-rate has no effect unless "
+            "--helper-call-max-depth > 1 (simt-step-fuzz default is 1)\n"
+        )
+    wants_wave_under_cf = False
+    if args.post_switch_wave_op_rate is not None and args.post_switch_wave_op_rate > 0.0:
+        wants_wave_under_cf = True
+    if args.non_uniform_helper_call_rate is not None and args.non_uniform_helper_call_rate > 0.0:
+        wants_wave_under_cf = True
+    if wants_wave_under_cf and not args.collective_cf and not args.sync_cf:
+        sys.stderr.write(
+            "note: this config can place wave ops under non-uniform control flow; "
+            "under the default independent control-flow policy most seeds fail "
+            "the determinism oracle. For CUDA-like semantics, pass --collective-cf.\n"
+        )
 
     fuzzer = Path(args.fuzzer)
     if not fuzzer.exists():

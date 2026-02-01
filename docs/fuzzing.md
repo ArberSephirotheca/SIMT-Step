@@ -80,6 +80,12 @@ These options are passed to `simt-step-fuzz --run` during seed filtering. They d
 - `--collective-cf` / `--sync-cf`: treat `if/loop/switch` as collective/synchronous before split (helps model warp-style control flow).
 - `--collective-mem` / `--sync-mem`: treat `buffer.load/store` as collective/synchronous (helps avoid schedule-dependent write conflicts).
 
+If you are enabling subgroup collectives (e.g. `wave_count_bits`) under non-uniform control flow
+(e.g. via `--post-switch-wave-op-rate` or `--non-uniform-helper-call-rate`), you almost certainly
+want `--collective-cf` for the determinism oracle. Under the default independent control-flow
+policy, the active-lane set at a wave op is schedule-dependent by construction, so most seeds will
+be rejected.
+
 ### Seed search
 - `--seed-start`, `--seed-step`: how to enumerate seeds.
 - `--max-attempts`: how many candidate seeds to try before failing the run.
@@ -109,7 +115,8 @@ Switch reconvergence stress (without subgroup ops inside cases):
 python3 tools/simt-step-fuzz/generate_tests.py \
   --count 200 --lanes 64 --subgroup-width 32 --trials 3 --schedule-seed 1 \
   --no-subgroup-in-switch \
-  --post-switch-wave-op-rate 1.0
+  --post-switch-wave-op-rate 1.0 \
+  --collective-cf
 ```
 
 Loop break/continue stress:
@@ -126,7 +133,8 @@ Predicate-buffer + complex helper (max coverage, slower to find deterministic pr
 python3 tools/simt-step-fuzz/generate_tests.py \
   --count 100 --lanes 64 --subgroup-width 32 --trials 3 --schedule-seed 1 \
   --predicate-buffer \
-  --complex-helper --helper-max-depth 3 --helper-min-control-ops 3
+  --complex-helper --helper-max-depth 3 --helper-min-control-ops 3 \
+  --collective-cf
 ```
 
 Non-uniform helper call nested under deeper control flow:
@@ -137,7 +145,8 @@ python3 tools/simt-step-fuzz/generate_tests.py \
   --predicate-buffer \
   --non-uniform-helper-call-rate 1.0 \
   --helper-call-max-depth 3 \
-  --helper-call-nest-loop-rate 0.5
+  --helper-call-nest-loop-rate 0.5 \
+  --collective-cf
 ```
 
 ## `simt-step-fuzz` (single-module) useful commands
