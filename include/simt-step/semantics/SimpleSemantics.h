@@ -46,6 +46,7 @@ private:
     StepType handleOrIOp(mlir::arith::OrIOp op,
                          SemanticsContext &context);
     StepType handleCmpIOp(mlir::arith::CmpIOp op, SemanticsContext &context);
+    StepType handleSelectOp(mlir::arith::SelectOp op, SemanticsContext &context);
     StepType handleDispatchThreadId(SemanticsContext &context);
     StepType handleWaveCountBits(mlir::Operation *op, SemanticsContext &context);
     StepType handleBufferStore(mlir::Operation *op, SemanticsContext &context);

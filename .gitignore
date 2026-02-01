@@ -12,4 +12,9 @@ Agent.md
 /skills
 /build-llvm
 /llvm-install
+/cuda-test*
+/fuzz-test*
+__pycache__/
+*.pyc
+
 .cache

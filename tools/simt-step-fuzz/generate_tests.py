@@ -48,9 +48,80 @@ def main():
         help="Probability in [0,1] to emit break/continue in loops",
     )
     parser.add_argument(
+        "--complex-helper",
+        action="store_true",
+        help="Generate a complex helper function with control flow and wave ops",
+    )
+    parser.add_argument(
+        "--helper-subgroup-ids",
+        action="store_true",
+        help="Allow lane_id/subgroup_id ops inside helper function",
+    )
+    parser.add_argument(
+        "--helper-max-depth",
+        type=int,
+        default=None,
+        help="Max recursion depth for helper pattern generation",
+    )
+    parser.add_argument(
+        "--helper-min-control-ops",
+        type=int,
+        default=None,
+        help="Minimum number of control-flow ops in helper function",
+    )
+    parser.add_argument(
+        "--no-subgroup-in-switch",
+        action="store_true",
+        help="Do not emit subgroup ops (wave/lane_id/subgroup_id) inside switch cases",
+    )
+    parser.add_argument(
+        "--post-switch-wave-op-rate",
+        type=float,
+        default=None,
+        help="Probability in [0,1] to emit a wave op immediately after a switch",
+    )
+    parser.add_argument(
+        "--non-uniform-helper-call-rate",
+        type=float,
+        default=None,
+        help="Probability in [0,1] to call helper under non-uniform control flow",
+    )
+    parser.add_argument(
+        "--helper-call-max-depth",
+        type=int,
+        default=None,
+        help="Max nesting depth for the non-uniform helper call site (>=1)",
+    )
+    parser.add_argument(
+        "--helper-call-nest-loop-rate",
+        type=float,
+        default=None,
+        help="Probability in [0,1] to nest helper call in a loop (vs if) when depth > 1",
+    )
+    parser.add_argument(
         "--predicate-buffer",
         action="store_true",
         help="Emit predicate buffer and YAML per test",
+    )
+    parser.add_argument(
+        "--collective-cf",
+        action="store_true",
+        help="Run determinism oracle with collective control flow (warp-like splits)",
+    )
+    parser.add_argument(
+        "--sync-cf",
+        action="store_true",
+        help="Run determinism oracle with synchronous control flow (barriered splits)",
+    )
+    parser.add_argument(
+        "--collective-mem",
+        action="store_true",
+        help="Run determinism oracle with collective buffer load/store",
+    )
+    parser.add_argument(
+        "--sync-mem",
+        action="store_true",
+        help="Run determinism oracle with synchronous buffer load/store",
     )
     parser.add_argument(
         "--seed-start", type=int, default=0, help="First program seed"
@@ -68,6 +139,10 @@ def main():
 
     if args.trials < 2:
         parser.error("--trials must be >= 2 to enforce determinism")
+    if args.collective_cf and args.sync_cf:
+        parser.error("--collective-cf conflicts with --sync-cf")
+    if args.collective_mem and args.sync_mem:
+        parser.error("--collective-mem conflicts with --sync-mem")
 
     fuzzer = Path(args.fuzzer)
     if not fuzzer.exists():
@@ -98,8 +173,44 @@ def main():
                 validate_cmd.append(
                     f"--break-continue-rate={args.break_continue_rate}"
                 )
+            if args.complex_helper:
+                validate_cmd.append("--complex-helper")
+            if args.helper_subgroup_ids:
+                validate_cmd.append("--helper-subgroup-ids")
+            if args.helper_max_depth is not None:
+                validate_cmd.append(f"--helper-max-depth={args.helper_max_depth}")
+            if args.helper_min_control_ops is not None:
+                validate_cmd.append(
+                    f"--helper-min-control-ops={args.helper_min_control_ops}"
+                )
+            if args.no_subgroup_in_switch:
+                validate_cmd.append("--no-subgroup-in-switch")
+            if args.post_switch_wave_op_rate is not None:
+                validate_cmd.append(
+                    f"--post-switch-wave-op-rate={args.post_switch_wave_op_rate}"
+                )
+            if args.non_uniform_helper_call_rate is not None:
+                validate_cmd.append(
+                    f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
+                )
+            if args.helper_call_max_depth is not None:
+                validate_cmd.append(
+                    f"--helper-call-max-depth={args.helper_call_max_depth}"
+                )
+            if args.helper_call_nest_loop_rate is not None:
+                validate_cmd.append(
+                    f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
+                )
             if args.predicate_buffer:
                 validate_cmd.append("--predicate-buffer")
+            if args.collective_cf:
+                validate_cmd.append("--collective-cf")
+            if args.sync_cf:
+                validate_cmd.append("--sync-cf")
+            if args.collective_mem:
+                validate_cmd.append("--collective-mem")
+            if args.sync_mem:
+                validate_cmd.append("--sync-mem")
             validate = run(validate_cmd)
             if validate.returncode != 0:
                 seed += args.seed_step
@@ -114,6 +225,32 @@ def main():
             ]
             if args.break_continue_rate is not None:
                 gen_cmd.append(f"--break-continue-rate={args.break_continue_rate}")
+            if args.complex_helper:
+                gen_cmd.append("--complex-helper")
+            if args.helper_subgroup_ids:
+                gen_cmd.append("--helper-subgroup-ids")
+            if args.helper_max_depth is not None:
+                gen_cmd.append(f"--helper-max-depth={args.helper_max_depth}")
+            if args.helper_min_control_ops is not None:
+                gen_cmd.append(
+                    f"--helper-min-control-ops={args.helper_min_control_ops}"
+                )
+            if args.no_subgroup_in_switch:
+                gen_cmd.append("--no-subgroup-in-switch")
+            if args.post_switch_wave_op_rate is not None:
+                gen_cmd.append(
+                    f"--post-switch-wave-op-rate={args.post_switch_wave_op_rate}"
+                )
+            if args.non_uniform_helper_call_rate is not None:
+                gen_cmd.append(
+                    f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
+                )
+            if args.helper_call_max_depth is not None:
+                gen_cmd.append(f"--helper-call-max-depth={args.helper_call_max_depth}")
+            if args.helper_call_nest_loop_rate is not None:
+                gen_cmd.append(
+                    f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
+                )
             predicate_yaml = ""
             if args.predicate_buffer:
                 predicate_yaml = f"{out_dir}/test_{count:03d}_seed_{seed}.yaml"
@@ -137,6 +274,32 @@ def main():
             }
             if args.break_continue_rate is not None:
                 record["break_continue_rate"] = args.break_continue_rate
+            if args.complex_helper:
+                record["complex_helper"] = True
+            if args.helper_subgroup_ids:
+                record["helper_subgroup_ids"] = True
+            if args.helper_max_depth is not None:
+                record["helper_max_depth"] = args.helper_max_depth
+            if args.helper_min_control_ops is not None:
+                record["helper_min_control_ops"] = args.helper_min_control_ops
+            if args.no_subgroup_in_switch:
+                record["no_subgroup_in_switch"] = True
+            if args.post_switch_wave_op_rate is not None:
+                record["post_switch_wave_op_rate"] = args.post_switch_wave_op_rate
+            if args.non_uniform_helper_call_rate is not None:
+                record["non_uniform_helper_call_rate"] = args.non_uniform_helper_call_rate
+            if args.helper_call_max_depth is not None:
+                record["helper_call_max_depth"] = args.helper_call_max_depth
+            if args.helper_call_nest_loop_rate is not None:
+                record["helper_call_nest_loop_rate"] = args.helper_call_nest_loop_rate
+            if args.collective_cf:
+                record["collective_cf"] = True
+            if args.sync_cf:
+                record["sync_cf"] = True
+            if args.collective_mem:
+                record["collective_mem"] = True
+            if args.sync_mem:
+                record["sync_mem"] = True
             if predicate_yaml:
                 record["predicate_yaml"] = Path(predicate_yaml).name
             manifest.write(json.dumps(record) + "\n")

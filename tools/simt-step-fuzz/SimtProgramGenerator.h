@@ -16,6 +16,15 @@ struct GeneratorConfig {
     std::uint64_t seed = 0; // 0 = deterministic default
     std::uint32_t maxTripCount = 4;
     std::uint32_t minControlOps = 4;
+    bool complexHelper = false;
+    bool helperUsesSubgroupIds = false;
+    bool noSubgroupOpsInSwitch = false;
+    double postSwitchWaveOpRate = 0.0; // probability in [0,1] to emit wave op after switch
+    double nonUniformHelperCallRate = 0.0; // probability in [0,1] to call helper under non-uniform control flow
+    std::uint32_t helperCallMaxDepth = 1;
+    double helperCallNestLoopRate = 0.0; // probability in [0,1] to wrap helper call in a loop (vs if) when nesting
+    std::uint32_t helperMaxDepth = 3;
+    std::uint32_t helperMinControlOps = 3;
     double breakContinueRate = -1.0; // < 0 => default RNG coin, [0,1] => rate
     bool predicateBuffer = false;
     unsigned predicateBufferArgIndex = 1;

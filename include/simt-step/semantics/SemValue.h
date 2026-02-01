@@ -7,17 +7,24 @@
 
 #include <mlir/IR/Types.h>
 #include <mlir/IR/BuiltinTypes.h>
+#include <mlir/IR/Value.h>
 
 namespace simt::semantics {
 
 /// Scalar value domain interpreted by the CPS engine.
 class SemValue {
 public:
-    enum class Kind { None, Bool, Int32, Int64, Float32 };
+    enum class Kind { None, Bool, Int32, Int64, Float32, Resource };
 
     SemValue() = default;
 
     static SemValue fromBool(bool v) {
+        SemValue value;
+        value.storage_ = v;
+        return value;
+    }
+
+    static SemValue fromResource(mlir::Value v) {
         SemValue value;
         value.storage_ = v;
         return value;
@@ -50,6 +57,8 @@ public:
             return Kind::Int64;
         if (std::holds_alternative<float>(storage_))
             return Kind::Float32;
+        if (std::holds_alternative<mlir::Value>(storage_))
+            return Kind::Resource;
         return Kind::None;
     }
 
@@ -57,11 +66,13 @@ public:
     bool isInt32() const { return kind() == Kind::Int32; }
     bool isInt64() const { return kind() == Kind::Int64; }
     bool isFloat32() const { return kind() == Kind::Float32; }
+    bool isResource() const { return kind() == Kind::Resource; }
     bool isInteger() const { return isBool() || isInt32() || isInt64(); }
 
     bool isNone() const { return kind() == Kind::None; }
 
     bool asBool() const {
+        assert(!isResource() && "SemValue: resource used as bool");
         if (std::holds_alternative<bool>(storage_))
             return std::get<bool>(storage_);
         if (std::holds_alternative<int32_t>(storage_))
@@ -74,6 +85,7 @@ public:
     }
 
     int64_t asInt64() const {
+        assert(!isResource() && "SemValue: resource used as integer");
         if (std::holds_alternative<int32_t>(storage_))
             return static_cast<int64_t>(std::get<int32_t>(storage_));
         if (std::holds_alternative<int64_t>(storage_))
@@ -86,6 +98,7 @@ public:
     }
 
     float asFloat32() const {
+        assert(!isResource() && "SemValue: resource used as float");
         if (std::holds_alternative<float>(storage_))
             return std::get<float>(storage_);
         if (std::holds_alternative<int32_t>(storage_))
@@ -98,6 +111,7 @@ public:
     }
 
     double asFloat64() const {
+        assert(!isResource() && "SemValue: resource used as float");
         if (std::holds_alternative<float>(storage_))
             return static_cast<double>(std::get<float>(storage_));
         if (std::holds_alternative<int32_t>(storage_))
@@ -107,6 +121,11 @@ public:
         if (std::holds_alternative<bool>(storage_))
             return std::get<bool>(storage_) ? 1.0 : 0.0;
         return 0.0;
+    }
+
+    mlir::Value asResource() const {
+        assert(isResource() && "SemValue: expected resource");
+        return std::get<mlir::Value>(storage_);
     }
 
     SemValue neg() const {
@@ -242,6 +261,8 @@ private:
     static Kind arithmeticKind(const SemValue &lhs, const SemValue &rhs) {
         Kind l = canonical(lhs.kind());
         Kind r = canonical(rhs.kind());
+        assert(l != Kind::Resource && r != Kind::Resource &&
+               "SemValue: arithmetic on resource");
         if (l == Kind::Float32 || r == Kind::Float32)
             return Kind::Float32;
         if (l == Kind::Int64 || r == Kind::Int64)
@@ -249,7 +270,8 @@ private:
         return Kind::Int32;
     }
 
-    std::variant<std::monostate, bool, int32_t, int64_t, float> storage_;
+    std::variant<std::monostate, bool, int32_t, int64_t, float, mlir::Value>
+        storage_;
 };
 
 } // namespace simt::semantics
