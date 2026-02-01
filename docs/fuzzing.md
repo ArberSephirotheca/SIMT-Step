@@ -89,6 +89,8 @@ These options are passed to `simt-step-fuzz --run` during seed filtering. They d
 - `--no-subgroup-in-switch`: do not emit subgroup ops inside switch cases (useful to isolate “switch reconvergence” from subgroup semantics).
 - `--post-switch-wave-op-rate p`: probability in `[0,1]` to emit a `wave_count_bits(true)` *immediately after* a `switch` (stresses reconvergence-after-switch).
 - `--non-uniform-helper-call-rate p`: probability in `[0,1]` to call `helper0` under a non-uniform `if` so wave ops inside the helper see the branch active mask.
+- `--helper-call-max-depth N`: max nesting depth for the helper call site (>=1). `1` means “just the outer conditional call”; larger values wrap the call in nested `if`/`loop`.
+- `--helper-call-nest-loop-rate p`: probability in `[0,1]` to use a `loop` wrapper (vs an `if`) when nesting the helper call (only relevant when `--helper-call-max-depth > 1`).
 
 ### Predicate buffer / YAML
 - `--predicate-buffer`: make `@main` take a predicate buffer and write `test_*.yaml`.
@@ -125,6 +127,17 @@ python3 tools/simt-step-fuzz/generate_tests.py \
   --count 100 --lanes 64 --subgroup-width 32 --trials 3 --schedule-seed 1 \
   --predicate-buffer \
   --complex-helper --helper-max-depth 3 --helper-min-control-ops 3
+```
+
+Non-uniform helper call nested under deeper control flow:
+
+```sh
+python3 tools/simt-step-fuzz/generate_tests.py \
+  --count 100 --lanes 64 --subgroup-width 32 --trials 3 --schedule-seed 1 \
+  --predicate-buffer \
+  --non-uniform-helper-call-rate 1.0 \
+  --helper-call-max-depth 3 \
+  --helper-call-nest-loop-rate 0.5
 ```
 
 ## `simt-step-fuzz` (single-module) useful commands

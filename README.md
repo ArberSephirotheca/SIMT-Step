@@ -12,6 +12,7 @@ See `docs/fuzzing.md` for the full option guide. Typical loop:
 
 ```sh
 # 1) Generate deterministic MLIR (+ optional YAML init buffers).
+#    See docs/fuzzing.md for a full option guide (e.g. complex helpers, nested non-uniform helper calls).
 python3 tools/simt-step-fuzz/generate_tests.py \
   --out-dir fuzz-tests \
   --count 100 \
