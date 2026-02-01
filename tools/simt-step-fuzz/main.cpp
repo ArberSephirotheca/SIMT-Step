@@ -232,6 +232,14 @@ int main(int argc, char **argv) {
         "non-uniform-helper-call-rate",
         llvm::cl::desc("Probability in [0,1] to call helper under non-uniform control flow"),
         llvm::cl::init(0.0));
+    llvm::cl::opt<unsigned> helperCallMaxDepth(
+        "helper-call-max-depth",
+        llvm::cl::desc("Max nesting depth for the non-uniform helper call site (>=1)"),
+        llvm::cl::init(1));
+    llvm::cl::opt<double> helperCallNestLoopRate(
+        "helper-call-nest-loop-rate",
+        llvm::cl::desc("Probability in [0,1] to nest helper call in a loop (vs if) when depth > 1"),
+        llvm::cl::init(0.0));
     llvm::cl::opt<unsigned> helperMaxDepth(
         "helper-max-depth",
         llvm::cl::desc("Max recursion depth for helper pattern generation"),
@@ -290,8 +298,16 @@ int main(int argc, char **argv) {
         llvm::errs() << "error: --non-uniform-helper-call-rate must be <= 1.0\n";
         return 1;
     }
+    if (helperCallNestLoopRate > 1.0) {
+        llvm::errs() << "error: --helper-call-nest-loop-rate must be <= 1.0\n";
+        return 1;
+    }
     if (helperMaxDepth < 1) {
         llvm::errs() << "error: --helper-max-depth must be >= 1\n";
+        return 1;
+    }
+    if (helperCallMaxDepth < 1) {
+        llvm::errs() << "error: --helper-call-max-depth must be >= 1\n";
         return 1;
     }
 
@@ -313,6 +329,8 @@ int main(int argc, char **argv) {
     cfg.noSubgroupOpsInSwitch = noSubgroupOpsInSwitch;
     cfg.postSwitchWaveOpRate = postSwitchWaveOpRate;
     cfg.nonUniformHelperCallRate = nonUniformHelperCallRate;
+    cfg.helperCallMaxDepth = helperCallMaxDepth;
+    cfg.helperCallNestLoopRate = helperCallNestLoopRate;
     cfg.helperMaxDepth = helperMaxDepth;
     cfg.helperMinControlOps = helperMinControlOps;
     cfg.breakContinueRate = breakContinueRate;

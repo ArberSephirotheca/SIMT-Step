@@ -795,6 +795,88 @@ static Value buildControlPattern(OpBuilder &b, Location loc, BuildState &st,
         return buildLoop(b, loc, st, depth, maxDepth);
     return buildSwitch(b, loc, st, depth, maxDepth);
 }
+
+static void emitNestedHelperCall(OpBuilder &b, Location loc, BuildState &st,
+                                 func::FuncOp helper,
+                                 llvm::ArrayRef<Value> helperArgs,
+                                 unsigned depth, unsigned maxDepth) {
+    if (depth >= maxDepth) {
+        b.create<func::CallOp>(loc, helper, helperArgs);
+        return;
+    }
+
+    bool wrapWithLoop = st.cfg.helperCallNestLoopRate > 0.0 &&
+                        st.rng.chance(st.cfg.helperCallNestLoopRate);
+    if (wrapWithLoop) {
+        st.controlOps++;
+        int maxTrip = std::max<int>(1, static_cast<int>(st.cfg.maxTripCount));
+        int tripHi = std::min<int>(2, maxTrip);
+        int trip = std::max(1, st.rng.pick(1, tripHi));
+
+        Value acc0 = makeI32(b, loc, 0);
+        Value idx0 = makeI32(b, loc, 0);
+        auto loop = b.create<simt::dialect::LoopOp>(
+            loc, TypeRange{b.getI32Type(), b.getI32Type()}, ValueRange{acc0, idx0});
+        if (loop.getPrepareRegion().empty()) {
+            auto *prep = new Block();
+            prep->addArguments({b.getI32Type(), b.getI32Type()},
+                               SmallVector<Location>{loc, loc});
+            loop.getPrepareRegion().push_back(prep);
+        }
+        if (loop.getBodyRegion().empty()) {
+            auto *body = new Block();
+            body->addArguments({b.getI32Type(), b.getI32Type()},
+                               SmallVector<Location>{loc, loc});
+            loop.getBodyRegion().push_back(body);
+        }
+        {
+            auto &prep = loop.getPrepareRegion().front();
+            if (prep.getNumArguments() == 0) {
+                prep.addArguments({b.getI32Type(), b.getI32Type()},
+                                  SmallVector<Location>{loc, loc});
+            }
+            OpBuilder pb(&prep, prep.begin());
+            Value acc = prep.getArgument(0);
+            Value idx = prep.getArgument(1);
+            Value bound =
+                makeNonUniformBound(pb, loc, st.rng, st.cfg, st.tid, trip);
+            Value cond =
+                pb.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, idx, bound);
+            pb.create<simt::dialect::ConditionOp>(loc, cond, ValueRange{acc, idx});
+        }
+        {
+            auto &body = loop.getBodyRegion().front();
+            if (body.getNumArguments() == 0) {
+                body.addArguments({b.getI32Type(), b.getI32Type()},
+                                  SmallVector<Location>{loc, loc});
+            }
+            OpBuilder bb(&body, body.begin());
+            Value acc = body.getArgument(0);
+            Value idx = body.getArgument(1);
+            emitNestedHelperCall(bb, loc, st, helper, helperArgs, depth + 1,
+                                 maxDepth);
+            Value one = makeI32(bb, loc, 1);
+            Value nextIdx = bb.create<arith::AddIOp>(loc, idx, one);
+            bb.create<simt::dialect::YieldOp>(loc, ValueRange{acc, nextIdx});
+        }
+        b.setInsertionPointAfter(loop);
+        return;
+    }
+
+    st.controlOps++;
+    Value cond = buildNonUniformCond(b, loc, st);
+    auto ifOp =
+        b.create<simt::dialect::IfOp>(loc, TypeRange{}, cond, /*withElseRegion=*/true);
+    auto &thenBlock = ifOp.getThenRegion().front();
+    auto &elseBlock = ifOp.getElseRegion().front();
+    Block &targetBlock = st.rng.coin() ? thenBlock : elseBlock;
+
+    OpBuilder armB(&targetBlock, targetBlock.begin());
+    if (mlir::Operation *term = targetBlock.getTerminator())
+        armB.setInsertionPoint(term);
+    emitNestedHelperCall(armB, loc, st, helper, helperArgs, depth + 1, maxDepth);
+    b.setInsertionPointAfter(ifOp);
+}
 } // namespace
 
 mlir::OwningOpRef<mlir::ModuleOp>
@@ -1159,6 +1241,7 @@ createRicherRandomModule(mlir::MLIRContext &context,
     if (!wrapHelper) {
         builder.create<func::CallOp>(loc, helper, helperArgs);
     } else {
+        st.controlOps++;
         Value cond;
         if (helperPredicateArgs) {
             Value pred = helperArgs[2];
@@ -1171,25 +1254,16 @@ createRicherRandomModule(mlir::MLIRContext &context,
 
         auto ifOp = builder.create<simt::dialect::IfOp>(loc, TypeRange{}, cond,
                                                        /*withElseRegion=*/true);
-        if (ifOp.getThenRegion().empty())
-            ifOp.getThenRegion().push_back(new Block());
-        if (ifOp.getElseRegion().empty())
-            ifOp.getElseRegion().push_back(new Block());
+        auto &thenBlock = ifOp.getThenRegion().front();
+        auto &elseBlock = ifOp.getElseRegion().front();
+        Block &targetBlock = st.rng.coin() ? thenBlock : elseBlock;
 
-        {
-            auto &thenBlock = ifOp.getThenRegion().front();
-            OpBuilder thenB(&thenBlock, thenBlock.begin());
-            if (mlir::Operation *term = thenBlock.getTerminator())
-                thenB.setInsertionPoint(term);
-            thenB.create<func::CallOp>(loc, helper, helperArgs);
-        }
-        {
-            auto &elseBlock = ifOp.getElseRegion().front();
-            OpBuilder elseB(&elseBlock, elseBlock.begin());
-            if (mlir::Operation *term = elseBlock.getTerminator())
-                elseB.setInsertionPoint(term);
-            elseB.create<func::CallOp>(loc, helper, helperArgs);
-        }
+        OpBuilder armB(&targetBlock, targetBlock.begin());
+        if (mlir::Operation *term = targetBlock.getTerminator())
+            armB.setInsertionPoint(term);
+        unsigned maxDepth = std::max<unsigned>(1, cfg.helperCallMaxDepth);
+        emitNestedHelperCall(armB, loc, st, helper, helperArgs,
+                             /*depth=*/1, maxDepth);
         builder.setInsertionPointAfter(ifOp);
     }
 

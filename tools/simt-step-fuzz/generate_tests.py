@@ -87,6 +87,18 @@ def main():
         help="Probability in [0,1] to call helper under non-uniform control flow",
     )
     parser.add_argument(
+        "--helper-call-max-depth",
+        type=int,
+        default=None,
+        help="Max nesting depth for the non-uniform helper call site (>=1)",
+    )
+    parser.add_argument(
+        "--helper-call-nest-loop-rate",
+        type=float,
+        default=None,
+        help="Probability in [0,1] to nest helper call in a loop (vs if) when depth > 1",
+    )
+    parser.add_argument(
         "--predicate-buffer",
         action="store_true",
         help="Emit predicate buffer and YAML per test",
@@ -181,6 +193,14 @@ def main():
                 validate_cmd.append(
                     f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
                 )
+            if args.helper_call_max_depth is not None:
+                validate_cmd.append(
+                    f"--helper-call-max-depth={args.helper_call_max_depth}"
+                )
+            if args.helper_call_nest_loop_rate is not None:
+                validate_cmd.append(
+                    f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
+                )
             if args.predicate_buffer:
                 validate_cmd.append("--predicate-buffer")
             if args.collective_cf:
@@ -225,6 +245,12 @@ def main():
                 gen_cmd.append(
                     f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
                 )
+            if args.helper_call_max_depth is not None:
+                gen_cmd.append(f"--helper-call-max-depth={args.helper_call_max_depth}")
+            if args.helper_call_nest_loop_rate is not None:
+                gen_cmd.append(
+                    f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
+                )
             predicate_yaml = ""
             if args.predicate_buffer:
                 predicate_yaml = f"{out_dir}/test_{count:03d}_seed_{seed}.yaml"
@@ -262,6 +288,10 @@ def main():
                 record["post_switch_wave_op_rate"] = args.post_switch_wave_op_rate
             if args.non_uniform_helper_call_rate is not None:
                 record["non_uniform_helper_call_rate"] = args.non_uniform_helper_call_rate
+            if args.helper_call_max_depth is not None:
+                record["helper_call_max_depth"] = args.helper_call_max_depth
+            if args.helper_call_nest_loop_rate is not None:
+                record["helper_call_nest_loop_rate"] = args.helper_call_nest_loop_rate
             if args.collective_cf:
                 record["collective_cf"] = True
             if args.sync_cf:
