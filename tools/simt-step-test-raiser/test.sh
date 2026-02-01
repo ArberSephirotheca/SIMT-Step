@@ -6,46 +6,41 @@ if [ $? -ne 0 ]; then
 fi
 
 files=${1:-*}
-lang=${2:-"glsl"}
+lang=${2:-"glsl-amber"}
 
 for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
     echo "----- $testfile -----"
     set -f
-    if [ $lang == "glsl" ]; then
-        if [[ files =~ "*" ]]; then
-            outfile=$(mktemp -t "XXXXXX.amber")
-        else
-            outfile=testout.amber
-        fi
+    outext=$(
+        case $lang in
+            "glsl-amber") echo "amber" ;;
+            "cuda") echo "cu" ;;
+            "hip") echo "hip" ;;
+        esac
+    )
+    if [[ files =~ "*" ]]; then
+        outfile=$(mktemp -t "XXXXXX.$outext")
     else
-        if [[ files =~ "*" ]]; then
-            outfile=$(mktemp -t "XXXXXX.cu")
-        else
-            outfile=testout.cu
-        fi
+        outfile=testout.$outext
     fi
     set +f
 
     noext="${testfile%.*}"
-    targetflag=$(
-        case $lang in
-            "glsl")
-                echo "--mlir-to-glsl-amber" ;;
-            "cuda")
-                echo "--mlir-to-cuda" ;;
-        esac
-    )
-    yamlflag=$( [ ! -f $noext.yaml ] || echo "--buffer-init-yaml $noext.yaml" || echo )
-    ./build/tools/simt-step-test-raiser/simt-step-test-raiser $testfile -o $outfile $targetflag $yamlflag
+    yamlflag=$( [ ! -f $noext.yaml ] || echo "--buffer-init-yaml $noext.yaml" && echo )
+    ./build/tools/simt-step-test-raiser/simt-step-test-raiser $testfile -o $outfile --mlir-to-$lang $yamlflag
     if [ $? -ne 0 ]; then
         continue
     fi
 
-    if [ $lang == "glsl" ]; then
+    if [ $lang == "glsl-amber" ]; then
         scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.amber
-        ssh skagle@waterthrush.be.ucsc.edu -tt sudo /home/skagle/amber/out/Debug/amber -D 0 testout.amber
-    else
+        cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S /home/skagle/amber/out/Debug/amber -D 0 testout.amber
+    elif [ $lang == "cuda" ]; then
         nvcc -w $outfile && ./a.out
+    elif [ $lang == "hip" ]; then
+        scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.hip
+        ssh skagle@waterthrush.be.ucsc.edu hipcc -w testout.hip
+        cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S ./a.out
     fi
     if [ $? -ne 0 ]; then
         echo "Output in: $outfile"
