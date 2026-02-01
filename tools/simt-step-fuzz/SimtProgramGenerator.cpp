@@ -1179,14 +1179,16 @@ createRicherRandomModule(mlir::MLIRContext &context,
         {
             auto &thenBlock = ifOp.getThenRegion().front();
             OpBuilder thenB(&thenBlock, thenBlock.begin());
+            if (mlir::Operation *term = thenBlock.getTerminator())
+                thenB.setInsertionPoint(term);
             thenB.create<func::CallOp>(loc, helper, helperArgs);
-            thenB.create<simt::dialect::YieldOp>(loc, ValueRange{});
         }
         {
             auto &elseBlock = ifOp.getElseRegion().front();
             OpBuilder elseB(&elseBlock, elseBlock.begin());
+            if (mlir::Operation *term = elseBlock.getTerminator())
+                elseB.setInsertionPoint(term);
             elseB.create<func::CallOp>(loc, helper, helperArgs);
-            elseB.create<simt::dialect::YieldOp>(loc, ValueRange{});
         }
         builder.setInsertionPointAfter(ifOp);
     }

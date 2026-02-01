@@ -92,6 +92,26 @@ def main():
         help="Emit predicate buffer and YAML per test",
     )
     parser.add_argument(
+        "--collective-cf",
+        action="store_true",
+        help="Run determinism oracle with collective control flow (warp-like splits)",
+    )
+    parser.add_argument(
+        "--sync-cf",
+        action="store_true",
+        help="Run determinism oracle with synchronous control flow (barriered splits)",
+    )
+    parser.add_argument(
+        "--collective-mem",
+        action="store_true",
+        help="Run determinism oracle with collective buffer load/store",
+    )
+    parser.add_argument(
+        "--sync-mem",
+        action="store_true",
+        help="Run determinism oracle with synchronous buffer load/store",
+    )
+    parser.add_argument(
         "--seed-start", type=int, default=0, help="First program seed"
     )
     parser.add_argument(
@@ -107,6 +127,10 @@ def main():
 
     if args.trials < 2:
         parser.error("--trials must be >= 2 to enforce determinism")
+    if args.collective_cf and args.sync_cf:
+        parser.error("--collective-cf conflicts with --sync-cf")
+    if args.collective_mem and args.sync_mem:
+        parser.error("--collective-mem conflicts with --sync-mem")
 
     fuzzer = Path(args.fuzzer)
     if not fuzzer.exists():
@@ -159,6 +183,14 @@ def main():
                 )
             if args.predicate_buffer:
                 validate_cmd.append("--predicate-buffer")
+            if args.collective_cf:
+                validate_cmd.append("--collective-cf")
+            if args.sync_cf:
+                validate_cmd.append("--sync-cf")
+            if args.collective_mem:
+                validate_cmd.append("--collective-mem")
+            if args.sync_mem:
+                validate_cmd.append("--sync-mem")
             validate = run(validate_cmd)
             if validate.returncode != 0:
                 seed += args.seed_step
@@ -230,6 +262,14 @@ def main():
                 record["post_switch_wave_op_rate"] = args.post_switch_wave_op_rate
             if args.non_uniform_helper_call_rate is not None:
                 record["non_uniform_helper_call_rate"] = args.non_uniform_helper_call_rate
+            if args.collective_cf:
+                record["collective_cf"] = True
+            if args.sync_cf:
+                record["sync_cf"] = True
+            if args.collective_mem:
+                record["collective_mem"] = True
+            if args.sync_mem:
+                record["sync_mem"] = True
             if predicate_yaml:
                 record["predicate_yaml"] = Path(predicate_yaml).name
             manifest.write(json.dumps(record) + "\n")

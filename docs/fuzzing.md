@@ -74,6 +74,12 @@ This script is a “corpus builder”: it keeps trying seeds until it finds prog
 - `--trials K`: run the interpreter `K` times with different schedule seeds and require identical final state.
 - `--schedule-seed S`: base seed for the randomized scheduler (trial `i` uses `S + i`).
 
+### Execution policy (oracle only)
+These options are passed to `simt-step-fuzz --run` during seed filtering. They do not change the emitted `.mlir`, but they *do* change which programs are considered “deterministic”.
+
+- `--collective-cf` / `--sync-cf`: treat `if/loop/switch` as collective/synchronous before split (helps model warp-style control flow).
+- `--collective-mem` / `--sync-mem`: treat `buffer.load/store` as collective/synchronous (helps avoid schedule-dependent write conflicts).
+
 ### Seed search
 - `--seed-start`, `--seed-step`: how to enumerate seeds.
 - `--max-attempts`: how many candidate seeds to try before failing the run.
