@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "simt-step/Runner/InitYaml.h"
@@ -125,6 +126,47 @@ struct Options {
     std::string arch;
     bool dumpPtx = false;
 };
+
+static void checkCuda(CUresult result, const char *what);
+
+struct CudaSession {
+    CUdevice device = 0;
+    CUcontext context = nullptr;
+
+    CudaSession() = default;
+    CudaSession(const CudaSession &) = delete;
+    CudaSession &operator=(const CudaSession &) = delete;
+
+    CudaSession(CudaSession &&other) noexcept : device(other.device), context(other.context) {
+        other.device = 0;
+        other.context = nullptr;
+    }
+
+    CudaSession &operator=(CudaSession &&other) noexcept {
+        if (this == &other)
+            return *this;
+        if (context)
+            cuCtxDestroy(context);
+        device = other.device;
+        context = other.context;
+        other.device = 0;
+        other.context = nullptr;
+        return *this;
+    }
+
+    ~CudaSession() {
+        if (context)
+            cuCtxDestroy(context);
+    }
+};
+
+static CudaSession createCudaSession(const Options &options) {
+    checkCuda(cuInit(0), "cuInit");
+    CudaSession session;
+    checkCuda(cuDeviceGet(&session.device, options.deviceIndex), "cuDeviceGet");
+    checkCuda(cuCtxCreate(&session.context, nullptr, 0, session.device), "cuCtxCreate");
+    return session;
+}
 
 static std::string trim(const std::string &value) {
     std::size_t start = 0;
@@ -343,6 +385,42 @@ static void checkNvrtc(nvrtcResult result, const char *what, nvrtcProgram progra
         }
     }
     throw std::runtime_error(message.str());
+}
+
+template <typename Fn>
+class ScopeExit final {
+  public:
+    explicit ScopeExit(Fn fn) : fn_(std::move(fn)) {}
+    ScopeExit(const ScopeExit &) = delete;
+    ScopeExit &operator=(const ScopeExit &) = delete;
+    ScopeExit(ScopeExit &&other) noexcept : fn_(std::move(other.fn_)), active_(other.active_) {
+        other.active_ = false;
+    }
+    ScopeExit &operator=(ScopeExit &&other) noexcept {
+        if (this == &other)
+            return *this;
+        if (active_)
+            fn_();
+        fn_ = std::move(other.fn_);
+        active_ = other.active_;
+        other.active_ = false;
+        return *this;
+    }
+    ~ScopeExit() {
+        if (active_)
+            fn_();
+    }
+
+    void cancel() { active_ = false; }
+
+  private:
+    Fn fn_;
+    bool active_ = true;
+};
+
+template <typename Fn>
+static ScopeExit<Fn> makeScopeExit(Fn fn) {
+    return ScopeExit<Fn>(std::move(fn));
 }
 
 static void parseScript(const std::string &path, Script &script) {
@@ -885,14 +963,15 @@ static void verifyExpectBuffer(const BufferRuntime &actual,
     }
 }
 
-static void runScript(const Script &script, const Options &options) {
-    checkCuda(cuInit(0), "cuInit");
-    CUdevice device = 0;
-    checkCuda(cuDeviceGet(&device, options.deviceIndex), "cuDeviceGet");
-    CUcontext context = nullptr;
-    checkCuda(cuCtxCreate(&context, nullptr, 0, device), "cuCtxCreate");
+static void runScript(const Script &script, const Options &options,
+                      const CudaSession &session) {
+    checkCuda(cuCtxSetCurrent(session.context), "cuCtxSetCurrent");
 
-    nvrtcProgram program;
+    nvrtcProgram program = nullptr;
+    auto destroyProgram = makeScopeExit([&]() {
+        if (program)
+            nvrtcDestroyProgram(&program);
+    });
     checkNvrtc(nvrtcCreateProgram(&program,
                                   script.kernelSource.c_str(),
                                   "script.cu",
@@ -924,17 +1003,29 @@ static void runScript(const Script &script, const Options &options) {
     std::string ptx(ptxSize, '\0');
     checkNvrtc(nvrtcGetPTX(program, ptx.data()), "nvrtcGetPTX", program);
     checkNvrtc(nvrtcDestroyProgram(&program), "nvrtcDestroyProgram", program);
+    program = nullptr;
+    destroyProgram.cancel();
 
     if (options.dumpPtx)
         std::cout << ptx << "\n";
 
     CUmodule module = nullptr;
     checkCuda(cuModuleLoadDataEx(&module, ptx.data(), 0, nullptr, nullptr), "cuModuleLoadDataEx");
+    auto unloadModule = makeScopeExit([&]() {
+        if (module)
+            cuModuleUnload(module);
+    });
 
     CUfunction kernel = nullptr;
     checkCuda(cuModuleGetFunction(&kernel, module, script.kernelName.c_str()), "cuModuleGetFunction");
 
     std::unordered_map<std::string, BufferRuntime> runtimes;
+    auto freeBuffers = makeScopeExit([&]() {
+        for (auto &entry : runtimes) {
+            if (entry.second.device)
+                cuMemFree(entry.second.device);
+        }
+    });
     for (const auto &entry : script.buffers) {
         BufferRuntime runtime;
         runtime.def = entry.second;
@@ -1029,17 +1120,11 @@ static void runScript(const Script &script, const Options &options) {
         verifyExpectRange(runtime, expect);
     }
 
-    for (const auto &expect : script.expectBuffers) {
-        const auto &actual = runtimes.at(expect.actual);
-        const auto &expected = runtimes.at(expect.expected);
-        verifyExpectBuffer(actual, expected, expect);
-    }
-
-    for (auto &entry : runtimes)
-        checkCuda(cuMemFree(entry.second.device), "cuMemFree");
-
-    checkCuda(cuModuleUnload(module), "cuModuleUnload");
-    checkCuda(cuCtxDestroy(context), "cuCtxDestroy");
+	    for (const auto &expect : script.expectBuffers) {
+	        const auto &actual = runtimes.at(expect.actual);
+	        const auto &expected = runtimes.at(expect.expected);
+	        verifyExpectBuffer(actual, expected, expect);
+	    }
 }
 
 static const char kUsage[] =
@@ -1162,14 +1247,14 @@ static std::string selectInitYamlPath(const std::filesystem::path &scriptPath,
 }
 
 static bool runSingle(const std::string &scriptPath, const Options &options,
-                      std::string &error) {
+                      const CudaSession &session, std::string &error) {
     try {
         Script script;
         parseScript(scriptPath, script);
         std::string initYaml = selectInitYamlPath(scriptPath, options);
         if (!initYaml.empty())
             applyInitYaml(script, initYaml);
-        runScript(script, options);
+        runScript(script, options, session);
         return true;
     } catch (const std::exception &ex) {
         error = ex.what();
@@ -1212,6 +1297,7 @@ collectBatchScripts(const Options &options) {
 }
 
 static int runBatch(const Options &options) {
+    CudaSession session = createCudaSession(options);
     std::vector<std::filesystem::path> scripts = collectBatchScripts(options);
     std::ofstream report;
     if (!options.reportPath.empty()) {
@@ -1225,7 +1311,7 @@ static int runBatch(const Options &options) {
     std::size_t fail = 0;
     for (const auto &scriptPath : scripts) {
         std::string error;
-        bool ok = runSingle(scriptPath.string(), options, error);
+        bool ok = runSingle(scriptPath.string(), options, session, error);
         if (ok) {
             ++pass;
             std::cout << "PASS " << scriptPath.string() << "\n";
@@ -1252,8 +1338,9 @@ int main(int argc, char **argv) {
         Options options = parseOptions(argc, argv);
         if (!options.batchDir.empty())
             return runBatch(options);
+        CudaSession session = createCudaSession(options);
         std::string error;
-        if (!runSingle(options.scriptPath, options, error)) {
+        if (!runSingle(options.scriptPath, options, session, error)) {
             std::cerr << error << "\n";
             return 1;
         }

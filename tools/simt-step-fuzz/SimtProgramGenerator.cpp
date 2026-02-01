@@ -264,6 +264,10 @@ static Value buildHelperSwitch(OpBuilder &b, Location loc, HelperBuildState &st,
         yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
         ++caseIdx;
     }
+    if (st.cfg.postSwitchWaveOpRate > 0.0 &&
+        st.rng.chance(st.cfg.postSwitchWaveOpRate)) {
+        emitHelperWaveCount(b, loc, st);
+    }
     return switchOp.getResult(0);
 }
 
@@ -645,6 +649,10 @@ static Value buildSwitch(OpBuilder &b, Location loc, BuildState &st,
         auto yield = cb.create<simt::dialect::YieldOp>(loc, ValueRange{bodyVal});
         yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
         ++caseIdx;
+    }
+    if (st.cfg.postSwitchWaveOpRate > 0.0 &&
+        st.rng.chance(st.cfg.postSwitchWaveOpRate)) {
+        emitWaveCount(b, loc, st, makeBool(b, loc, true));
     }
     return switchOp.getResult(0);
 }

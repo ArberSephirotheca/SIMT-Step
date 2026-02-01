@@ -224,6 +224,10 @@ int main(int argc, char **argv) {
         "no-subgroup-in-switch",
         llvm::cl::desc("Do not emit subgroup ops (wave/lane_id/subgroup_id) inside switch cases"),
         llvm::cl::init(false));
+    llvm::cl::opt<double> postSwitchWaveOpRate(
+        "post-switch-wave-op-rate",
+        llvm::cl::desc("Probability in [0,1] to emit a wave op immediately after a switch"),
+        llvm::cl::init(0.0));
     llvm::cl::opt<unsigned> helperMaxDepth(
         "helper-max-depth",
         llvm::cl::desc("Max recursion depth for helper pattern generation"),
@@ -274,6 +278,10 @@ int main(int argc, char **argv) {
         llvm::errs() << "error: --break-continue-rate must be <= 1.0\n";
         return 1;
     }
+    if (postSwitchWaveOpRate > 1.0) {
+        llvm::errs() << "error: --post-switch-wave-op-rate must be <= 1.0\n";
+        return 1;
+    }
     if (helperMaxDepth < 1) {
         llvm::errs() << "error: --helper-max-depth must be >= 1\n";
         return 1;
@@ -295,6 +303,7 @@ int main(int argc, char **argv) {
     cfg.complexHelper = complexHelper || helperSubgroupIds;
     cfg.helperUsesSubgroupIds = helperSubgroupIds;
     cfg.noSubgroupOpsInSwitch = noSubgroupOpsInSwitch;
+    cfg.postSwitchWaveOpRate = postSwitchWaveOpRate;
     cfg.helperMaxDepth = helperMaxDepth;
     cfg.helperMinControlOps = helperMinControlOps;
     cfg.breakContinueRate = breakContinueRate;
