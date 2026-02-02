@@ -180,7 +180,7 @@ python3 tools/simt-cuda-test/generate_cuda_tests.py \
 
 This will:
 - call `simt-step-raise --target=cuda` to get CUDA device code,
-- call `simt-step-runner` to compute expected output buffers,
+- call `simt-step-runner --collective-cf` to compute expected output buffers (CUDA warp semantics),
 - write `cuda-tests/test_*.cuda`,
 - copy `test_*.yaml` next to each script when present (predicate-buffer / prefill buffers).
 

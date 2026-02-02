@@ -1172,6 +1172,12 @@ private:
         }
 
         auto dispatchLane = [&](LaneId lane) {
+            // NOTE: handle*Split may create new dynamic blocks, which can rehash
+            // waveCtx.blocks and invalidate pointers to existing DynamicBlocks.
+            // Re-fetch the parent block each time to avoid use-after-rehash.
+            auto *blockCtx = getBlock(waveCtx, key);
+            if (!blockCtx)
+                llvm::report_fatal_error("collective-cf: missing block context");
             blockCtx->activeMask |= (1ull << lane);
             SemanticsContext laneCtx;
             laneCtx.activeMask = evalActive;
