@@ -227,8 +227,12 @@ LogicalResult BaseRaiser::printOp(func::FuncOp& op){
     if (op.getSymName() == "main"){
         if (failed(emitMainFuncTop(op))) return failure();
     } else {
-        assert(op.getFunctionType().getNumResults() == 1);
-        if (failed(emitType(op.getFunctionType().getResult(0)))) return failure();
+        assert(op.getFunctionType().getNumResults() <= 1);
+        if (op.getFunctionType().getNumResults() == 0){
+            os << "void";
+        } else {
+            if (failed(emitType(op.getFunctionType().getResult(0)))) return failure();
+        }
         os << " " << op.getSymName() << "(";
         for (auto arg : op.getArguments()){
             if (failed(emitType(arg.getType()))) return failure();
@@ -669,7 +673,7 @@ LogicalResult emitAmberHarness(
     b.os << "SET ENGINE_DATA fence_timeout_ms 10000\n"
             "SHADER compute compute_shader " << lang << " TARGET_ENV vulkan1.1\n";
     
-    if (failed(b.emitShaderPrologue()) || failed(b.emitOp(op))) {
+    if (failed(b.emitShaderPrologue(op)) || failed(b.emitOp(op))) {
         return failure();
     }
     

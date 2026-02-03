@@ -1,16 +1,12 @@
-#include "RaiseCUDA.h"
+#include "RaiseCUDA_HIP.h"
 #include "BaseRaiser.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/Utils/StaticValueUtils.h"
-#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/SmallVectorExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/FormatVariadicDetails.h"
 #include "llvm/Support/LogicalResult.h"
 #include <cstddef>
 #include <cstdio>
@@ -22,7 +18,13 @@ using namespace simt::test_raiser;
 using namespace llvm;
 using namespace mlir;
 
-class CudaRaiser : public BaseRaiser {
+enum RaiserType {
+    CUDA,
+    HIP
+};
+
+template<RaiserType RT>
+class CudaHipRaiser : public BaseRaiser {
 
 public:
 
@@ -34,11 +36,13 @@ LogicalResult emitHarness(
     Operation* op, 
     HarnessProps props) override {
 
+    std::string name = RT == RaiserType::CUDA ? "cuda" : "hip";
+
     std::vector<int64_t> bufferIndicies;
     if(failed(getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
 
     os << "#include <assert.h>\n#include <cstdio>\n";
-    os << "__device__ __forceinline__ int3 make_int3(uint3 v){ return make_int3(v.x, v.y, v.z); }\n";
+    if (RT == RaiserType::HIP) os << "#include <hip/hip_runtime.h>\n";
 
     if (failed(emitOp(op))) return failure();
 
@@ -63,8 +67,8 @@ LogicalResult emitHarness(
         }
         os << "};\n";
         os << "int *dev_actual" << i << ";\n";
-        os << "cudaMalloc(&dev_actual" << i << ", sizeof(host_actual" << i << "));\n";
-        os << "cudaMemcpy(dev_actual" << i << ", host_actual" << i << ", sizeof(host_actual" << i << "), cudaMemcpyHostToDevice);\n";
+        os << name + "Malloc(&dev_actual" << i << ", sizeof(host_actual" << i << "));\n";
+        os << name + "Memcpy(dev_actual" << i << ", host_actual" << i << ", sizeof(host_actual" << i << "), " + name + "MemcpyHostToDevice);\n";
     }
 
     os << "dim3 thread_dim(" << ntx << ", " << nty << ", " << ntz << ");\n";
@@ -76,7 +80,7 @@ LogicalResult emitHarness(
     os << ");\n";
 
     for (size_t i = 0; i < props.input.size(); i++){
-        os << "cudaMemcpy(host_actual" << i << ", dev_actual" << i << ", sizeof(host_actual" << i << "), cudaMemcpyDeviceToHost);\n";
+        os << name + "Memcpy(host_actual" << i << ", dev_actual" << i << ", sizeof(host_actual" << i << "), " + name + "MemcpyDeviceToHost);\n";
         os << "for (int i = 0; i < " << props.expected[i].size() << "; i++){\n";
         os.indent() << "if (expected" << i << "[i] != host_actual" << i << "[i]){\n";
         os.indent() << "printf(\"[%d]: expected=%d actual=%d\\n\", i, expected" << i << "[i], host_actual" << i << "[i]);\n";
@@ -123,7 +127,11 @@ LogicalResult emitMainFuncTop(func::FuncOp& f) override {
 }
 
 LogicalResult emitType(Type type) override {
-    if (type.isInteger()){
+    
+    if (auto rtype = dyn_cast<simt::dialect::ResourceType>(type)){
+        if (failed(emitType(rtype.getElementType()))) return failure();
+        os << "*";
+    } else if (type.isInteger()){
         switch (type.getIntOrFloatBitWidth()){
             case 1:
                 os << "bool";
@@ -162,10 +170,11 @@ LogicalResult emitType(Type type) override {
     } else {
         llvm_unreachable("Unsupported type");
     }
+
     return success();
 }
 
-LogicalResult emitShaderPrologue() override {
+LogicalResult emitShaderPrologue(Operation* op) override {
     return success();
 }
 
@@ -227,7 +236,11 @@ LogicalResult printOp(BufferAtomicAddOp& op) override {
 
 LogicalResult printOp(WaveCountBitsOp& op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
-    os << "__popc(__ballot_sync(__activemask(), " << getValueName(op.getOperand()) << "))";
+    if (RT == CUDA){
+        os << "__popc(__ballot_sync(__activemask(), " << getValueName(op.getOperand()) << "))";
+    } else {
+        os << "__popc(__ballot(" << getValueName(op.getOperand()) << "))";
+    }
     return success();
 }
 
@@ -252,15 +265,15 @@ LogicalResult printOp(WaveAnyOp& op) override {
 }
 
 LogicalResult printOp(GroupIdOp& op) override {
-    return emitConstVec(op.getResult(), "make_int3(blockDim)");
+    return emitConstVec(op.getResult(), "make_int3(blockDim.x, blockDim.y, blockDim.x)");
 }
 
 LogicalResult printOp(GroupThreadIdOp& op) override {
-    return emitConstVec(op.getResult(), "make_int3(threadIdx)");
+    return emitConstVec(op.getResult(), "make_int3(threadIdx.x, threadIdx.y, threadIdx.x)");
 }
 
 LogicalResult printOp(GroupIndexOp& op) override {
-    return emitConstVec(op.getResult(), "make_int3(blockIdx)");
+    return emitConstVec(op.getResult(), "make_int3(blockIdx.x, blockIdx.y, blockIdx.z)");
 }
 
 };
@@ -272,10 +285,21 @@ LogicalResult emitRaisedCUDA(
     raw_ostream &o, 
     HarnessProps props){
 
-    CudaRaiser cuda(o);
+    CudaHipRaiser<RaiserType::CUDA> cuda(o);
     cuda.subgroupWidth = props.subgroupWidth;
 
     return cuda.emitHarness(op, props);
+}
+
+LogicalResult emitRaisedHIP(
+    Operation *op, 
+    raw_ostream &o, 
+    HarnessProps props){
+
+    CudaHipRaiser<RaiserType::HIP> hip(o);
+    hip.subgroupWidth = props.subgroupWidth;
+
+    return hip.emitHarness(op, props);
 }
 
 }

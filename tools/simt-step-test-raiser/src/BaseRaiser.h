@@ -106,7 +106,7 @@ namespace simt::test_raiser {
 
             // Emits the language-specific prologue inside of the harness and before
             // any code is emitted.
-            virtual LogicalResult emitShaderPrologue() = 0;
+            virtual LogicalResult emitShaderPrologue(Operation* op) = 0;
 
             // Emits the language-specific main function definition, excluding the
             // body, which is handled elsewhere.
@@ -158,7 +158,6 @@ namespace simt::test_raiser {
             LogicalResult emitBlock(Block& block);
 
             LogicalResult printOp(func::ReturnOp& op);
-            LogicalResult printOp(func::CallOp& op);
             LogicalResult printOp(mlir::ModuleOp& op);
             LogicalResult printOp(arith::ConstantOp& op);
             LogicalResult printOp(arith::CmpIOp& op);
@@ -179,6 +178,7 @@ namespace simt::test_raiser {
             LogicalResult printOp(SwitchOp& op);
 
             virtual LogicalResult printOp(func::FuncOp& op);
+            virtual LogicalResult printOp(func::CallOp& op);
             
             virtual LogicalResult printOp(arith::RemFOp& op) = 0;
             virtual LogicalResult printOp(DispatchThreadIdOp& op) = 0;
