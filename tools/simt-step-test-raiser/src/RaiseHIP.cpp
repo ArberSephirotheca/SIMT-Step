@@ -1,16 +1,12 @@
 #include "RaiseHIP.h"
 #include "BaseRaiser.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/Utils/StaticValueUtils.h"
-#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/SmallVectorExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/FormatVariadicDetails.h"
 #include "llvm/Support/LogicalResult.h"
 #include <cstddef>
 #include <cstdio>
@@ -165,7 +161,7 @@ LogicalResult emitType(Type type) override {
     return success();
 }
 
-LogicalResult emitShaderPrologue() override {
+LogicalResult emitShaderPrologue(Operation* op) override {
     return success();
 }
 

@@ -15,5 +15,10 @@ LogicalResult emitRaisedCUDA(
     Operation *op, 
     raw_ostream &o, 
     HarnessProps props);
+
+LogicalResult emitRaisedHIP(
+    Operation *op, 
+    raw_ostream &o, 
+    HarnessProps props);
     
 }

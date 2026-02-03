@@ -1,14 +1,12 @@
 #include "BaseRaiser.h"
 #include "RaiseGLSL.h"
-#include "RaiseCUDA.h"
-#include "RaiseHIP.h"
+#include "RaiseCUDA_HIP.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SimpleProgram.h"
 #include "../tools/simt-step-runner/InitYaml.h"
 
 #include <cstdint>
-#include <functional>
 #include <iostream>
 #include <llvm/Support/CommandLine.h>
 #include <mlir/Tools/mlir-translate/Translation.h>

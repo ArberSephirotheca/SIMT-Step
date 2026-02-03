@@ -1,14 +1,18 @@
 #include "RaiseGLSL.h"
 #include "BaseRaiser.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/Utils/StaticValueUtils.h"
-#include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/Support/WalkResult.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
+#include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
 #include <cstdio>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -23,6 +27,8 @@ public:
 
 using BaseRaiser::BaseRaiser;
 
+std::map<std::string, std::vector<int>> funcBufferMaps;
+
 LogicalResult emitHarness(Operation* op, HarnessProps props) override {
     return emitAmberHarness(*this, op, "GLSL", props);
 }
@@ -31,21 +37,6 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
 
 private:
 LogicalResult emitMainFuncTop(func::FuncOp& f) override {
-    os  << "layout(local_size_x = " << std::to_string(ntx)
-        << ", local_size_y = " << std::to_string(nty) 
-        << ", local_size_z = " << std::to_string(ntz) << ") in;\n";
-
-    // TODO: Buffer memory semantics
-    int locs = 0;
-    for (Value v : f.getArguments()){
-        if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
-            assert(t.getMemorySpace() == simt::dialect::MemorySpace::Global);
-            os << "layout(set = 0, binding = " << locs << ") buffer Buf { ";
-            if (failed(emitType(t.getElementType()))) return failure();
-            os << " " << addValueName(v) << "[" << buffer_sizes[locs] << "];};\n";
-            locs++;
-        }
-    }
     os << "void main()";
     return success();
 }
@@ -90,10 +81,11 @@ LogicalResult emitType(Type type) override {
     } else {
         llvm_unreachable("Unsupported type");
     }
+
     return success();
 }
 
-LogicalResult emitShaderPrologue() override {
+LogicalResult emitShaderPrologue(Operation* op) override {
     os << 
         "#version 430\n"
         "#extension GL_KHR_shader_subgroup_ballot  : enable\n"
@@ -101,9 +93,47 @@ LogicalResult emitShaderPrologue() override {
         "#extension GL_KHR_shader_subgroup_basic   : enable\n"
         "#extension GL_KHR_memory_scope_semantics  : enable\n"
         "#extension GL_ARB_gpu_shader_int64        : enable\n";
+    os  << "layout(local_size_x = " << std::to_string(ntx)
+        << ", local_size_y = " << std::to_string(nty) 
+        << ", local_size_z = " << std::to_string(ntz) << ") in;\n";
+
+    // TODO: Buffer memory semantics
+    int locs = 0;
+    auto m = dyn_cast<ModuleOp>(op);
+    assert(m);
+    auto f = m.lookupSymbol<func::FuncOp>("main");
+    for (Value v : f.getArguments()){
+        if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
+            assert(t.getMemorySpace() == simt::dialect::MemorySpace::Global);
+            os << "layout(set = 0, binding = " << locs << ") buffer Buf" << std::to_string(locs) <<  " { ";
+            if (failed(emitType(t.getElementType()))) return failure();
+            os << " " << addValueName(v) << "[" << buffer_sizes[locs] << "];};\n";
+            locs++;
+        }
+    }
+
+    f->walk([&](Operation* op) -> WalkResult {
+        auto call = dyn_cast<func::CallOp>(op);
+        if (!call) return WalkResult::advance();
+        std::string fname = call.getCallee().str();
+        
+
+        std::vector<int> bufmap;
+        for (auto arg : call.getArgOperands()){
+            if (isa<simt::dialect::ResourceType>(arg.getType())){
+                bufmap.push_back(getValueNumber(arg));
+            }
+        }
+        if (funcBufferMaps.contains(fname) && funcBufferMaps[fname] != bufmap){
+            llvm_unreachable("Cannot support multiple mapping from buffers to function arguments");
+        }
+        funcBufferMaps[fname] = bufmap;
+
+        return WalkResult::advance();
+    });
+
     return success();
 }
-
 
 LogicalResult emitCast(Value in, Value out) override {
     if(failed(emitValueDefine(out))) return failure();
@@ -117,8 +147,55 @@ LogicalResult printOp(arith::RemFOp &op) override {
     return emitFuncCall(op.getResult(), "mod", {op->getOperand(0), op->getOperand(1)});
 }
 
-/////////////// 'vector' dialect ///////////////
+/////////////// 'func' dialect ///////////////
+LogicalResult printOp(func::FuncOp &op) override {
+    if (op.getSymName() == "main"){
+        if (failed(emitMainFuncTop(op))) return failure();
+    } else {
+        assert(op.getFunctionType().getNumResults() <= 1);
+        if (op.getFunctionType().getNumResults() == 0){
+            os << "void";
+        } else {
+            if (failed(emitType(op.getFunctionType().getResult(0)))) return failure();
+        }
+        os << " " << op.getSymName() << "(";
+        int seen = 0;
+        for (auto arg : op.getArguments()){
+            if (!isa<simt::dialect::ResourceType>(arg.getType())){
+                if (failed(emitType(arg.getType()))) return failure();
+                os << " " << addValueName(arg);
+                if (arg.getArgNumber() < op.getNumArguments() - 1){
+                    os << ", ";
+                }
+            } else {
+                value_map[arg] = funcBufferMaps[op.getSymName().str()][seen];
+                seen++;
+            }
+        }
+        os << ")";
+    }
+    os << "{\n";
+    os.indent();
+    if (failed(emitRegion(op.getRegion()))) return failure();
+    os.unindent();
+    os << "}\n\n";
+    return success();
+}
 
+LogicalResult printOp(func::CallOp &op) override {
+    std::string fname = op.getCallee().str();
+    os << fname << "(";
+    for (auto [i, arg] : llvm::enumerate(op.getArgOperands())){
+        if (!isa<simt::dialect::ResourceType>(arg.getType())){
+            os << getValueName(arg);
+            if (i < op.getArgOperands().size() - 1){
+                os << ", ";
+            }
+        }
+    }
+    os << ")";
+    return success();
+}
 
 /////////////// 'simt_step' dialect ///////////////
 
@@ -175,49 +252,13 @@ LogicalResult printOp(GroupIdOp& op) override {
     return emitConstVec(op.getResult(), "gl_WorkGroupID");
 }
 
-std::string Scope2Const(Scope s){
-    switch (s){
-        case Scope::Workgroup:
-            return "gl_ScopeWorkgroup";
-        case Scope::Subgroup:
-            return "gl_ScopeSubgroup";
-        case Scope::Thread:
-            return "gl_ScopeInvocation";
-    }
+LogicalResult printOp(GroupThreadIdOp& op) override {
+    return emitConstVec(op.getResult(), "gl_LocalInvocationID");
 }
 
-std::string Memsem2Const(MemorySemantics s){
-    switch (s){
-        case MemorySemantics::None:
-            return "gl_SemanticsRelaxed"; // TODO: Double check this
-        case MemorySemantics::Acquire:
-            return "gl_SemanticsAquire";
-        case MemorySemantics::Release:
-            return "gl_SemanticsRelease";
-        case MemorySemantics::AcqRel:
-            return "gl_SemanticsAquireRelease";
-    }
+LogicalResult printOp(GroupIndexOp& op) override {
+    return emitConstVec(op.getResult(), "gl_SubgroupInvocationID");
 }
-
-// LogicalResult printOp(BarrierOp& op) override {
-//     os << "controlBarrier(";
-//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
-//     os << ", ";
-//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
-//     os << ", gl_StorageSemanticsNone, ";
-//     os << Memsem2Const(op.getMemsem().value_or(MemorySemantics::None));
-//     os << ")";
-//     return success();
-// }
-
-// LogicalResult printOp(FenceOp& op) override {
-//     os << "memoryBarrier(";
-//     os << Scope2Const(op.getScope().value_or(Scope::Workgroup));
-//     os << ", gl_StorageSemanticsNone, ";
-//     os << Memsem2Const(op.getMemsem().value_or(MemorySemantics::None));
-//     os << ")";
-//     return success();
-// }
 
 };
 

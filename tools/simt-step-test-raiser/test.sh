@@ -27,16 +27,20 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
 
     noext="${testfile%.*}"
     yamlflag=$( [ ! -f $noext.yaml ] || echo "--buffer-init-yaml $noext.yaml" && echo )
-    ./build/tools/simt-step-test-raiser/simt-step-test-raiser $testfile -o $outfile --mlir-to-$lang $yamlflag
+    ./build/tools/simt-step-test-raiser/simt-step-test-raiser $testfile -o $outfile --mlir-to-$lang $yamlflag --no-f64
     if [ $? -ne 0 ]; then
         continue
     fi
 
     if [ $lang == "glsl-amber" ]; then
-        scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.amber
-        cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S /home/skagle/amber/out/Debug/amber -D 0 testout.amber
+        if [ "$3 " == "waterthrush" ]; then
+            scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.amber
+            cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S /home/skagle/amber/out/Debug/amber -D 0 testout.amber
+        else
+            sudo -S /home/simonk/amber/out/Debug/amber -D 0 $outfile
+        fi
     elif [ $lang == "cuda" ]; then
-        nvcc -w $outfile && ./a.out
+        nvcc -w $outfile && sudo ./a.out
     elif [ $lang == "hip" ]; then
         scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.hip
         ssh skagle@waterthrush.be.ucsc.edu hipcc -w testout.hip
@@ -44,6 +48,6 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
     fi
     if [ $? -ne 0 ]; then
         echo "Output in: $outfile"
-        exit
+        continue
     fi
 done
