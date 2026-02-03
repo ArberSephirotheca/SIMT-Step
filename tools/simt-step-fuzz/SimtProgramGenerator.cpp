@@ -838,8 +838,10 @@ static void emitNestedHelperCall(OpBuilder &b, Location loc, BuildState &st,
             OpBuilder pb(&prep, prep.begin());
             Value acc = prep.getArgument(0);
             Value idx = prep.getArgument(1);
-            Value bound =
-                makeNonUniformBound(pb, loc, st.rng, st.cfg, st.tid, trip);
+            // Keep this wrapper loop uniform to avoid introducing extra
+            // divergence at the helper call site (the outer if already provides
+            // non-uniformity when enabled).
+            Value bound = makeI32(pb, loc, trip);
             Value cond =
                 pb.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, idx, bound);
             pb.create<simt::dialect::ConditionOp>(loc, cond, ValueRange{acc, idx});

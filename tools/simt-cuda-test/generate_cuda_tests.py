@@ -288,6 +288,9 @@ def main():
                 str(runner_bin),
                 f"--lanes={lanes}",
                 f"--subgroup-width={subgroup}",
+                # CUDA warp semantics require collective control flow so wave ops
+                # observe a stable participant mask under divergence.
+                "--collective-cf",
             ]
             if predicate_yaml:
                 run_cmdline.append(f"--init-file={predicate_yaml}")

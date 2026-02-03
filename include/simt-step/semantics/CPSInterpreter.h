@@ -241,6 +241,16 @@ public:
     void enqueue(WaveId wave, const DynamicBlockKey &block, LaneId lane,
                  StepType step) {
         ensureWaveBlock(wave, block, lane);
+        auto &waveCtx = state_.waves[wave];
+        if (auto *blockCtx = getBlock(waveCtx, block)) {
+            std::uint64_t laneBit = 1ull << lane;
+            blockCtx->activeMask |= laneBit;
+            if (blockCtx->expectedMask)
+                blockCtx->expectedMask |= laneBit;
+            else
+                blockCtx->expectedMask = blockCtx->activeMask;
+            blockCtx->completedMask &= ~laneBit;
+        }
         if (EnableCPSDebugLogs) {
             cpsDebugStream() << "[CPS] enqueue lane=" << lane
                          << " block=" << block.block
@@ -355,11 +365,12 @@ public:
                             blk->expectedMask ? blk->expectedMask : blk->activeMask;
                         auto envIt = blk->valueEnvs.find(lane);
                         if (envIt != blk->valueEnvs.end()) {
-                            auto &laneCtx = waveCtx->lanes[lane];
+                            auto &laneState = waveCtx->lanes[lane];
                             for (const auto &entry : envIt->second)
-                                laneCtx.values[entry.first] = entry.second;
+                                laneState.values[entry.first] = entry.second;
                         }
                     }
+                    waveCtx->lanes[lane].currentBlock = key;
                     ctx.valueEnv = &waveCtx->lanes[lane].values;
                 }
                 const std::uint32_t blockSeq = key.sequenceId;
@@ -557,13 +568,11 @@ public:
                                         auto &waveCtx = waveIt->second;
                                         auto syncIt = waveCtx.collectives.find(collectKey);
                                         if (syncIt == waveCtx.collectives.end())
-                                            llvm::report_fatal_error(
-                                                "collective memory resume: missing sync point");
+                                            return StepType::halt();
                                         auto &syncPoint = syncIt->second;
                                         auto resultIt = syncPoint.results.find(lane);
                                         if (resultIt == syncPoint.results.end())
-                                            llvm::report_fatal_error(
-                                                "collective memory resume: missing lane result");
+                                            return StepType::halt();
                                         ValueType result = resultIt->second;
                                         syncPoint.results.erase(resultIt);
                                         syncPoint.continuations.erase(lane);
@@ -611,13 +620,11 @@ public:
                                 auto &waveCtx = waveIt->second;
                                 auto syncIt = waveCtx.collectives.find(collectKey);
                                 if (syncIt == waveCtx.collectives.end())
-                                    llvm::report_fatal_error(
-                                        "collective wave resume: missing sync point");
+                                    return StepType::halt();
                                 auto &syncPoint = syncIt->second;
                                 auto resultIt = syncPoint.results.find(lane);
                                 if (resultIt == syncPoint.results.end())
-                                    llvm::report_fatal_error(
-                                        "collective wave resume: missing lane result");
+                                    return StepType::halt();
                                 ValueType result = resultIt->second;
                                 syncPoint.results.erase(resultIt);
                                 syncPoint.continuations.erase(lane);
@@ -787,6 +794,16 @@ public:
 private:
     using IfDecisionMap = llvm::DenseMap<LaneId, bool>;
     using SwitchDecisionMap = llvm::DenseMap<LaneId, std::int64_t>;
+
+    static std::uint64_t arrivedMask(const llvm::DenseSet<LaneId> &arrivals) {
+        std::uint64_t mask = 0;
+        for (LaneId lane : arrivals) {
+            if (lane >= 64)
+                llvm::report_fatal_error("collective: lane id out of range");
+            mask |= (1ull << lane);
+        }
+        return mask;
+    }
 
     static bool isControlFlowOp(mlir::Operation *op) {
         return llvm::isa<simt::dialect::IfOp, simt::dialect::LoopOp,
@@ -1155,6 +1172,12 @@ private:
         }
 
         auto dispatchLane = [&](LaneId lane) {
+            // NOTE: handle*Split may create new dynamic blocks, which can rehash
+            // waveCtx.blocks and invalidate pointers to existing DynamicBlocks.
+            // Re-fetch the parent block each time to avoid use-after-rehash.
+            auto *blockCtx = getBlock(waveCtx, key);
+            if (!blockCtx)
+                llvm::report_fatal_error("collective-cf: missing block context");
             blockCtx->activeMask |= (1ull << lane);
             SemanticsContext laneCtx;
             laneCtx.activeMask = evalActive;
@@ -3159,6 +3182,14 @@ private:
         calleeBlockCtx.block = calleeKey.block;
         calleeBlockCtx.sequenceId = calleeKey.sequenceId;
         calleeBlockCtx.kind = DynamicBlockKind::Plain;
+        // A function call is not a nested region in the caller's CFG. Avoid
+        // inheriting caller control-flow metadata; otherwise, loop/switch/if
+        // pruning can incorrectly treat callee blocks as belonging to the
+        // caller's dynamic subtree.
+        calleeBlockCtx.parentKey.reset();
+        calleeBlockCtx.loopOp = nullptr;
+        calleeBlockCtx.switchOp = nullptr;
+        calleeBlockCtx.ifOp = nullptr;
         std::uint64_t expected =
             context.expectedMask ? context.expectedMask : context.activeMask;
         if (calleeBlockCtx.expectedMask == 0)
@@ -3228,7 +3259,11 @@ private:
             return SemValue::fromResource(value);
         // If the value has a defining op, ask the semantics to evaluate it.
         if (auto *defOp = value.getDefiningOp()) {
-            if (llvm::isa<mlir::func::CallOp>(defOp)) {
+            // Values produced by calls/control-flow ops are materialized by the CPS
+            // interpreter (not by the SimpleSemantics adaptor). Their defs may not
+            // be in the current block env due to dynamic block boundaries, so scan
+            // all per-block envs as a fallback.
+            if (llvm::isa<mlir::func::CallOp>(defOp) || isControlFlowOp(defOp)) {
                 for (auto &blockEntry : waveCtx.blocks) {
                     auto envIt = blockEntry.second.valueEnvs.find(lane);
                     if (envIt == blockEntry.second.valueEnvs.end())
@@ -3271,6 +3306,13 @@ private:
         auto &laneCtx = waveCtx.lanes[item.lane];
         laneCtx.currentBlock = item.block;
         if (auto *blockCtx = getBlock(waveCtx, item.block)) {
+            std::uint64_t laneBit = 1ull << item.lane;
+            blockCtx->activeMask |= laneBit;
+            if (blockCtx->expectedMask)
+                blockCtx->expectedMask |= laneBit;
+            else
+                blockCtx->expectedMask = blockCtx->activeMask;
+            blockCtx->completedMask &= ~laneBit;
             waveCtx.currentMask = blockCtx->activeMask;
         }
         if (EnableCPSDebugLogs) {
@@ -3474,8 +3516,10 @@ private:
                 }
                 bool memoryProducesResults =
                     isMemoryCollective && !syncPoint.results.empty();
-                if (isWaveCollective && syncPoint.results.empty())
+                if (isWaveCollective && syncPoint.results.empty()) {
+                    syncPoint.expectedMask = arrivedMask(syncPoint.arrivals);
                     computeWaveCollectiveResults(waveOp, syncPoint);
+                }
                 if (isMemoryCollective && !memoryProducesResults)
                     memoryProducesResults =
                         computeMemoryCollectiveResults(waveOp, syncPoint);
@@ -3705,6 +3749,7 @@ private:
                     }
                 } else if (isWaveCollective) {
                     if (it->second.results.empty()) {
+                        it->second.expectedMask = arrivedMask(it->second.arrivals);
                         computeWaveCollectiveResults(waveOp, it->second);
                         emitCollective = true;
                     } else {
@@ -3897,6 +3942,7 @@ private:
                     }
                 } else if (isWaveCollective) {
                     if (it->second.results.empty()) {
+                        it->second.expectedMask = arrivedMask(it->second.arrivals);
                         computeWaveCollectiveResults(waveOp, it->second);
                         emitCollective = true;
                     } else {
@@ -4109,6 +4155,7 @@ private:
                     }
                 } else if (isWaveCollective) {
                     if (it->second.results.empty()) {
+                        it->second.expectedMask = arrivedMask(it->second.arrivals);
                         computeWaveCollectiveResults(waveOp, it->second);
                         emitCollective = true;
                     } else {

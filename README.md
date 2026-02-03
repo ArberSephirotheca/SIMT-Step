@@ -20,7 +20,8 @@ python3 tools/simt-step-fuzz/generate_tests.py \
   --subgroup-width 32 \
   --trials 3 \
   --schedule-seed 1 \
-  --predicate-buffer
+  --predicate-buffer \
+  --collective-cf
 
 # 2) Turn the MLIR corpus into CUDA test scripts.
 python3 tools/simt-cuda-test/generate_cuda_tests.py \
