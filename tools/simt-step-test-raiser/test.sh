@@ -33,7 +33,7 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
     fi
 
     if [ $lang == "glsl-amber" ]; then
-        if [ "$3 " == "waterthrush" ]; then
+        if [ "$3" == "waterthrush" ]; then
             scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.amber
             cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S /home/skagle/amber/out/Debug/amber -D 0 testout.amber
         else

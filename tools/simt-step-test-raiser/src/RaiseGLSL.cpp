@@ -95,7 +95,8 @@ LogicalResult emitShaderPrologue(Operation* op) override {
         << ", local_size_y = " << std::to_string(nty) 
         << ", local_size_z = " << std::to_string(ntz) << ") in;\n";
 
-    // TODO: Buffer memory semantics
+    
+    // Declare all buffers at top of program
     int locs = 0;
     auto m = dyn_cast<ModuleOp>(op);
     assert(m);
@@ -103,13 +104,19 @@ LogicalResult emitShaderPrologue(Operation* op) override {
     for (Value v : f.getArguments()){
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
             assert(t.getMemorySpace() == simt::dialect::MemorySpace::Global);
+
             os << "layout(set = 0, binding = " << locs << ") buffer Buf" << std::to_string(locs) <<  " { ";
             if (failed(emitType(t.getElementType()))) return failure();
             os << " " << addValueName(v) << "[" << buffer_sizes[locs] << "];};\n";
+
             locs++;
         }
     }
 
+    // GLSL doesn't really support passing arrays without explicit lengths,
+    // but SIMT Step does and passes them as arguments. We need to figure out
+    // which arguments corrispond to which buffers and remove the buffer parameters
+    // in the function call.
     f->walk([&](Operation* op) -> WalkResult {
         auto call = dyn_cast<func::CallOp>(op);
         if (!call) return WalkResult::advance();
@@ -122,6 +129,7 @@ LogicalResult emitShaderPrologue(Operation* op) override {
                 bufmap.push_back(getValueNumber(arg));
             }
         }
+
         if (funcBufferMaps.contains(fname) && funcBufferMaps[fname] != bufmap){
             llvm_unreachable("Cannot support multiple mapping from buffers to function arguments");
         }
@@ -150,6 +158,9 @@ LogicalResult printOp(func::FuncOp &op) override {
     if (op.getSymName() == "main"){
         if (failed(emitMainFuncTop(op))) return failure();
     } else {
+        // This portion handles replacing the buffer arguments with the buffers
+        // themselves, and removing them from the function signature before running
+        // the normal function printer.
         assert(op.getFunctionType().getNumResults() <= 1);
         if (op.getFunctionType().getNumResults() == 0){
             os << "void";

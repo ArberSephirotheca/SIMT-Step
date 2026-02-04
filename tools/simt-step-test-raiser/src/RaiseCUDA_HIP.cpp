@@ -174,10 +174,6 @@ LogicalResult emitType(Type type) override {
     return success();
 }
 
-LogicalResult emitShaderPrologue(Operation* op) override {
-    return success();
-}
-
 
 LogicalResult emitCast(Value in, Value out) override {
     if(failed(emitValueDefine(out))) return failure();
