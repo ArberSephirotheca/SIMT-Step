@@ -93,6 +93,10 @@ LogicalResult BaseRaiser::emitConst(Type t, APFloat v){
     return success();
 }
 
+LogicalResult BaseRaiser::emitShaderPrologue(Operation* op){
+    return success();
+}
+
 
 LogicalResult BaseRaiser::emitValueDefine(Value v){
     std::string vname = getOrAddValueName(v);

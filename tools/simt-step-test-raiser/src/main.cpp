@@ -3,8 +3,9 @@
 #include "RaiseCUDA_HIP.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
+#include "simt-step/semantics/SemanticsContext.h"
 #include "simt-step/semantics/SimpleProgram.h"
-#include "../tools/simt-step-runner/InitYaml.h"
+#include "simt-step/Runner/InitYaml.h"
 
 #include <cstdint>
 #include <iostream>
@@ -59,6 +60,10 @@ llvm::LogicalResult getExpectedBuffer(
     options.entry = "main";
     options.lanes = ntx;
     options.subgroupWidth = subgroupWidth;
+
+    simt::semantics::ExecutionPolicy policy;
+    policy.controlFlow = simt::semantics::ExecutionMode::Collective;
+    options.policy = &policy;
 
     std::vector<simt::semantics::BufferInitEntry> init_entries = {};
 

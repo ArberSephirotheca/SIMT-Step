@@ -102,7 +102,7 @@ namespace simt::test_raiser {
 
             // Emits the language-specific prologue inside of the harness and before
             // any code is emitted.
-            virtual LogicalResult emitShaderPrologue(Operation* op) = 0;
+            virtual LogicalResult emitShaderPrologue(Operation* op);
 
             // Emits the language-specific main function definition, excluding the
             // body, which is handled elsewhere.
@@ -197,8 +197,8 @@ namespace simt::test_raiser {
     LogicalResult emitAmberHarness(BaseRaiser& b, Operation* op, std::string lang, HarnessProps props);
 
     /*
-    Gets the thread dimensions from the main function and the argument index of the buffer 
-    (or -1 if there is no buffer), and places them in the corrispoding referenced variables.
+    Gets the thread dimensions from the main function and the argument 
+    indicies that contain buffers.
     */
     LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& ntz, std::vector<int64_t>& bufferIndex);
 
