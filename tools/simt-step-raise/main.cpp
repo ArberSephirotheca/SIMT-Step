@@ -1,5 +1,6 @@
 #include "CudaEmitter.h"
 #include "HlslEmitter.h"
+#include "MslEmitter.h"
 
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 
@@ -22,7 +23,7 @@ int main(int argc, char **argv) {
                                          llvm::cl::init("-"));
     llvm::cl::opt<std::string> target(
         "target",
-        llvm::cl::desc("Output target: hlsl or cuda"),
+        llvm::cl::desc("Output target: hlsl, cuda, or msl"),
         llvm::cl::init("hlsl"));
     llvm::cl::ParseCommandLineOptions(argc, argv, "simt-step raise\n");
 
@@ -45,6 +46,11 @@ int main(int argc, char **argv) {
         }
     } else if (target == "cuda") {
         if (failed(simt::raise::emitModuleAsCuda(*module, llvm::outs()))) {
+            llvm::errs() << "failed to raise module\n";
+            return 1;
+        }
+    } else if (target == "msl" || target == "metal") {
+        if (failed(simt::raise::emitModuleAsMsl(*module, llvm::outs()))) {
             llvm::errs() << "failed to raise module\n";
             return 1;
         }

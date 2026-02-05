@@ -5,6 +5,7 @@
 
 #include "CudaEmitter.h"
 #include "HlslEmitter.h"
+#include "MslEmitter.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SimpleProgram.h"
 #include "simt-step/semantics/SimpleSemantics.h"
@@ -200,6 +201,9 @@ int main(int argc, char **argv) {
     llvm::cl::opt<bool> dumpCuda("raise-cuda",
                                  llvm::cl::desc("Print raised CUDA for generated module"),
                                  llvm::cl::init(false));
+    llvm::cl::opt<bool> dumpMsl("raise-msl",
+                                llvm::cl::desc("Print raised MSL for generated module"),
+                                llvm::cl::init(false));
     llvm::cl::opt<bool> runInterp("run", llvm::cl::desc("Run generated module in interpreter"),
                                   llvm::cl::init(false));
     llvm::cl::opt<std::uint64_t> seedOpt("seed", llvm::cl::desc("Seed for RNG (0=deterministic)"),
@@ -392,6 +396,10 @@ int main(int argc, char **argv) {
     }
     if (dumpCuda) {
         if (failed(simt::raise::emitModuleAsCuda(*module, llvm::outs())))
+            return 1;
+    }
+    if (dumpMsl) {
+        if (failed(simt::raise::emitModuleAsMsl(*module, llvm::outs())))
             return 1;
     }
 

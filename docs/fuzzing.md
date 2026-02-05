@@ -213,3 +213,11 @@ Notes:
   exists next to `test_*.cuda`.
 - If NVRTC cannot find `cuda_runtime.h`, pass `--cuda-include /path/to/cuda/include`
   (the tool tries to auto-detect common install paths).
+
+## Metal raiser (MSL)
+
+To emit Metal Shading Language for a module:
+
+```sh
+build/tools/simt-step-raise/simt-step-raise --target=msl input.mlir > out.metal
+```
