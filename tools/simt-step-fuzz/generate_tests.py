@@ -87,6 +87,12 @@ def main():
         help="Probability in [0,1] to call helper under non-uniform control flow",
     )
     parser.add_argument(
+        "--helper-call-post-switch-rate",
+        type=float,
+        default=None,
+        help="Probability in [0,1] to emit a switch immediately before the helper call site",
+    )
+    parser.add_argument(
         "--helper-call-max-depth",
         type=int,
         default=None,
@@ -212,6 +218,10 @@ def main():
                 validate_cmd.append(
                     f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
                 )
+            if args.helper_call_post_switch_rate is not None:
+                validate_cmd.append(
+                    f"--helper-call-post-switch-rate={args.helper_call_post_switch_rate}"
+                )
             if args.helper_call_max_depth is not None:
                 validate_cmd.append(
                     f"--helper-call-max-depth={args.helper_call_max_depth}"
@@ -264,6 +274,10 @@ def main():
                 gen_cmd.append(
                     f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
                 )
+            if args.helper_call_post_switch_rate is not None:
+                gen_cmd.append(
+                    f"--helper-call-post-switch-rate={args.helper_call_post_switch_rate}"
+                )
             if args.helper_call_max_depth is not None:
                 gen_cmd.append(f"--helper-call-max-depth={args.helper_call_max_depth}")
             if args.helper_call_nest_loop_rate is not None:
@@ -307,6 +321,8 @@ def main():
                 record["post_switch_wave_op_rate"] = args.post_switch_wave_op_rate
             if args.non_uniform_helper_call_rate is not None:
                 record["non_uniform_helper_call_rate"] = args.non_uniform_helper_call_rate
+            if args.helper_call_post_switch_rate is not None:
+                record["helper_call_post_switch_rate"] = args.helper_call_post_switch_rate
             if args.helper_call_max_depth is not None:
                 record["helper_call_max_depth"] = args.helper_call_max_depth
             if args.helper_call_nest_loop_rate is not None:

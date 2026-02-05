@@ -21,6 +21,7 @@ struct GeneratorConfig {
     bool noSubgroupOpsInSwitch = false;
     double postSwitchWaveOpRate = 0.0; // probability in [0,1] to emit wave op after switch
     double nonUniformHelperCallRate = 0.0; // probability in [0,1] to call helper under non-uniform control flow
+    double helperCallPostSwitchRate = 0.0; // probability in [0,1] to emit a switch before helper call (call happens after switch)
     std::uint32_t helperCallMaxDepth = 1;
     double helperCallNestLoopRate = 0.0; // probability in [0,1] to wrap helper call in a loop (vs if) when nesting
     std::uint32_t helperMaxDepth = 3;

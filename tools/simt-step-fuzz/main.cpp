@@ -232,6 +232,10 @@ int main(int argc, char **argv) {
         "non-uniform-helper-call-rate",
         llvm::cl::desc("Probability in [0,1] to call helper under non-uniform control flow"),
         llvm::cl::init(0.0));
+    llvm::cl::opt<double> helperCallPostSwitchRate(
+        "helper-call-post-switch-rate",
+        llvm::cl::desc("Probability in [0,1] to emit a switch immediately before the helper call site"),
+        llvm::cl::init(0.0));
     llvm::cl::opt<unsigned> helperCallMaxDepth(
         "helper-call-max-depth",
         llvm::cl::desc("Max nesting depth for the non-uniform helper call site (>=1)"),
@@ -298,6 +302,10 @@ int main(int argc, char **argv) {
         llvm::errs() << "error: --non-uniform-helper-call-rate must be <= 1.0\n";
         return 1;
     }
+    if (helperCallPostSwitchRate > 1.0) {
+        llvm::errs() << "error: --helper-call-post-switch-rate must be <= 1.0\n";
+        return 1;
+    }
     if (helperCallNestLoopRate > 1.0) {
         llvm::errs() << "error: --helper-call-nest-loop-rate must be <= 1.0\n";
         return 1;
@@ -329,6 +337,7 @@ int main(int argc, char **argv) {
     cfg.noSubgroupOpsInSwitch = noSubgroupOpsInSwitch;
     cfg.postSwitchWaveOpRate = postSwitchWaveOpRate;
     cfg.nonUniformHelperCallRate = nonUniformHelperCallRate;
+    cfg.helperCallPostSwitchRate = helperCallPostSwitchRate;
     cfg.helperCallMaxDepth = helperCallMaxDepth;
     cfg.helperCallNestLoopRate = helperCallNestLoopRate;
     cfg.helperMaxDepth = helperMaxDepth;

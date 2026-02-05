@@ -796,12 +796,74 @@ static Value buildControlPattern(OpBuilder &b, Location loc, BuildState &st,
     return buildSwitch(b, loc, st, depth, maxDepth);
 }
 
+static void emitPostSwitchHelperCall(OpBuilder &b, Location loc, BuildState &st,
+                                     func::FuncOp helper,
+                                     llvm::ArrayRef<Value> helperArgs) {
+    st.controlOps++;
+    int numCases = st.rng.pick(2, 4);
+    bool includeDefault = st.rng.coin();
+    int defaultIndex = st.rng.pick(0, numCases - 1);
+
+    int selectorMod = includeDefault ? numCases : (numCases - 1);
+    Value selector = st.tid;
+    if (selectorMod > 1) {
+        Value mod = makeI32(b, loc, selectorMod);
+        selector = b.create<arith::RemSIOp>(loc, selector, mod);
+    }
+
+    Value initVal = buildValue(b, loc, st);
+
+    llvm::SmallVector<int64_t, 4> caseValues;
+    caseValues.reserve(numCases - 1);
+    int nextCaseValue = 0;
+    for (int i = 0; i < numCases; ++i) {
+        if (i == defaultIndex)
+            continue;
+        caseValues.push_back(nextCaseValue++);
+    }
+
+    auto switchOp = b.create<simt::dialect::SwitchOp>(
+        loc, TypeRange{b.getI32Type()}, selector, ValueRange{initVal}, caseValues,
+        defaultIndex);
+
+    auto &region = switchOp.getCaseBody();
+    while (static_cast<int>(region.getBlocks().size()) < numCases) {
+        auto *blk = new Block();
+        blk->addArguments({b.getI32Type()}, SmallVector<Location>{loc});
+        region.push_back(blk);
+    }
+
+    int caseIdx = 0;
+    for (auto &blk : region) {
+        if (caseIdx >= numCases)
+            break;
+        if (blk.getNumArguments() == 0) {
+            blk.addArguments({b.getI32Type()}, SmallVector<Location>{loc});
+        }
+        OpBuilder cb(&blk, blk.begin());
+        Value in = blk.getArgument(0);
+        Value c = makeI32(cb, loc, st.rng.pick(0, 4));
+        Value out = cb.create<arith::AddIOp>(loc, in, c);
+        auto yield = cb.create<simt::dialect::YieldOp>(loc, ValueRange{out});
+        yield->setAttr("fallthrough", b.getBoolAttr(false));
+        ++caseIdx;
+    }
+
+    b.create<func::CallOp>(loc, helper, helperArgs);
+}
+
 static void emitNestedHelperCall(OpBuilder &b, Location loc, BuildState &st,
                                  func::FuncOp helper,
                                  llvm::ArrayRef<Value> helperArgs,
                                  unsigned depth, unsigned maxDepth) {
     if (depth >= maxDepth) {
-        b.create<func::CallOp>(loc, helper, helperArgs);
+        bool wrapWithSwitch = st.cfg.helperCallPostSwitchRate > 0.0 &&
+                              st.rng.chance(st.cfg.helperCallPostSwitchRate);
+        if (wrapWithSwitch) {
+            emitPostSwitchHelperCall(b, loc, st, helper, helperArgs);
+        } else {
+            b.create<func::CallOp>(loc, helper, helperArgs);
+        }
         return;
     }
 
