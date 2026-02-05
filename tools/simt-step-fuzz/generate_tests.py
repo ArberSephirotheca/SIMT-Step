@@ -42,6 +42,12 @@ def main():
         help="Base schedule seed for randomized scheduling",
     )
     parser.add_argument(
+        "--profile",
+        choices=["safe", "aggressive"],
+        default=None,
+        help="Apply a preset profile of generation options",
+    )
+    parser.add_argument(
         "--break-continue-rate",
         type=float,
         default=None,
@@ -142,6 +148,56 @@ def main():
         help="Max attempts before giving up",
     )
     args = parser.parse_args()
+
+    if args.profile is not None:
+        if args.profile == "safe":
+            rate_defaults = {
+                "break_continue_rate": 0.2,
+                "post_switch_wave_op_rate": 0.2,
+                "non_uniform_helper_call_rate": 0.2,
+                "helper_call_post_switch_rate": 0.2,
+                "helper_call_nest_loop_rate": 0.2,
+            }
+            int_defaults = {
+                "helper_max_depth": 2,
+                "helper_min_control_ops": 2,
+                "helper_call_max_depth": 1,
+            }
+            bool_defaults = {
+                "collective_cf": True,
+                "predicate_buffer": True,
+                "no_subgroup_in_switch": True,
+            }
+        else:
+            rate_defaults = {
+                "break_continue_rate": 0.3,
+                "post_switch_wave_op_rate": 0.3,
+                "non_uniform_helper_call_rate": 0.3,
+                "helper_call_post_switch_rate": 0.3,
+                "helper_call_nest_loop_rate": 0.3,
+            }
+            int_defaults = {
+                "helper_max_depth": 3,
+                "helper_min_control_ops": 3,
+                "helper_call_max_depth": 2,
+            }
+            bool_defaults = {
+                "collective_cf": True,
+                "predicate_buffer": True,
+                "no_subgroup_in_switch": True,
+                "complex_helper": True,
+                "helper_subgroup_ids": True,
+            }
+
+        for key, value in rate_defaults.items():
+            if getattr(args, key) is None:
+                setattr(args, key, value)
+        for key, value in int_defaults.items():
+            if getattr(args, key) is None:
+                setattr(args, key, value)
+        for key, value in bool_defaults.items():
+            if value:
+                setattr(args, key, True)
 
     if args.trials < 2:
         parser.error("--trials must be >= 2 to enforce determinism")
@@ -305,6 +361,8 @@ def main():
                 "trials": args.trials,
                 "schedule_seed": args.schedule_seed,
             }
+            if args.profile is not None:
+                record["profile"] = args.profile
             if args.break_continue_rate is not None:
                 record["break_continue_rate"] = args.break_continue_rate
             if args.complex_helper:

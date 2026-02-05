@@ -221,3 +221,12 @@ To emit Metal Shading Language for a module:
 ```sh
 build/tools/simt-step-raise/simt-step-raise --target=msl input.mlir > out.metal
 ```
+
+## Fuzz generator presets
+
+`generate_tests.py` supports preset profiles:
+
+```sh
+python3 tools/simt-step-fuzz/generate_tests.py --profile=safe
+python3 tools/simt-step-fuzz/generate_tests.py --profile=aggressive
+```
