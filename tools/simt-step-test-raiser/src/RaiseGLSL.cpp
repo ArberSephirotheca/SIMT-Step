@@ -5,6 +5,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Support/WalkResult.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
+#include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
@@ -124,7 +125,9 @@ LogicalResult emitShaderPrologue(Operation* op) override {
         
 
         std::vector<int> bufmap;
+        llvm::BitVector bv {false};
         for (auto arg : call.getArgOperands()){
+            bv.push_back(isa<simt::dialect::ResourceType>(arg.getType()));
             if (isa<simt::dialect::ResourceType>(arg.getType())){
                 bufmap.push_back(getValueNumber(arg));
             }
@@ -134,6 +137,8 @@ LogicalResult emitShaderPrologue(Operation* op) override {
             llvm_unreachable("Cannot support multiple mapping from buffers to function arguments");
         }
         funcBufferMaps[fname] = bufmap;
+
+        call->eraseOperands(bv);
 
         return WalkResult::advance();
     });
@@ -188,21 +193,6 @@ LogicalResult printOp(func::FuncOp &op) override {
     if (failed(emitRegion(op.getRegion()))) return failure();
     os.unindent();
     os << "}\n\n";
-    return success();
-}
-
-LogicalResult printOp(func::CallOp &op) override {
-    std::string fname = op.getCallee().str();
-    os << fname << "(";
-    for (auto [i, arg] : llvm::enumerate(op.getArgOperands())){
-        if (!isa<simt::dialect::ResourceType>(arg.getType())){
-            os << getValueName(arg);
-            if (i < op.getArgOperands().size() - 1){
-                os << ", ";
-            }
-        }
-    }
-    os << ")";
     return success();
 }
 

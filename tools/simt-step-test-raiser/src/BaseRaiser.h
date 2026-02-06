@@ -56,15 +56,22 @@ namespace simt::test_raiser {
         protected:
             struct ScopeHandler {
                 struct Scope {
+                    // Output variables of a scope block
                     std::vector<Value> results;
+
                     enum ScopeKinds {
                         IF_SCOPE,
                         LOOP_SCOPE,
                         SWITCH_SCOPE
                     } scopeKind;
+
+                    // Sets lefts to rights
                     LogicalResult emitGroupSet(BaseRaiser& b, std::vector<Value> lefts, std::vector<Value> rights);
+                    // Declares all values and adds them to value map
                     LogicalResult emitGroupDeclare(BaseRaiser& b, std::vector<Value> values);
+                    // Sets scope output variables to rights
                     LogicalResult emitSetResults(BaseRaiser& b, std::vector<Value> rights);
+                    // Declares scope output variables and adds them to value map
                     LogicalResult emitDeclareResults(BaseRaiser& b);
                 };
                 std::deque<Scope> stack;
@@ -72,6 +79,9 @@ namespace simt::test_raiser {
                 Scope pop();
                 Scope peek();
                 void push(Scope);
+
+                // Find the highest scope of this kind on the scope stack.
+                // Returns failure if no such scope exists.
                 LogicalResult peekKind(Scope::ScopeKinds kind, Scope& out);
             };
             friend ScopeHandler;
