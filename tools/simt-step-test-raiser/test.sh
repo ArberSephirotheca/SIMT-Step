@@ -37,7 +37,7 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
             scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.amber
             cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S /home/skagle/amber/out/Debug/amber -D 0 testout.amber
         else
-            sudo -S /home/simonk/amber/out/Debug/amber -D 0 $outfile
+            sudo -S /home/simonk/amber/out/Debug/amber -D $3 $outfile
         fi
     elif [ $lang == "cuda" ]; then
         nvcc -w $outfile && sudo ./a.out
