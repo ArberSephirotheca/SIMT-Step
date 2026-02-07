@@ -7,15 +7,10 @@
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
-#include <cstdio>
-#include <map>
-#include <string>
-#include <vector>
 
 
 using namespace simt::test_raiser;
