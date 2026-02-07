@@ -29,6 +29,7 @@ struct ExecutionPolicy;
 using LaneId = std::uint32_t;
 using WaveId = std::uint32_t;
 using CollectiveKey = std::uint64_t;
+using LoopFrameId = std::uint64_t;
 
 template <typename ValueT>
 class Step;
@@ -63,6 +64,7 @@ struct DynamicBlock {
 
     std::optional<DynamicBlockKey> parentKey;
     const mlir::Operation *loopOp = nullptr;
+    std::optional<LoopFrameId> ownerLoopFrameId;
     const mlir::Operation *switchOp = nullptr;
     const mlir::Operation *ifOp = nullptr;
     bool isLoopPrepare = false;
@@ -79,14 +81,17 @@ struct DynamicBlock {
     llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlReadyMask;
 };
 
-template <typename ValueT>
+template <typename ValueT, typename StepT>
 struct LoopFrameState {
+    LoopFrameId frameId = 0;
     const mlir::Operation *loopOp = nullptr;
     DynamicBlockKey prepareKey;
     DynamicBlockKey bodyKey;
     // Per-lane next sequence id for the next iteration prep/body.
     llvm::DenseMap<LaneId, std::uint32_t> laneNextSeq;
     llvm::DenseMap<LaneId, llvm::SmallVector<ValueT, 4>> carried;
+    // Continuation to execute after the loop exits for each lane.
+    llvm::DenseMap<LaneId, StepT> exitContinuations;
 };
 
 template <typename ValueT>
@@ -154,7 +159,7 @@ struct MergeStackEntry {
     llvm::SmallVector<std::uint64_t, 4> childMasks;
     std::uint64_t expectedMask = 0;
     std::uint64_t completedMask = 0;
-    std::optional<LoopFrameState<ValueT>> loopFrame;
+    std::optional<LoopFrameState<ValueT, StepT>> loopFrame;
     std::optional<SwitchFrameState<ValueT>> switchFrame;
     const mlir::Operation *ifOp = nullptr;
 };
@@ -170,6 +175,8 @@ struct WaveContext {
     llvm::DenseMap<std::uint32_t, SynchronizationSyncPoint<ValueT, StepT>> syncPoints;
     llvm::DenseMap<LaneId, LaneContext<ValueT, StepT>> lanes;
     std::uint32_t nextCallSeq = 1;
+    std::uint32_t nextDynamicSeq = 1;
+    LoopFrameId nextLoopFrameId = 1;
     std::uint32_t nextControlToken = 1;
     llvm::DenseMap<CollectiveKey, const mlir::Operation *> controlTokenToOp;
     llvm::DenseMap<std::uint32_t, const mlir::Operation *> syncTokenToOp;

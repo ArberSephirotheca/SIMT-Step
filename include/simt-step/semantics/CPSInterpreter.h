@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -258,8 +259,7 @@ public:
             dumpReadyQueue();
             dumpContinuations();
         }
-        state_.readyQueue.push_back(
-            ReadyContinuation<ValueType, StepType>{wave, block, lane, std::move(step)});
+        pushReady(wave, block, lane, std::move(step));
     }
 
     void dumpReadyQueue() const {
@@ -427,6 +427,8 @@ public:
                         auto &waveCtx = waveIt->second;
                         auto &laneCtx = waveCtx.lanes[lane];
                         if (!laneCtx.callStack.empty()) {
+                            DynamicBlockKey calleeKey = key;
+                            auto calleeRoot = findDynamicRoot(waveCtx, calleeKey);
                             auto frame = std::move(laneCtx.callStack.back());
                             laneCtx.callStack.pop_back();
                             if (auto *blockCtx = getBlock(waveCtx, key))
@@ -449,6 +451,8 @@ public:
                                     *valOrErr;
                                 laneCtx.values[frame.results[0]] = *valOrErr;
                             }
+                            if (calleeRoot)
+                                shrinkExpectedForSubtree(wave, waveCtx, *calleeRoot, lane);
                             callerBlockCtx->activeMask |= (1ull << lane);
                             laneCtx.phase =
                                 LaneContext<ValueType, StepType>::Phase::Running;
@@ -803,6 +807,11 @@ private:
             mask |= (1ull << lane);
         }
         return mask;
+    }
+
+    static void ensureExpectedCoversArrivals(
+        CollectiveSyncPoint<ValueType, StepType> &syncPoint) {
+        syncPoint.expectedMask |= arrivedMask(syncPoint.arrivals);
     }
 
     static bool isControlFlowOp(mlir::Operation *op) {
@@ -1282,50 +1291,6 @@ private:
         mlir::Block *prepareBlock = &loopOp.getPrepareRegion().front();
         mlir::Block *bodyBlock = &loopOp.getBodyRegion().front();
 
-        std::uint32_t baseSeq = key.sequenceId + 1;
-        DynamicBlockKey prepKey{prepareBlock, baseSeq};
-        DynamicBlockKey bodyKey{bodyBlock, baseSeq + 1};
-
-        // NOTE: `waveCtx.blocks` is a DenseMap; inserting can rehash and invalidate
-        // references. Insert both keys before taking references.
-        waveCtx.blocks.try_emplace(prepKey);
-        waveCtx.blocks.try_emplace(bodyKey);
-
-        auto &prepareCtx = waveCtx.blocks.find(prepKey)->second;
-        prepareCtx.block = prepareBlock;
-        prepareCtx.sequenceId = prepKey.sequenceId;
-        prepareCtx.parentKey = key;
-        if (prepareCtx.expectedMask == 0)
-            prepareCtx.expectedMask = parentExpected;
-        prepareCtx.activeMask |= laneBit;
-        prepareCtx.completedMask &= ~laneBit;
-        prepareCtx.loopOp = loopOp.getOperation();
-        prepareCtx.switchOp = nullptr;
-        prepareCtx.isLoopPrepare = true;
-        prepareCtx.isLoopBody = false;
-        prepareCtx.loopIteration = 0;
-        prepareCtx.kind = DynamicBlockKind::LoopPrepare;
-        assert(!(prepareCtx.loopOp && prepareCtx.switchOp) &&
-               "dynamic block cannot have both loopOp and switchOp");
-
-        auto &bodyCtx = waveCtx.blocks.find(bodyKey)->second;
-        bodyCtx.block = bodyBlock;
-        bodyCtx.sequenceId = bodyKey.sequenceId;
-        bodyCtx.parentKey = prepKey;
-        if (bodyCtx.expectedMask == 0)
-            bodyCtx.expectedMask = parentExpected;
-        bodyCtx.activeMask &= ~laneBit;
-        bodyCtx.completedMask &= ~laneBit;
-        bodyCtx.loopOp = loopOp.getOperation();
-        bodyCtx.switchOp = nullptr;
-        bodyCtx.ifOp = nullptr;
-        bodyCtx.isLoopPrepare = false;
-        bodyCtx.isLoopBody = true;
-        bodyCtx.loopIteration = 0;
-        bodyCtx.kind = DynamicBlockKind::LoopBody;
-        assert(!(bodyCtx.loopOp && bodyCtx.switchOp) &&
-               "dynamic block cannot have both loopOp and switchOp");
-
         auto nextIt = std::next(it);
         SemanticsContext parentContext = context;
         parentContext.overrideMode.reset();
@@ -1351,10 +1316,25 @@ private:
         };
         MergeStackEntry<ValueType, StepType> *entry =
             findEntry(waveCtx, key, loopOp.getOperation());
+        DynamicBlockKey prepKey{};
+        DynamicBlockKey bodyKey{};
         if (!entry) {
+            // Reserve a disjoint sequence-id slab per dynamic loop instance to avoid
+            // collisions when the same loop op is re-entered under divergent control.
+            constexpr std::uint32_t kLoopSeqStride = 1u << 20;
+            if (waveCtx.nextDynamicSeq >
+                std::numeric_limits<std::uint32_t>::max() - kLoopSeqStride) {
+                llvm::report_fatal_error("handleLoopSplit: exhausted dynamic sequence space");
+            }
+            std::uint32_t baseSeq = waveCtx.nextDynamicSeq;
+            waveCtx.nextDynamicSeq += kLoopSeqStride;
+            prepKey = DynamicBlockKey{prepareBlock, baseSeq};
+            bodyKey = DynamicBlockKey{bodyBlock, static_cast<std::uint32_t>(baseSeq + 1)};
+
             MergeStackEntry<ValueType, StepType> newEntry;
             newEntry.parent = key;
             newEntry.loopFrame.emplace();
+            newEntry.loopFrame->frameId = waveCtx.nextLoopFrameId++;
             newEntry.loopFrame->loopOp = loopOp.getOperation();
             newEntry.loopFrame->prepareKey = prepKey;
             newEntry.loopFrame->bodyKey = bodyKey;
@@ -1365,8 +1345,54 @@ private:
                              << " seq=" << key.sequenceId << "\n";
                 logMergeStackState<ValueType, StepType>(waveCtx);
             }
+        } else {
+            prepKey = entry->loopFrame->prepareKey;
+            bodyKey = entry->loopFrame->bodyKey;
         }
         auto &loopFrame = *entry->loopFrame;
+
+        // NOTE: `waveCtx.blocks` is a DenseMap; inserting can rehash and invalidate
+        // references. Insert both keys before taking references.
+        waveCtx.blocks.try_emplace(prepKey);
+        waveCtx.blocks.try_emplace(bodyKey);
+
+        auto &prepareCtx = waveCtx.blocks.find(prepKey)->second;
+        prepareCtx.block = prepareBlock;
+        prepareCtx.sequenceId = prepKey.sequenceId;
+        prepareCtx.parentKey = key;
+        if (prepareCtx.expectedMask == 0)
+            prepareCtx.expectedMask = parentExpected;
+        prepareCtx.activeMask |= laneBit;
+        prepareCtx.completedMask &= ~laneBit;
+        prepareCtx.loopOp = loopOp.getOperation();
+        prepareCtx.ownerLoopFrameId = loopFrame.frameId;
+        prepareCtx.switchOp = nullptr;
+        prepareCtx.isLoopPrepare = true;
+        prepareCtx.isLoopBody = false;
+        prepareCtx.loopIteration = 0;
+        prepareCtx.kind = DynamicBlockKind::LoopPrepare;
+        assert(!(prepareCtx.loopOp && prepareCtx.switchOp) &&
+               "dynamic block cannot have both loopOp and switchOp");
+
+        auto &bodyCtx = waveCtx.blocks.find(bodyKey)->second;
+        bodyCtx.block = bodyBlock;
+        bodyCtx.sequenceId = bodyKey.sequenceId;
+        bodyCtx.parentKey = prepKey;
+        if (bodyCtx.expectedMask == 0)
+            bodyCtx.expectedMask = parentExpected;
+        bodyCtx.activeMask &= ~laneBit;
+        bodyCtx.completedMask &= ~laneBit;
+        bodyCtx.loopOp = loopOp.getOperation();
+        bodyCtx.ownerLoopFrameId = loopFrame.frameId;
+        bodyCtx.switchOp = nullptr;
+        bodyCtx.ifOp = nullptr;
+        bodyCtx.isLoopPrepare = false;
+        bodyCtx.isLoopBody = true;
+        bodyCtx.loopIteration = 0;
+        bodyCtx.kind = DynamicBlockKind::LoopBody;
+        assert(!(bodyCtx.loopOp && bodyCtx.switchOp) &&
+               "dynamic block cannot have both loopOp and switchOp");
+
         if (!llvm::is_contained(entry->pendingChildren, prepKey)) {
             entry->pendingChildren.push_back(prepKey);
             entry->childMasks.push_back(0);
@@ -1375,6 +1401,7 @@ private:
             entry->pendingChildren.push_back(bodyKey);
             entry->childMasks.push_back(0);
         }
+        loopFrame.exitContinuations[lane] = parentCont;
         entry->expectedMask |= (parentExpected ? (parentExpected & laneBit) : laneBit);
 
         auto inits = loopOp.getInits();
@@ -1442,6 +1469,8 @@ private:
         std::uint64_t parentExpected =
             parentBlock.expectedMask ? parentBlock.expectedMask : parentBlock.activeMask;
         const mlir::Operation *enclosingLoopOp = parentBlock.loopOp;
+        std::optional<LoopFrameId> enclosingLoopFrameId =
+            parentBlock.ownerLoopFrameId;
 
         if (auto gated = gateControlFlowOp(wave, key, block, it, context, lane))
             return gated;
@@ -1629,6 +1658,7 @@ private:
                                 : DynamicBlockKind::SwitchCase;
             childCtx.switchOp = switchOp.getOperation();
             childCtx.loopOp = enclosingLoopOp;
+            childCtx.ownerLoopFrameId = enclosingLoopFrameId;
             childCtx.ifOp = nullptr;
         }
 
@@ -1640,6 +1670,7 @@ private:
             pathCtx.parentKey = key;
             pathCtx.switchOp = switchOp.getOperation();
             pathCtx.loopOp = enclosingLoopOp;
+            pathCtx.ownerLoopFrameId = enclosingLoopFrameId;
             pathCtx.ifOp = nullptr;
             pathCtx.kind = (pathIdx == static_cast<unsigned>(defaultIndex))
                                ? DynamicBlockKind::SwitchDefault
@@ -1660,6 +1691,7 @@ private:
             otherCtx.parentKey = key;
             otherCtx.switchOp = switchOp.getOperation();
             otherCtx.loopOp = enclosingLoopOp;
+            otherCtx.ownerLoopFrameId = enclosingLoopFrameId;
             otherCtx.ifOp = nullptr;
             otherCtx.kind = (otherIdx == static_cast<unsigned>(defaultIndex))
                                 ? DynamicBlockKind::SwitchDefault
@@ -1728,17 +1760,44 @@ private:
     findLoopEntry(WaveContext<ValueType, StepType> &waveCtx,
                   const DynamicBlockKey &key,
                   const mlir::Operation *loopOp) {
+        auto resolveOwnerFrameId = [&](DynamicBlockKey cur)
+            -> std::optional<LoopFrameId> {
+            while (true) {
+                auto blockIt = waveCtx.blocks.find(cur);
+                if (blockIt == waveCtx.blocks.end())
+                    return std::nullopt;
+                if (blockIt->second.ownerLoopFrameId)
+                    return blockIt->second.ownerLoopFrameId;
+                if (!blockIt->second.parentKey)
+                    return std::nullopt;
+                cur = *blockIt->second.parentKey;
+            }
+        };
+
+        if (auto frameId = resolveOwnerFrameId(key)) {
+            for (auto it = waveCtx.mergeStack.rbegin();
+                 it != waveCtx.mergeStack.rend(); ++it) {
+                if (!it->loopFrame)
+                    continue;
+                if (it->loopFrame->frameId != *frameId)
+                    continue;
+                if (loopOp && it->loopFrame->loopOp != loopOp)
+                    continue;
+                return &*it;
+            }
+            return nullptr;
+        }
+
+        // Fallback for legacy dynamic blocks that predate explicit owner ids.
         for (auto it = waveCtx.mergeStack.rbegin();
              it != waveCtx.mergeStack.rend(); ++it) {
             if (!it->loopFrame)
                 continue;
-            if (it->loopFrame->loopOp != loopOp)
+            if (loopOp && it->loopFrame->loopOp != loopOp)
                 continue;
             const auto &frame = *it->loopFrame;
-            // Disambiguate multiple dynamic instances of the same loop op (e.g.,
-            // when the loop is nested under another loop/switch and lanes are in
-            // different iterations): pick the frame whose prepare/body subtree
-            // contains the current dynamic block key.
+            if (key == frame.prepareKey || key == frame.bodyKey)
+                return &*it;
             if (isDynamicDescendant(waveCtx, key, frame.prepareKey) ||
                 isDynamicDescendant(waveCtx, key, frame.bodyKey))
                 return &*it;
@@ -1836,6 +1895,7 @@ private:
                 bodyCtx.expectedMask = inheritedExpected;
             bodyCtx.activeMask |= laneBit;
             bodyCtx.loopOp = loopOp;
+            bodyCtx.ownerLoopFrameId = loopFrame.frameId;
             bodyCtx.isLoopBody = true;
             bodyCtx.isLoopPrepare = false;
             bodyCtx.kind = DynamicBlockKind::LoopBody;
@@ -1883,16 +1943,10 @@ private:
                     parentEnv[res] = forwarded[idx];
                 ++idx;
             }
-            auto contIt = parentIt->second.continuations.find(lane);
-            if (contIt != parentIt->second.continuations.end()) {
-                parentIt->second.activeMask |= laneBit;
-                state_.readyQueue.push_back(ReadyContinuation<ValueType, StepType>{
-                    wave, entry->parent, lane, contIt->second});
-                parentIt->second.continuations.erase(contIt);
-                auto &laneCtx = waveCtx.lanes[lane];
-                laneCtx.currentBlock = entry->parent;
-            }
         }
+        loopFrame.laneNextSeq.erase(lane);
+        loopFrame.carried.erase(lane);
+        (void)enqueueLoopExitContinuation(wave, waveCtx, *entry, lane);
         shrinkExpectedForLoopLane(wave, waveCtx, blockCtx->loopOp, lane);
         handleReconvergence(wave, waveCtx, key, lane);
         auto *finalEntry = findLoopEntry(waveCtx, key, blockCtx->loopOp);
@@ -1902,12 +1956,10 @@ private:
                     ? (finalEntry->completedMask == finalEntry->expectedMask)
                     : finalEntry->pendingChildren.empty();
             if (loopDone) {
-                for (auto it = waveCtx.mergeStack.rbegin();
-                     it != waveCtx.mergeStack.rend(); ++it) {
-                    if (it->loopFrame &&
-                        it->loopFrame->loopOp == blockCtx->loopOp) {
-                        auto base = it.base();
-                        waveCtx.mergeStack.erase(--base);
+                for (auto it = waveCtx.mergeStack.begin();
+                     it != waveCtx.mergeStack.end(); ++it) {
+                    if (&*it == finalEntry) {
+                        waveCtx.mergeStack.erase(it);
                         break;
                     }
                 }
@@ -2028,11 +2080,15 @@ private:
         if (nextPrep.sequenceId >= loopFrame.prepareKey.sequenceId)
             loopIteration =
                 (nextPrep.sequenceId - loopFrame.prepareKey.sequenceId) / 2;
-        std::uint64_t nextExpected = entry->expectedMask
-                                         ? entry->expectedMask
-                                         : (blockCtx->expectedMask
-                                                ? blockCtx->expectedMask
-                                                : (blockCtx->activeMask | laneBit));
+        std::uint64_t nextExpected = 0;
+        for (const auto &it : loopFrame.laneNextSeq) {
+            if (it.second == nextSeq)
+                nextExpected |= (1ull << it.first);
+        }
+        if (entry->expectedMask)
+            nextExpected &= entry->expectedMask;
+        if (nextExpected == 0)
+            nextExpected = laneBit;
 
         // NOTE: `waveCtx.blocks` is a DenseMap; inserting can rehash and invalidate
         // references. Insert both keys before taking references.
@@ -2048,14 +2104,13 @@ private:
             prepCtx.activeMask = 0;
             prepCtx.completedMask = 0;
         } else {
-            if (!prepCtx.parentKey)
-                prepCtx.parentKey = key;
-            if (prepCtx.expectedMask == 0)
-                prepCtx.expectedMask = nextExpected;
+            prepCtx.parentKey = key;
         }
+        prepCtx.expectedMask |= nextExpected;
         prepCtx.activeMask |= laneBit;
         prepCtx.completedMask &= ~laneBit;
         prepCtx.loopOp = loopOp;
+        prepCtx.ownerLoopFrameId = loopFrame.frameId;
         prepCtx.switchOp = nullptr;
         prepCtx.ifOp = nullptr;
         prepCtx.isLoopPrepare = true;
@@ -2072,14 +2127,13 @@ private:
             bodyCtx.activeMask = 0;
             bodyCtx.completedMask = 0;
         } else {
-            if (!bodyCtx.parentKey)
-                bodyCtx.parentKey = nextPrep;
-            if (bodyCtx.expectedMask == 0)
-                bodyCtx.expectedMask = nextExpected;
+            bodyCtx.parentKey = nextPrep;
         }
+        bodyCtx.expectedMask |= nextExpected;
         bodyCtx.activeMask &= ~laneBit;
         bodyCtx.completedMask &= ~laneBit;
         bodyCtx.loopOp = loopOp;
+        bodyCtx.ownerLoopFrameId = loopFrame.frameId;
         bodyCtx.switchOp = nullptr;
         bodyCtx.ifOp = nullptr;
         bodyCtx.isLoopPrepare = false;
@@ -2158,6 +2212,10 @@ private:
             llvm::report_fatal_error("handleLoopContinue: missing loop frame");
         auto &loopFrame = *entry->loopFrame;
         const mlir::Operation *loopOp = blockCtx->loopOp;
+        auto bodyKeyOrNone = findOwningLoopBodyKey(waveCtx, key, loopOp);
+        if (!bodyKeyOrNone)
+            llvm::report_fatal_error("handleLoopContinue: missing owning loop body key");
+        DynamicBlockKey bodyKey = *bodyKeyOrNone;
         // Continuing from a nested region still targets the loop's next prepare/body.
         if (!blockCtx->isLoopBody) {
             if (EnableCPSDebugLogs) {
@@ -2173,11 +2231,14 @@ private:
                     break;
                 if (parentIt->second.loopOp != blockCtx->loopOp)
                     break;
-                parentIt->second.continuations.erase(lane);
                 if (parentIt->second.kind == DynamicBlockKind::IfThen ||
                     parentIt->second.kind == DynamicBlockKind::IfElse ||
                     parentIt->second.kind == DynamicBlockKind::SwitchCase ||
                     parentIt->second.kind == DynamicBlockKind::SwitchDefault) {
+                    // Only clear continuations that belong to control-split
+                    // scaffolding. Loop ancestors keep their continuation so the
+                    // lane can return to the correct loop parent.
+                    parentIt->second.continuations.erase(lane);
                     markMergeCompletion(wave, waveCtx, *parentKey, lane);
                 }
                 parentKey = parentIt->second.parentKey;
@@ -2186,6 +2247,7 @@ private:
                 blockCtx->kind == DynamicBlockKind::IfElse ||
                 blockCtx->kind == DynamicBlockKind::SwitchCase ||
                 blockCtx->kind == DynamicBlockKind::SwitchDefault) {
+                blockCtx->continuations.erase(lane);
                 markMergeCompletion(wave, waveCtx, key, lane);
             }
         }
@@ -2207,6 +2269,9 @@ private:
 
         blockCtx->activeMask &= ~laneBit;
         blockCtx->completedMask |= laneBit;
+        // This lane exits the current iteration immediately; trim it from any
+        // pending collectives in the abandoned iteration subtree.
+        shrinkExpectedForSubtree(wave, waveCtx, bodyKey, lane);
 
         std::uint32_t nextSeq =
             loopFrame.laneNextSeq.try_emplace(lane, key.sequenceId + 2).first->second;
@@ -2217,11 +2282,15 @@ private:
         if (nextPrep.sequenceId >= loopFrame.prepareKey.sequenceId)
             loopIteration =
                 (nextPrep.sequenceId - loopFrame.prepareKey.sequenceId) / 2;
-        std::uint64_t nextExpected = entry->expectedMask
-                                         ? entry->expectedMask
-                                         : (blockCtx->expectedMask
-                                                ? blockCtx->expectedMask
-                                                : (blockCtx->activeMask | laneBit));
+        std::uint64_t nextExpected = 0;
+        for (const auto &it : loopFrame.laneNextSeq) {
+            if (it.second == nextSeq)
+                nextExpected |= (1ull << it.first);
+        }
+        if (entry->expectedMask)
+            nextExpected &= entry->expectedMask;
+        if (nextExpected == 0)
+            nextExpected = laneBit;
 
         // NOTE: `waveCtx.blocks` is a DenseMap; inserting can rehash and invalidate
         // references. Insert both keys before taking references.
@@ -2232,19 +2301,18 @@ private:
         if (insertedPrep) {
             prepCtx.block = nextPrep.block;
             prepCtx.sequenceId = nextPrep.sequenceId;
-            prepCtx.parentKey = key;
+            prepCtx.parentKey = bodyKey;
             prepCtx.expectedMask = nextExpected;
             prepCtx.activeMask = 0;
             prepCtx.completedMask = 0;
         } else {
-            if (!prepCtx.parentKey)
-                prepCtx.parentKey = key;
-            if (prepCtx.expectedMask == 0)
-                prepCtx.expectedMask = nextExpected;
+            prepCtx.parentKey = bodyKey;
         }
+        prepCtx.expectedMask |= nextExpected;
         prepCtx.activeMask |= laneBit;
         prepCtx.completedMask &= ~laneBit;
         prepCtx.loopOp = loopOp;
+        prepCtx.ownerLoopFrameId = loopFrame.frameId;
         prepCtx.ifOp = nullptr;
         prepCtx.isLoopPrepare = true;
         prepCtx.isLoopBody = false;
@@ -2260,14 +2328,13 @@ private:
             bodyCtx.activeMask = 0;
             bodyCtx.completedMask = 0;
         } else {
-            if (!bodyCtx.parentKey)
-                bodyCtx.parentKey = nextPrep;
-            if (bodyCtx.expectedMask == 0)
-                bodyCtx.expectedMask = nextExpected;
+            bodyCtx.parentKey = nextPrep;
         }
+        bodyCtx.expectedMask |= nextExpected;
         bodyCtx.activeMask &= ~laneBit;
         bodyCtx.completedMask &= ~laneBit;
         bodyCtx.loopOp = loopOp;
+        bodyCtx.ownerLoopFrameId = loopFrame.frameId;
         bodyCtx.ifOp = nullptr;
         bodyCtx.isLoopPrepare = false;
         bodyCtx.isLoopBody = true;
@@ -2584,6 +2651,7 @@ private:
                            : DynamicBlockKind::SwitchCase;
         nextCtx.switchOp = blockCtx->switchOp;
         nextCtx.loopOp = blockCtx->loopOp;
+        nextCtx.ownerLoopFrameId = blockCtx->ownerLoopFrameId;
         nextCtx.ifOp = nullptr;
 
         auto &env = nextCtx.valueEnvs[lane];
@@ -2727,6 +2795,8 @@ private:
         }
         auto &loopFrame = *entry.loopFrame;
         loopFrame.carried[lane].assign(results.begin(), results.end());
+        loopFrame.laneNextSeq.erase(lane);
+        loopFrame.carried.erase(lane);
 
         auto parentIt = waveCtx.blocks.find(entry.parent);
         if (parentIt != waveCtx.blocks.end()) {
@@ -2738,14 +2808,8 @@ private:
                     parentEnv[res] = results[idx];
                 ++idx;
             }
-            auto contIt = parentIt->second.continuations.find(lane);
-            if (contIt != parentIt->second.continuations.end()) {
-                parentIt->second.activeMask |= laneBit;
-                state_.readyQueue.push_back(ReadyContinuation<ValueType, StepType>{
-                    wave, entry.parent, lane, contIt->second});
-                parentIt->second.continuations.erase(contIt);
-            }
         }
+        enqueueLoopExitContinuation(wave, waveCtx, entry, lane);
 
         blockCtx->activeMask &= ~laneBit;
         blockCtx->completedMask |= laneBit;
@@ -2760,6 +2824,39 @@ private:
         shrinkExpectedForLoopLane(wave, waveCtx, blockCtx->loopOp, lane);
         handleReconvergence(wave, waveCtx, key, lane);
         return StepType::halt();
+    }
+
+    bool enqueueLoopExitContinuation(WaveId wave,
+                                     WaveContext<ValueType, StepType> &waveCtx,
+                                     MergeStackEntry<ValueType, StepType> &entry,
+                                     LaneId lane) {
+        if (!entry.loopFrame)
+            return false;
+
+        auto parentIt = waveCtx.blocks.find(entry.parent);
+        if (parentIt == waveCtx.blocks.end())
+            return false;
+
+        std::uint64_t laneBit = 1ull << lane;
+        auto &parentBlock = parentIt->second;
+        auto &loopFrame = *entry.loopFrame;
+
+        auto exitIt = loopFrame.exitContinuations.find(lane);
+        if (exitIt == loopFrame.exitContinuations.end()) {
+            auto contIt = parentBlock.continuations.find(lane);
+            if (contIt == parentBlock.continuations.end())
+                return false;
+            parentBlock.activeMask |= laneBit;
+            pushReady(wave, entry.parent, lane, std::move(contIt->second));
+            parentBlock.continuations.erase(contIt);
+        } else {
+            parentBlock.activeMask |= laneBit;
+            pushReady(wave, entry.parent, lane, std::move(exitIt->second));
+            loopFrame.exitContinuations.erase(exitIt);
+            parentBlock.continuations.erase(lane);
+        }
+
+        return true;
     }
 
     std::optional<StepType> handleSwitchBreakInternal(
@@ -2799,8 +2896,7 @@ private:
             auto contIt = parentIt->second.continuations.find(lane);
             if (contIt != parentIt->second.continuations.end()) {
                 parentIt->second.activeMask |= laneBit;
-                state_.readyQueue.push_back(ReadyContinuation<ValueType, StepType>{
-                    wave, entry.parent, lane, contIt->second});
+                pushReady(wave, entry.parent, lane, std::move(contIt->second));
                 parentIt->second.continuations.erase(contIt);
             }
         }
@@ -2872,6 +2968,8 @@ private:
         std::uint64_t laneMask =
             parentExpected ? (parentExpected & (1ull << lane)) : (1ull << lane);
         const mlir::Operation *enclosingLoopOp = parentBlock.loopOp;
+        std::optional<LoopFrameId> enclosingLoopFrameId =
+            parentBlock.ownerLoopFrameId;
         const mlir::Operation *enclosingSwitchOp = parentBlock.switchOp;
 
         // Evaluate predicate only for this lane.
@@ -2969,6 +3067,7 @@ private:
         child.parentKey = key;
         child.ifOp = ifOp.getOperation();
         child.loopOp = enclosingLoopOp;
+        child.ownerLoopFrameId = enclosingLoopFrameId;
         child.switchOp = enclosingSwitchOp;
         if (child.expectedMask == 0)
             child.expectedMask = parentExpected ? parentExpected : (1ull << lane);
@@ -2987,6 +3086,7 @@ private:
         elseCtx.parentKey = key;
         elseCtx.ifOp = ifOp.getOperation();
         elseCtx.loopOp = enclosingLoopOp;
+        elseCtx.ownerLoopFrameId = enclosingLoopFrameId;
         elseCtx.switchOp = enclosingSwitchOp;
         elseCtx.kind = DynamicBlockKind::IfElse;
             if (elseCtx.expectedMask == 0)
@@ -3040,6 +3140,7 @@ private:
         child.parentKey = key;
         child.ifOp = ifOp.getOperation();
         child.loopOp = enclosingLoopOp;
+        child.ownerLoopFrameId = enclosingLoopFrameId;
         child.switchOp = enclosingSwitchOp;
         if (child.expectedMask == 0)
             child.expectedMask = parentExpected ? parentExpected : (1ull << lane);
@@ -3057,6 +3158,7 @@ private:
         thenCtx.parentKey = key;
         thenCtx.ifOp = ifOp.getOperation();
         thenCtx.loopOp = enclosingLoopOp;
+        thenCtx.ownerLoopFrameId = enclosingLoopFrameId;
         thenCtx.switchOp = enclosingSwitchOp;
         thenCtx.kind = DynamicBlockKind::IfThen;
         if (thenCtx.expectedMask == 0)
@@ -3105,9 +3207,7 @@ private:
         auto contIt = parentBlockCtx.continuations.find(lane);
         if (contIt != parentBlockCtx.continuations.end()) {
             parentBlockCtx.activeMask |= (1ull << lane);
-            waveCtx.lanes[lane].currentBlock = key;
-            state_.readyQueue.push_back(
-                ReadyContinuation<ValueType, StepType>{wave, key, lane, contIt->second});
+            pushReady(wave, key, lane, std::move(contIt->second));
             parentBlockCtx.continuations.erase(contIt);
         }
         return StepType::halt();
@@ -3188,6 +3288,7 @@ private:
         // caller's dynamic subtree.
         calleeBlockCtx.parentKey.reset();
         calleeBlockCtx.loopOp = nullptr;
+        calleeBlockCtx.ownerLoopFrameId.reset();
         calleeBlockCtx.switchOp = nullptr;
         calleeBlockCtx.ifOp = nullptr;
         std::uint64_t expected =
@@ -3304,6 +3405,23 @@ private:
         ensureWaveBlock(item.wave, item.block, item.lane);
         auto &waveCtx = state_.waves[item.wave];
         auto &laneCtx = waveCtx.lanes[item.lane];
+        if (laneCtx.currentBlock && *laneCtx.currentBlock != item.block) {
+            if (EnableCPSDebugLogs) {
+                cpsDebugStream() << "[CPS] drop stale ready lane=" << item.lane
+                                 << " block=" << item.block.block
+                                 << " seq=" << item.block.sequenceId
+                                 << " currentBlock="
+                                 << laneCtx.currentBlock->block
+                                 << " currentSeq="
+                                 << laneCtx.currentBlock->sequenceId << "\n";
+            }
+            if (auto *staleCtx = getBlock(waveCtx, item.block)) {
+                std::uint64_t laneBit = 1ull << item.lane;
+                staleCtx->activeMask &= ~laneBit;
+                staleCtx->completedMask |= laneBit;
+            }
+            return llvm::Error::success();
+        }
         laneCtx.currentBlock = item.block;
         if (auto *blockCtx = getBlock(waveCtx, item.block)) {
             std::uint64_t laneBit = 1ull << item.lane;
@@ -3487,6 +3605,7 @@ private:
                             return resume();
                         });
             }
+            ensureExpectedCoversArrivals(syncPoint);
 
             auto expectedCount =
                 static_cast<unsigned>(std::popcount(syncPoint.expectedMask));
@@ -3560,9 +3679,7 @@ private:
                     auto contIt = syncPoint.continuations.find(l);
                     if (contIt != syncPoint.continuations.end()) {
                         blockCtx->activeMask |= (1ull << l);
-                        state_.readyQueue.push_back(
-                            ReadyContinuation<ValueType, StepType>{wave, block, l,
-                                                                   contIt->second});
+                        pushReady(wave, block, l, contIt->second);
                     }
                 }
                 if (!isWaveCollective && !memoryProducesResults)
@@ -3626,9 +3743,7 @@ private:
                                 blockKindLabel(blockCtx->kind),
                                 blockCtx->loopIteration);
                         }
-                        state_.readyQueue.push_back(
-                            ReadyContinuation<ValueType, StepType>{wave, block, l,
-                                                                   contIt->second});
+                        pushReady(wave, block, l, std::move(contIt->second));
                     }
                 }
                 waveCtx.syncPoints.erase(key);
@@ -3657,6 +3772,15 @@ private:
         return it == waveCtx.blocks.end() ? nullptr : &it->second;
     }
 
+    void pushReady(WaveId wave, const DynamicBlockKey &block, LaneId lane,
+                   StepType step) {
+        auto &waveCtx = state_.waves[wave];
+        waveCtx.lanes[lane].currentBlock = block;
+        state_.readyQueue.push_back(
+            ReadyContinuation<ValueType, StepType>{
+                wave, block, lane, std::move(step)});
+    }
+
     static bool isDynamicDescendant(WaveContext<ValueType, StepType> &waveCtx,
                                     const DynamicBlockKey &desc,
                                     const DynamicBlockKey &ancestor) {
@@ -3668,6 +3792,19 @@ private:
             if (it == waveCtx.blocks.end() || !it->second.parentKey)
                 return false;
             cur = *it->second.parentKey;
+        }
+    }
+
+    static std::optional<DynamicBlockKey>
+    findDynamicRoot(WaveContext<ValueType, StepType> &waveCtx,
+                    DynamicBlockKey key) {
+        while (true) {
+            auto it = waveCtx.blocks.find(key);
+            if (it == waveCtx.blocks.end())
+                return std::nullopt;
+            if (!it->second.parentKey)
+                return key;
+            key = *it->second.parentKey;
         }
     }
 
@@ -3697,6 +3834,7 @@ private:
             it->second.results.erase(lane);
             it->second.memoryIndices.erase(lane);
             it->second.memoryValues.erase(lane);
+            ensureExpectedCoversArrivals(it->second);
             const mlir::Operation *waveOp = nullptr;
             auto waveIt = waveCtx.collectiveTokenToOp.find(key);
             if (waveIt != waveCtx.collectiveTokenToOp.end())
@@ -3788,9 +3926,8 @@ private:
                         auto contIt = it->second.continuations.find(l);
                         if (contIt != it->second.continuations.end()) {
                             blockCtx->activeMask |= (1ull << l);
-                            state_.readyQueue.push_back(
-                                ReadyContinuation<ValueType, StepType>{
-                                    waveId, it->second.block, l, contIt->second});
+                            pushReady(waveId, it->second.block, l,
+                                      contIt->second);
                         }
                     }
                 }
@@ -3834,9 +3971,8 @@ private:
                         auto contIt = it->second.continuations.find(l);
                         if (contIt != it->second.continuations.end()) {
                             blockCtx->activeMask |= (1ull << l);
-                            state_.readyQueue.push_back(
-                                ReadyContinuation<ValueType, StepType>{
-                                    waveId, it->second.block, l, contIt->second});
+                            pushReady(waveId, it->second.block, l,
+                                      contIt->second);
                         }
                     }
                 }
@@ -3860,6 +3996,7 @@ private:
 
         for (auto &entry : waveCtx.blocks) {
             if (inSubtree(entry.first)) {
+                entry.second.activeMask &= ~laneBit;
                 entry.second.expectedMask &= ~laneBit;
                 entry.second.completedMask &= ~laneBit;
                 entry.second.continuations.erase(lane);
@@ -3886,6 +4023,7 @@ private:
             it->second.results.erase(lane);
             it->second.memoryIndices.erase(lane);
             it->second.memoryValues.erase(lane);
+            ensureExpectedCoversArrivals(it->second);
 
             CollectiveKey key = it->first;
             const mlir::Operation *waveOp = nullptr;
@@ -3979,9 +4117,8 @@ private:
                         auto contIt = it->second.continuations.find(l);
                         if (contIt != it->second.continuations.end()) {
                             blockCtx->activeMask |= (1ull << l);
-                            state_.readyQueue.push_back(
-                                ReadyContinuation<ValueType, StepType>{
-                                    waveId, it->second.block, l, contIt->second});
+                            pushReady(waveId, it->second.block, l,
+                                      contIt->second);
                         }
                     }
                 }
@@ -4030,9 +4167,8 @@ private:
                         auto contIt = it->second.continuations.find(l);
                         if (contIt != it->second.continuations.end()) {
                             blockCtx->activeMask |= (1ull << l);
-                            state_.readyQueue.push_back(
-                                ReadyContinuation<ValueType, StepType>{
-                                    waveId, it->second.block, l, contIt->second});
+                            pushReady(waveId, it->second.block, l,
+                                      contIt->second);
                         }
                     }
                 }
@@ -4057,6 +4193,23 @@ private:
             if (!it->second.parentKey)
                 return false;
             key = *it->second.parentKey;
+        }
+    }
+
+    std::optional<DynamicBlockKey>
+    findOwningLoopBodyKey(WaveContext<ValueType, StepType> &waveCtx,
+                          DynamicBlockKey key,
+                          const mlir::Operation *loopOp) {
+        while (true) {
+            auto it = waveCtx.blocks.find(key);
+            if (it == waveCtx.blocks.end())
+                return std::nullopt;
+            const auto &ctx = it->second;
+            if (ctx.loopOp == loopOp && ctx.isLoopBody)
+                return key;
+            if (!ctx.parentKey)
+                return std::nullopt;
+            key = *ctx.parentKey;
         }
     }
 
@@ -4099,6 +4252,7 @@ private:
             it->second.results.erase(lane);
             it->second.memoryIndices.erase(lane);
             it->second.memoryValues.erase(lane);
+            ensureExpectedCoversArrivals(it->second);
 
             CollectiveKey key = it->first;
             const mlir::Operation *waveOp = nullptr;
@@ -4192,9 +4346,8 @@ private:
                         auto contIt = it->second.continuations.find(l);
                         if (contIt != it->second.continuations.end()) {
                             blockCtx->activeMask |= (1ull << l);
-                            state_.readyQueue.push_back(
-                                ReadyContinuation<ValueType, StepType>{
-                                    waveId, it->second.block, l, contIt->second});
+                            pushReady(waveId, it->second.block, l,
+                                      contIt->second);
                         }
                     }
                 }
@@ -4243,9 +4396,8 @@ private:
                         auto contIt = it->second.continuations.find(l);
                         if (contIt != it->second.continuations.end()) {
                             blockCtx->activeMask |= (1ull << l);
-                            state_.readyQueue.push_back(
-                                ReadyContinuation<ValueType, StepType>{
-                                    waveId, it->second.block, l, contIt->second});
+                            pushReady(waveId, it->second.block, l,
+                                      contIt->second);
                         }
                     }
                 }
@@ -4331,9 +4483,7 @@ private:
                                      << " parent=" << parentKey.block
                                      << " seq=" << parentKey.sequenceId << "\n";
                     }
-                    state_.readyQueue.push_back(
-                        ReadyContinuation<ValueType, StepType>{waveId, parentKey, lane,
-                                                               contIt->second});
+                    pushReady(waveId, parentKey, lane, std::move(contIt->second));
                     dumpReadyQueue();
                     parentBlock.continuations.erase(contIt);
                 } else if (EnableCPSDebugLogs) {
