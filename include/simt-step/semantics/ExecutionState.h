@@ -77,6 +77,8 @@ struct DynamicBlock {
     llvm::DenseMap<LaneId, StepT> pendingOps;
     llvm::DenseMap<LaneId, llvm::DenseMap<mlir::Value, ValueT>> valueEnvs;
     llvm::DenseMap<const mlir::Operation *, DynamicBlockKey> callChildren;
+    // Active loop frame per loop op for this parent dynamic block.
+    llvm::DenseMap<const mlir::Operation *, LoopFrameId> activeLoopFrames;
     llvm::DenseMap<const mlir::Operation *, std::uint32_t> controlTokens;
     llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlReadyMask;
     // Lanes that have already executed a specific control op in this dynamic block.

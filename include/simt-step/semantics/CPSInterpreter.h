@@ -1267,12 +1267,8 @@ private:
         std::uint64_t laneBit = 1ull << lane;
         std::uint64_t parentActiveMask = parentBlock.activeMask;
         std::uint64_t parentExpectedMask = parentBlock.expectedMask;
-        // if ((parentBlock.activeMask & laneBit) == 0)
-        //     return StepType::halt();
-
-        // std::uint64_t activeMask = parentBlock.activeMask;
-        // if (activeMask == 0)
-        //     return StepType::halt();
+        if ((parentBlock.activeMask & laneBit) == 0)
+            return StepType::halt();
         std::uint64_t parentExpected = parentExpectedMask;
 
         if (auto gated = gateControlFlowOp(wave, key, block, it, context, lane))
@@ -1313,18 +1309,13 @@ private:
         auto &parentBlockCtx = waveCtx.blocks.find(key)->second;
         parentBlockCtx.continuations[lane] = parentCont;
 
-        auto findEntry = [&](WaveContext<ValueType, StepType> &ctx,
-                             const DynamicBlockKey &parentKey,
-                             const mlir::Operation *loop) {
-            for (auto it = ctx.mergeStack.rbegin(); it != ctx.mergeStack.rend(); ++it) {
-                if (it->parent == parentKey && it->loopFrame &&
-                    it->loopFrame->loopOp == loop)
-                    return &*it;
-            }
-            return static_cast<MergeStackEntry<ValueType, StepType> *>(nullptr);
-        };
-        MergeStackEntry<ValueType, StepType> *entry =
-            findEntry(waveCtx, key, loopOp.getOperation());
+        MergeStackEntry<ValueType, StepType> *entry = nullptr;
+        auto frameBindingIt = parentBlockCtx.activeLoopFrames.find(loopOp.getOperation());
+        if (frameBindingIt != parentBlockCtx.activeLoopFrames.end()) {
+            entry = findLoopEntryByFrameId(waveCtx, frameBindingIt->second);
+            if (!entry)
+                parentBlockCtx.activeLoopFrames.erase(frameBindingIt);
+        }
         DynamicBlockKey prepKey{};
         DynamicBlockKey bodyKey{};
         if (!entry) {
@@ -1349,6 +1340,8 @@ private:
             newEntry.loopFrame->bodyKey = bodyKey;
             waveCtx.mergeStack.push_back(std::move(newEntry));
             entry = &waveCtx.mergeStack.back();
+            parentBlockCtx.activeLoopFrames[loopOp.getOperation()] =
+                entry->loopFrame->frameId;
             if (EnableCPSDebugLogs) {
                 cpsDebugStream() << "[CPS] push merge (loop) parent=" << key.block
                              << " seq=" << key.sequenceId << "\n";
@@ -1448,7 +1441,7 @@ private:
                                         prepareBlock->begin(), childContext, lane);
         enqueue(wave, prepKey, lane, std::move(childStep));
 
-        parentBlockCtx.activeMask &= ~laneBit;
+        waveCtx.blocks.find(key)->second.activeMask &= ~laneBit;
         return StepType::halt();
     }
 
@@ -1766,6 +1759,57 @@ private:
     }
 
     MergeStackEntry<ValueType, StepType> *
+    findLoopEntryByFrameId(WaveContext<ValueType, StepType> &waveCtx,
+                           LoopFrameId frameId) {
+        for (auto it = waveCtx.mergeStack.rbegin();
+             it != waveCtx.mergeStack.rend(); ++it) {
+            if (!it->loopFrame)
+                continue;
+            if (it->loopFrame->frameId == frameId)
+                return &*it;
+        }
+        return nullptr;
+    }
+
+    void clearLoopFrameBinding(WaveContext<ValueType, StepType> &waveCtx,
+                               const MergeStackEntry<ValueType, StepType> &entry) {
+        if (!entry.loopFrame)
+            return;
+        auto parentIt = waveCtx.blocks.find(entry.parent);
+        if (parentIt == waveCtx.blocks.end())
+            return;
+        auto &bindings = parentIt->second.activeLoopFrames;
+        auto bindingIt = bindings.find(entry.loopFrame->loopOp);
+        if (bindingIt != bindings.end() &&
+            bindingIt->second == entry.loopFrame->frameId) {
+            bindings.erase(bindingIt);
+        }
+    }
+
+    bool popLoopEntryIfComplete(WaveContext<ValueType, StepType> &waveCtx,
+                                MergeStackEntry<ValueType, StepType> *entry) {
+        if (!entry || !entry->loopFrame)
+            return false;
+        const auto &frame = *entry->loopFrame;
+        bool loopDone =
+            entry->expectedMask != 0
+                ? (entry->completedMask == entry->expectedMask)
+                : (frame.laneNextSeq.empty() && frame.exitContinuations.empty() &&
+                   frame.carried.empty());
+        if (!loopDone)
+            return false;
+        clearLoopFrameBinding(waveCtx, *entry);
+        for (auto it = waveCtx.mergeStack.begin(); it != waveCtx.mergeStack.end();
+             ++it) {
+            if (&*it == entry) {
+                waveCtx.mergeStack.erase(it);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    MergeStackEntry<ValueType, StepType> *
     findLoopEntry(WaveContext<ValueType, StepType> &waveCtx,
                   const DynamicBlockKey &key,
                   const mlir::Operation *loopOp) {
@@ -1958,22 +2002,8 @@ private:
         (void)enqueueLoopExitContinuation(wave, waveCtx, *entry, lane);
         shrinkExpectedForLoopLane(wave, waveCtx, blockCtx->loopOp, lane);
         handleReconvergence(wave, waveCtx, key, lane);
-        auto *finalEntry = findLoopEntry(waveCtx, key, blockCtx->loopOp);
-        if (finalEntry && finalEntry->loopFrame) {
-            bool loopDone =
-                finalEntry->expectedMask != 0
-                    ? (finalEntry->completedMask == finalEntry->expectedMask)
-                    : finalEntry->pendingChildren.empty();
-            if (loopDone) {
-                for (auto it = waveCtx.mergeStack.begin();
-                     it != waveCtx.mergeStack.end(); ++it) {
-                    if (&*it == finalEntry) {
-                        waveCtx.mergeStack.erase(it);
-                        break;
-                    }
-                }
-            }
-        }
+        (void)popLoopEntryIfComplete(
+            waveCtx, findLoopEntry(waveCtx, key, blockCtx->loopOp));
         return StepType::halt();
     }
 
@@ -2843,6 +2873,8 @@ private:
         }
         shrinkExpectedForLoopLane(wave, waveCtx, blockCtx->loopOp, lane);
         handleReconvergence(wave, waveCtx, key, lane);
+        (void)popLoopEntryIfComplete(
+            waveCtx, findLoopEntry(waveCtx, key, blockCtx->loopOp));
         return StepType::halt();
     }
 
@@ -4288,6 +4320,9 @@ private:
             if (entry.loopFrame && entry.loopFrame->loopOp == loopOp) {
                 entry.expectedMask &= ~laneBit;
                 entry.completedMask &= ~laneBit;
+                entry.loopFrame->laneNextSeq.erase(lane);
+                entry.loopFrame->carried.erase(lane);
+                entry.loopFrame->exitContinuations.erase(lane);
                 continue;
             }
             if (!entry.loopFrame && isUnderLoop(waveCtx, entry.parent, loopOp)) {
@@ -4506,7 +4541,10 @@ private:
                 it->completedMask &= ~laneBit;
             if (it->completedMask == it->expectedMask) {
                 auto base = it.base();
-                waveCtx.mergeStack.erase(--base);
+                auto eraseIt = --base;
+                if (eraseIt->loopFrame)
+                    clearLoopFrameBinding(waveCtx, *eraseIt);
+                waveCtx.mergeStack.erase(eraseIt);
             }
             break;
         }
