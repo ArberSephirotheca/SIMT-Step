@@ -1024,6 +1024,11 @@ private:
             context.expectedMask ? context.expectedMask : context.activeMask;
         if (expected == 0)
             expected = laneBit;
+        // A control op is single-shot per dynamic block instance. Exclude lanes
+        // that already executed this op from the next collective epoch.
+        expected &= ~blockCtx->controlExecutedMask.lookup(op);
+        if ((expected & laneBit) == 0)
+            return StepType::halt();
 
         std::uint32_t token = 0;
         auto tokenIt = blockCtx->controlTokens.find(op);
@@ -1089,6 +1094,9 @@ private:
             context.expectedMask ? context.expectedMask : context.activeMask;
         if (expected == 0)
             expected = laneBit;
+        expected &= ~blockCtx->controlExecutedMask.lookup(op);
+        if ((expected & laneBit) == 0)
+            return StepType::halt();
 
         std::uint32_t token = 0;
         auto tokenIt = blockCtx->controlTokens.find(op);
@@ -1146,6 +1154,7 @@ private:
             expectedMask ? expectedMask : blockCtx->activeMask;
         if (blockCtx->expectedMask == 0)
             blockCtx->expectedMask = evalExpected;
+        blockCtx->controlExecutedMask[op] |= evalExpected;
 
         llvm::DenseMap<LaneId, bool> ifDecisions;
         llvm::DenseMap<LaneId, std::int64_t> switchDecisions;
@@ -2606,6 +2615,17 @@ private:
 
         bool switchDoneNow = !fallthrough || lastCase;
         if (switchDoneNow) {
+            // handleSwitchSplit seeds this lane into downstream cases to model
+            // potential fallthrough. If this case terminates the switch for the
+            // lane, prune it from all future-case subtrees so their collectives
+            // do not wait on an impossible participant.
+            for (unsigned futureIdx = caseIdx + 1; futureIdx < numCases;
+                 ++futureIdx) {
+                DynamicBlockKey futureKey{
+                    frame.caseBlocks[futureIdx],
+                    static_cast<std::uint32_t>(frame.baseSeq + futureIdx)};
+                shrinkExpectedForSubtree(wave, waveCtx, futureKey, lane);
+            }
             if (auto pendingIt = frame.pendingCases.find(lane);
                 pendingIt != frame.pendingCases.end()) {
                 if (auto *pendingBlock = getBlock(waveCtx, pendingIt->second))
@@ -3405,22 +3425,33 @@ private:
         ensureWaveBlock(item.wave, item.block, item.lane);
         auto &waveCtx = state_.waves[item.wave];
         auto &laneCtx = waveCtx.lanes[item.lane];
-        if (laneCtx.currentBlock && *laneCtx.currentBlock != item.block) {
+        if (item.epoch != laneCtx.readyEpoch) {
             if (EnableCPSDebugLogs) {
-                cpsDebugStream() << "[CPS] drop stale ready lane=" << item.lane
+                cpsDebugStream() << "[CPS] drop stale ready epoch lane="
+                                 << item.lane << " itemEpoch=" << item.epoch
+                                 << " currentEpoch=" << laneCtx.readyEpoch
                                  << " block=" << item.block.block
-                                 << " seq=" << item.block.sequenceId
-                                 << " currentBlock="
-                                 << laneCtx.currentBlock->block
-                                 << " currentSeq="
-                                 << laneCtx.currentBlock->sequenceId << "\n";
-            }
-            if (auto *staleCtx = getBlock(waveCtx, item.block)) {
-                std::uint64_t laneBit = 1ull << item.lane;
-                staleCtx->activeMask &= ~laneBit;
-                staleCtx->completedMask |= laneBit;
+                                 << " seq=" << item.block.sequenceId << "\n";
             }
             return llvm::Error::success();
+        }
+        if (auto *blockCtx = getBlock(waveCtx, item.block)) {
+            std::uint64_t laneBit = 1ull << item.lane;
+            // A queued continuation is stale only when this lane has been pruned
+            // from the dynamic block's expected set.
+            if (blockCtx->expectedMask && (blockCtx->expectedMask & laneBit) == 0) {
+                if (EnableCPSDebugLogs) {
+                    cpsDebugStream() << "[CPS] drop stale ready lane=" << item.lane
+                                     << " block=" << item.block.block
+                                     << " seq=" << item.block.sequenceId
+                                     << " expected=0b"
+                                     << formatMaskBits(blockCtx->expectedMask, 32)
+                                     << "\n";
+                }
+                blockCtx->activeMask &= ~laneBit;
+                blockCtx->completedMask |= laneBit;
+                return llvm::Error::success();
+            }
         }
         laneCtx.currentBlock = item.block;
         if (auto *blockCtx = getBlock(waveCtx, item.block)) {
@@ -3597,6 +3628,10 @@ private:
                                              ? collective->activeMask
                                              : fallbackMask;
             }
+            if (waveOp) {
+                syncPoint.expectedMask &=
+                    ~blockCtx->collectiveExecutedMask.lookup(waveOp);
+            }
             syncPoint.arrivals.insert(lane);
             if (!isControlFlow) {
                 syncPoint.continuations[lane] =
@@ -3642,6 +3677,9 @@ private:
                 if (isMemoryCollective && !memoryProducesResults)
                     memoryProducesResults =
                         computeMemoryCollectiveResults(waveOp, syncPoint);
+                if (waveOp)
+                    blockCtx->collectiveExecutedMask[waveOp] |=
+                        syncPoint.expectedMask;
                 if (isWaveCollective && traceSink_) {
                     std::string opName;
                     if (waveOp)
@@ -3724,9 +3762,12 @@ private:
                 if (tokenIt != waveCtx.syncTokenToOp.end()) {
                     controlOp = tokenIt->second;
                     waveCtx.syncTokenToOp.erase(tokenIt);
-                    if (blockCtx)
+                    if (blockCtx) {
+                        blockCtx->controlExecutedMask[controlOp] |=
+                            syncPoint.expectedMask;
                         blockCtx->controlReadyMask[controlOp] |=
                             syncPoint.expectedMask;
+                    }
                 }
                 std::uint64_t mask = syncPoint.expectedMask;
                 while (mask) {
@@ -3775,10 +3816,11 @@ private:
     void pushReady(WaveId wave, const DynamicBlockKey &block, LaneId lane,
                    StepType step) {
         auto &waveCtx = state_.waves[wave];
-        waveCtx.lanes[lane].currentBlock = block;
+        auto &laneCtx = waveCtx.lanes[lane];
+        std::uint64_t epoch = ++laneCtx.readyEpoch;
         state_.readyQueue.push_back(
             ReadyContinuation<ValueType, StepType>{
-                wave, block, lane, std::move(step)});
+                wave, block, lane, epoch, std::move(step)});
     }
 
     static bool isDynamicDescendant(WaveContext<ValueType, StepType> &waveCtx,
@@ -3818,6 +3860,17 @@ private:
             entry.second.completedMask &= ~laneBit;
             entry.second.continuations.erase(lane);
             entry.second.pendingOps.erase(lane);
+            for (auto it = entry.second.controlReadyMask.begin();
+                 it != entry.second.controlReadyMask.end();) {
+                it->second &= ~laneBit;
+                if (it->second == 0) {
+                    auto cur = it;
+                    ++it;
+                    entry.second.controlReadyMask.erase(cur);
+                    continue;
+                }
+                ++it;
+            }
         }
         for (auto &entry : waveCtx.mergeStack) {
             entry.expectedMask &= ~laneBit;
@@ -4001,6 +4054,17 @@ private:
                 entry.second.completedMask &= ~laneBit;
                 entry.second.continuations.erase(lane);
                 entry.second.pendingOps.erase(lane);
+                for (auto it = entry.second.controlReadyMask.begin();
+                     it != entry.second.controlReadyMask.end();) {
+                    it->second &= ~laneBit;
+                    if (it->second == 0) {
+                        auto cur = it;
+                        ++it;
+                        entry.second.controlReadyMask.erase(cur);
+                        continue;
+                    }
+                    ++it;
+                }
             }
         }
         for (auto &entry : waveCtx.mergeStack) {
@@ -4237,6 +4301,17 @@ private:
                 entry.second.completedMask &= ~laneBit;
                 entry.second.continuations.erase(lane);
                 entry.second.pendingOps.erase(lane);
+                for (auto it = entry.second.controlReadyMask.begin();
+                     it != entry.second.controlReadyMask.end();) {
+                    it->second &= ~laneBit;
+                    if (it->second == 0) {
+                        auto cur = it;
+                        ++it;
+                        entry.second.controlReadyMask.erase(cur);
+                        continue;
+                    }
+                    ++it;
+                }
             }
         }
         for (auto it = waveCtx.collectives.begin();

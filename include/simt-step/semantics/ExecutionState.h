@@ -79,6 +79,10 @@ struct DynamicBlock {
     llvm::DenseMap<const mlir::Operation *, DynamicBlockKey> callChildren;
     llvm::DenseMap<const mlir::Operation *, std::uint32_t> controlTokens;
     llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlReadyMask;
+    // Lanes that have already executed a specific control op in this dynamic block.
+    llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlExecutedMask;
+    // Lanes that have already completed a specific collective op in this block.
+    llvm::DenseMap<const mlir::Operation *, std::uint64_t> collectiveExecutedMask;
 };
 
 template <typename ValueT, typename StepT>
@@ -148,6 +152,7 @@ struct LaneContext {
     bool hasReturned = false;
     std::optional<ValueT> returnValue;
     std::optional<DynamicBlockKey> currentBlock;
+    std::uint64_t readyEpoch = 0;
     enum class Phase { Running, Waiting, Completed } phase = Phase::Running;
     llvm::SmallVector<CallFrame<ValueT>, 4> callStack;
 };
@@ -189,6 +194,7 @@ struct ReadyContinuation {
     WaveId wave = 0;
     DynamicBlockKey block;
     LaneId lane = 0;
+    std::uint64_t epoch = 0;
     StepT resume;
 };
 
