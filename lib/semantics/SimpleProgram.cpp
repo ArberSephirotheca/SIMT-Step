@@ -97,7 +97,6 @@ llvm::Error SimpleProgramRunner::runBlock(mlir::Block *block,
         waveCtx.waveId = wave;
         waveCtx.subgroupWidth = subgroupWidth;
         waveCtx.policy = context.policy;
-        waveCtx.currentMask = laneMask;
 
         auto &dynamicBlock = waveCtx.blocks[entryKey];
         dynamicBlock.block = block;

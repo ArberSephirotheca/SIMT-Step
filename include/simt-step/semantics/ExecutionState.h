@@ -67,8 +67,6 @@ struct DynamicBlock {
     std::optional<LoopFrameId> ownerLoopFrameId;
     const mlir::Operation *switchOp = nullptr;
     const mlir::Operation *ifOp = nullptr;
-    bool isLoopPrepare = false;
-    bool isLoopBody = false;
     std::optional<std::uint32_t> loopIteration;
 
     DynamicBlockKind kind = DynamicBlockKind::Plain;
@@ -131,14 +129,6 @@ struct SynchronizationSyncPoint {
     llvm::DenseMap<LaneId, StepT> continuations;
 };
 
-template <typename StepT>
-struct ControlFlowSyncPoint {
-    std::uint64_t expectedMask = 0;
-    std::uint64_t readyMask = 0;
-    llvm::DenseSet<LaneId> arrivals;
-    llvm::DenseMap<LaneId, StepT> continuations;
-};
-
 template <typename ValueT>
 struct CallFrame {
     DynamicBlockKey callerKey;
@@ -163,7 +153,6 @@ template <typename ValueT, typename StepT>
 struct MergeStackEntry {
     DynamicBlockKey parent;
     llvm::SmallVector<DynamicBlockKey, 4> pendingChildren;
-    llvm::SmallVector<std::uint64_t, 4> childMasks;
     std::uint64_t expectedMask = 0;
     std::uint64_t completedMask = 0;
     std::optional<LoopFrameState<ValueT, StepT>> loopFrame;
@@ -175,7 +164,6 @@ template <typename ValueT, typename StepT>
 struct WaveContext {
     std::uint32_t waveId = 0;
     std::uint32_t subgroupWidth = 0;
-    std::uint64_t currentMask = 0;
     llvm::DenseMap<DynamicBlockKey, DynamicBlock<ValueT, StepT>> blocks;
     llvm::SmallVector<MergeStackEntry<ValueT, StepT>, 8> mergeStack;
     llvm::DenseMap<CollectiveKey, CollectiveSyncPoint<ValueT, StepT>> collectives;
@@ -204,7 +192,6 @@ template <typename ValueT, typename StepT>
 struct InterpreterState {
     llvm::DenseMap<WaveId, WaveContext<ValueT, StepT>> waves;
     std::deque<ReadyContinuation<ValueT, StepT>> readyQueue;
-    StepT pendingStep;
 };
 
 using DefaultValue = SemValue;

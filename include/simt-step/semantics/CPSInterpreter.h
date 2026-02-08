@@ -22,6 +22,7 @@
 
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <llvm/ADT/Hashing.h>
+#include <llvm/ADT/Twine.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/ErrorHandling.h>
 #include <llvm/Support/raw_ostream.h>
@@ -117,8 +118,7 @@ inline void logMergeStackState(const WaveContext<ValueT, StepT> &waveCtx) {
                      << (entry.loopFrame ? " (loop)" : "") << "\n";
         for (std::size_t ci = 0; ci < entry.pendingChildren.size(); ++ci) {
             cpsDebugStream() << "      child[" << ci << "]=" << entry.pendingChildren[ci].block
-                         << " seq=" << entry.pendingChildren[ci].sequenceId
-                         << " mask=0b" << fmt(entry.childMasks[ci]) << "\n";
+                         << " seq=" << entry.pendingChildren[ci].sequenceId << "\n";
         }
     }
 }
@@ -230,10 +230,7 @@ public:
 
     void setTraceSink(TraceSink *sink) { traceSink_ = sink; }
     void setScheduleMode(ScheduleMode mode) { scheduleMode_ = mode; }
-    void setScheduleSeed(std::uint64_t seed) {
-        scheduleSeed_ = seed;
-        rng_.seed(seed);
-    }
+    void setScheduleSeed(std::uint64_t seed) { rng_.seed(seed); }
 
     StateType &state() { return state_; }
     const StateType &state() const { return state_; }
@@ -453,6 +450,10 @@ public:
                             }
                             if (calleeRoot)
                                 shrinkExpectedForSubtree(wave, waveCtx, *calleeRoot, lane);
+                            callerBlockCtx = getBlock(waveCtx, frame.callerKey);
+                            if (!callerBlockCtx)
+                                llvm::report_fatal_error(
+                                    "call return missing caller block after shrink");
                             callerBlockCtx->activeMask |= (1ull << lane);
                             laneCtx.phase =
                                 LaneContext<ValueType, StepType>::Phase::Running;
@@ -802,8 +803,11 @@ private:
     static std::uint64_t arrivedMask(const llvm::DenseSet<LaneId> &arrivals) {
         std::uint64_t mask = 0;
         for (LaneId lane : arrivals) {
-            if (lane >= 64)
-                llvm::report_fatal_error("collective: lane id out of range");
+            if (lane >= 64) {
+                llvm::report_fatal_error(
+                    llvm::Twine("collective: lane id out of range: ") +
+                    llvm::Twine(lane));
+            }
             mask |= (1ull << lane);
         }
         return mask;
@@ -1369,8 +1373,6 @@ private:
         prepareCtx.loopOp = loopOp.getOperation();
         prepareCtx.ownerLoopFrameId = loopFrame.frameId;
         prepareCtx.switchOp = nullptr;
-        prepareCtx.isLoopPrepare = true;
-        prepareCtx.isLoopBody = false;
         prepareCtx.loopIteration = 0;
         prepareCtx.kind = DynamicBlockKind::LoopPrepare;
         assert(!(prepareCtx.loopOp && prepareCtx.switchOp) &&
@@ -1388,8 +1390,6 @@ private:
         bodyCtx.ownerLoopFrameId = loopFrame.frameId;
         bodyCtx.switchOp = nullptr;
         bodyCtx.ifOp = nullptr;
-        bodyCtx.isLoopPrepare = false;
-        bodyCtx.isLoopBody = true;
         bodyCtx.loopIteration = 0;
         bodyCtx.kind = DynamicBlockKind::LoopBody;
         assert(!(bodyCtx.loopOp && bodyCtx.switchOp) &&
@@ -1397,11 +1397,9 @@ private:
 
         if (!llvm::is_contained(entry->pendingChildren, prepKey)) {
             entry->pendingChildren.push_back(prepKey);
-            entry->childMasks.push_back(0);
         }
         if (!llvm::is_contained(entry->pendingChildren, bodyKey)) {
             entry->pendingChildren.push_back(bodyKey);
-            entry->childMasks.push_back(0);
         }
         loopFrame.exitContinuations[lane] = parentCont;
         entry->expectedMask |= (parentExpected ? (parentExpected & laneBit) : laneBit);
@@ -1637,7 +1635,6 @@ private:
             for (unsigned idx = 0; idx < caseBlocks.size(); ++idx) {
                 entry->pendingChildren.push_back(
                     DynamicBlockKey{caseBlocks[idx], baseSeq + idx});
-                entry->childMasks.push_back(0);
             }
         }
 
@@ -1711,6 +1708,11 @@ private:
             shrinkExpectedForSubtree(wave, waveCtx, otherKey, lane);
         }
 
+        entry = findEntry(waveCtx, key, switchOp.getOperation());
+        if (!entry || !entry->switchFrame)
+            llvm::report_fatal_error("handleSwitchSplit: missing switch frame after shrink");
+        auto &frameAfter = *entry->switchFrame;
+
         // `waveCtx.blocks` is a DenseMap; loops above can insert and rehash.
         auto &childCtx = waveCtx.blocks.find(childKey)->second;
         auto &env = childCtx.valueEnvs[lane];
@@ -1725,7 +1727,7 @@ private:
                 llvm::report_fatal_error("handleSwitchSplit: failed to evaluate init");
             initVals.push_back(*valOrErr);
         }
-        frame.carried[lane] = initVals;
+        frameAfter.carried[lane] = initVals;
         for (auto indexed : llvm::enumerate(childArgs)) {
             if (indexed.index() < initVals.size())
                 env[indexed.value()] = initVals[indexed.index()];
@@ -1871,7 +1873,8 @@ private:
             llvm::report_fatal_error("handleLoopPrepareTerminator: missing wave context");
         auto &waveCtx = waveIt->second;
         auto *blockCtx = getBlock(waveCtx, key);
-        if (!blockCtx || !blockCtx->isLoopPrepare || !blockCtx->loopOp)
+        if (!blockCtx || blockCtx->kind != DynamicBlockKind::LoopPrepare ||
+            !blockCtx->loopOp)
             llvm::report_fatal_error("handleLoopPrepareTerminator: invalid block context");
         if ((blockCtx->activeMask & (1ull << lane)) == 0){
             llvm::report_fatal_error("handleLoopPrepareTerminator: invalid active mask");
@@ -1949,8 +1952,6 @@ private:
             bodyCtx.activeMask |= laneBit;
             bodyCtx.loopOp = loopOp;
             bodyCtx.ownerLoopFrameId = loopFrame.frameId;
-            bodyCtx.isLoopBody = true;
-            bodyCtx.isLoopPrepare = false;
             bodyCtx.kind = DynamicBlockKind::LoopBody;
             if (key.sequenceId >= loopFrame.prepareKey.sequenceId) {
                 bodyCtx.loopIteration =
@@ -1969,7 +1970,6 @@ private:
 
             if (isNew && !llvm::is_contained(entry->pendingChildren, bodyKey)) {
                 entry->pendingChildren.push_back(bodyKey);
-                entry->childMasks.push_back(bodyCtx.activeMask);
             }
 
             SemanticsContext laneCtx = context;
@@ -2000,10 +2000,10 @@ private:
         loopFrame.laneNextSeq.erase(lane);
         loopFrame.carried.erase(lane);
         (void)enqueueLoopExitContinuation(wave, waveCtx, *entry, lane);
-        shrinkExpectedForLoopLane(wave, waveCtx, blockCtx->loopOp, lane);
+        shrinkExpectedForLoopLane(wave, waveCtx, loopOp, lane);
         handleReconvergence(wave, waveCtx, key, lane);
         (void)popLoopEntryIfComplete(
-            waveCtx, findLoopEntry(waveCtx, key, blockCtx->loopOp));
+            waveCtx, findLoopEntry(waveCtx, key, loopOp));
         return StepType::halt();
     }
 
@@ -2023,7 +2023,8 @@ private:
             llvm::report_fatal_error("handleLoopYield: missing wave context");
         auto &waveCtx = waveIt->second;
         auto *blockCtx = getBlock(waveCtx, key);
-        if (!blockCtx || !blockCtx->isLoopBody || !blockCtx->loopOp)
+        if (!blockCtx || blockCtx->kind != DynamicBlockKind::LoopBody ||
+            !blockCtx->loopOp)
             return std::nullopt;
         if ((blockCtx->activeMask & (1ull << lane)) == 0) {
             llvm::report_fatal_error("handleLoopYield: invalid active mask");
@@ -2152,8 +2153,6 @@ private:
         prepCtx.ownerLoopFrameId = loopFrame.frameId;
         prepCtx.switchOp = nullptr;
         prepCtx.ifOp = nullptr;
-        prepCtx.isLoopPrepare = true;
-        prepCtx.isLoopBody = false;
         prepCtx.loopIteration = loopIteration;
         prepCtx.kind = DynamicBlockKind::LoopPrepare;
 
@@ -2175,8 +2174,6 @@ private:
         bodyCtx.ownerLoopFrameId = loopFrame.frameId;
         bodyCtx.switchOp = nullptr;
         bodyCtx.ifOp = nullptr;
-        bodyCtx.isLoopPrepare = false;
-        bodyCtx.isLoopBody = true;
         bodyCtx.loopIteration = loopIteration;
         bodyCtx.kind = DynamicBlockKind::LoopBody;
 
@@ -2187,11 +2184,9 @@ private:
 
         if (insertedPrep && !llvm::is_contained(entry->pendingChildren, nextPrep)) {
             entry->pendingChildren.push_back(nextPrep);
-            entry->childMasks.push_back(prepCtx.activeMask);
         }
         if (insertedBody && !llvm::is_contained(entry->pendingChildren, nextBody)) {
             entry->pendingChildren.push_back(nextBody);
-            entry->childMasks.push_back(bodyCtx.activeMask);
         }
 
         auto prepArgs =
@@ -2250,13 +2245,14 @@ private:
         if (!entry || !entry->loopFrame)
             llvm::report_fatal_error("handleLoopContinue: missing loop frame");
         auto &loopFrame = *entry->loopFrame;
+        LoopFrameId loopFrameId = loopFrame.frameId;
         const mlir::Operation *loopOp = blockCtx->loopOp;
         auto bodyKeyOrNone = findOwningLoopBodyKey(waveCtx, key, loopOp);
         if (!bodyKeyOrNone)
             llvm::report_fatal_error("handleLoopContinue: missing owning loop body key");
         DynamicBlockKey bodyKey = *bodyKeyOrNone;
         // Continuing from a nested region still targets the loop's next prepare/body.
-        if (!blockCtx->isLoopBody) {
+        if (blockCtx->kind != DynamicBlockKind::LoopBody) {
             if (EnableCPSDebugLogs) {
                 cpsDebugStream() << "[CPS] handleLoopContinue non-body lane=" << lane
                              << " block=" << key.block << " seq=" << key.sequenceId
@@ -2312,17 +2308,22 @@ private:
         // pending collectives in the abandoned iteration subtree.
         shrinkExpectedForSubtree(wave, waveCtx, bodyKey, lane);
 
+        entry = findLoopEntryByFrameId(waveCtx, loopFrameId);
+        if (!entry || !entry->loopFrame)
+            llvm::report_fatal_error("handleLoopContinue: missing loop frame after shrink");
+        auto &loopFrameAfter = *entry->loopFrame;
+
         std::uint32_t nextSeq =
-            loopFrame.laneNextSeq.try_emplace(lane, key.sequenceId + 2).first->second;
-        DynamicBlockKey nextPrep{loopFrame.prepareKey.block, nextSeq};
-        DynamicBlockKey nextBody{loopFrame.bodyKey.block,
+            loopFrameAfter.laneNextSeq.try_emplace(lane, key.sequenceId + 2).first->second;
+        DynamicBlockKey nextPrep{loopFrameAfter.prepareKey.block, nextSeq};
+        DynamicBlockKey nextBody{loopFrameAfter.bodyKey.block,
                                  static_cast<std::uint32_t>(nextSeq + 1)};
         std::uint32_t loopIteration = 0;
-        if (nextPrep.sequenceId >= loopFrame.prepareKey.sequenceId)
+        if (nextPrep.sequenceId >= loopFrameAfter.prepareKey.sequenceId)
             loopIteration =
-                (nextPrep.sequenceId - loopFrame.prepareKey.sequenceId) / 2;
+                (nextPrep.sequenceId - loopFrameAfter.prepareKey.sequenceId) / 2;
         std::uint64_t nextExpected = 0;
-        for (const auto &it : loopFrame.laneNextSeq) {
+        for (const auto &it : loopFrameAfter.laneNextSeq) {
             if (it.second == nextSeq)
                 nextExpected |= (1ull << it.first);
         }
@@ -2351,10 +2352,8 @@ private:
         prepCtx.activeMask |= laneBit;
         prepCtx.completedMask &= ~laneBit;
         prepCtx.loopOp = loopOp;
-        prepCtx.ownerLoopFrameId = loopFrame.frameId;
+        prepCtx.ownerLoopFrameId = loopFrameAfter.frameId;
         prepCtx.ifOp = nullptr;
-        prepCtx.isLoopPrepare = true;
-        prepCtx.isLoopBody = false;
         prepCtx.loopIteration = loopIteration;
         prepCtx.kind = DynamicBlockKind::LoopPrepare;
 
@@ -2373,20 +2372,16 @@ private:
         bodyCtx.activeMask &= ~laneBit;
         bodyCtx.completedMask &= ~laneBit;
         bodyCtx.loopOp = loopOp;
-        bodyCtx.ownerLoopFrameId = loopFrame.frameId;
+        bodyCtx.ownerLoopFrameId = loopFrameAfter.frameId;
         bodyCtx.ifOp = nullptr;
-        bodyCtx.isLoopPrepare = false;
-        bodyCtx.isLoopBody = true;
         bodyCtx.loopIteration = loopIteration;
         bodyCtx.kind = DynamicBlockKind::LoopBody;
 
         if (insertedPrep && !llvm::is_contained(entry->pendingChildren, nextPrep)) {
             entry->pendingChildren.push_back(nextPrep);
-            entry->childMasks.push_back(prepCtx.activeMask);
         }
         if (insertedBody && !llvm::is_contained(entry->pendingChildren, nextBody)) {
             entry->pendingChildren.push_back(nextBody);
-            entry->childMasks.push_back(bodyCtx.activeMask);
         }
 
         auto prepArgs =
@@ -2407,7 +2402,7 @@ private:
         StepType childStep =
             makeNextOp(wave, nextPrep, prepBlock, prepBlock->begin(), laneCtx, lane);
         enqueue(wave, nextPrep, lane, std::move(childStep));
-        loopFrame.laneNextSeq[lane] = nextSeq + 2;
+        loopFrameAfter.laneNextSeq[lane] = nextSeq + 2;
         return StepType::halt();
     }
 
@@ -2536,25 +2531,29 @@ private:
         // IMPORTANT: a single simt_step.switch op can execute multiple times (e.g.
         // inside a simt_step.loop), so matching by switchOp alone is ambiguous.
         // Prefer the parent dynamic block key when available.
-        MergeStackEntry<ValueType, StepType> *entry = nullptr;
-        if (blockCtx->parentKey) {
-            for (auto it = waveCtx.mergeStack.rbegin();
-                 it != waveCtx.mergeStack.rend(); ++it) {
-                if (it->loopFrame || it->ifOp || it->parent != *blockCtx->parentKey)
-                    continue;
-                if (it->switchFrame &&
-                    it->switchFrame->switchOp != blockCtx->switchOp)
-                    continue;
-                entry = &*it;
-                break;
+        const auto parentKey = blockCtx->parentKey;
+        const mlir::Operation *switchToken = blockCtx->switchOp;
+        auto resolveSwitchEntry = [&]() -> MergeStackEntry<ValueType, StepType> * {
+            MergeStackEntry<ValueType, StepType> *resolved = nullptr;
+            if (parentKey) {
+                for (auto it = waveCtx.mergeStack.rbegin();
+                     it != waveCtx.mergeStack.rend(); ++it) {
+                    if (it->loopFrame || it->ifOp || it->parent != *parentKey)
+                        continue;
+                    if (it->switchFrame &&
+                        it->switchFrame->switchOp != switchToken)
+                        continue;
+                    resolved = &*it;
+                    break;
+                }
             }
-        }
-        if (!entry) {
+            if (resolved)
+                return resolved;
             for (auto it = waveCtx.mergeStack.rbegin();
                  it != waveCtx.mergeStack.rend(); ++it) {
                 if (it->loopFrame || it->ifOp || !it->switchFrame)
                     continue;
-                if (it->switchFrame->switchOp != blockCtx->switchOp)
+                if (it->switchFrame->switchOp != switchToken)
                     continue;
                 // Disambiguate multiple dynamic instances by sequence range.
                 std::uint32_t baseSeq = it->switchFrame->baseSeq;
@@ -2564,10 +2563,11 @@ private:
                 std::uint32_t caseIdx = key.sequenceId - baseSeq;
                 if (caseIdx >= numCases)
                     continue;
-                entry = &*it;
-                break;
+                return &*it;
             }
-        }
+            return nullptr;
+        };
+        MergeStackEntry<ValueType, StepType> *entry = resolveSwitchEntry();
         if (entry && !entry->switchFrame) {
             SwitchFrameState<ValueType> frame;
             frame.switchOp = switchOp.getOperation();
@@ -2580,7 +2580,6 @@ private:
                     entry->pendingChildren.push_back(DynamicBlockKey{
                         entry->switchFrame->caseBlocks[idx],
                         static_cast<std::uint32_t>(entry->switchFrame->baseSeq + idx)});
-                    entry->childMasks.push_back(0);
                 }
             }
             if (entry->expectedMask == 0)
@@ -2600,12 +2599,10 @@ private:
                 frame.caseBlocks.push_back(&b);
             if (entry->pendingChildren.size() != frame.caseBlocks.size()) {
                 entry->pendingChildren.clear();
-                entry->childMasks.clear();
                 for (unsigned idx = 0; idx < frame.caseBlocks.size(); ++idx) {
                     entry->pendingChildren.push_back(DynamicBlockKey{
                         frame.caseBlocks[idx],
                         static_cast<std::uint32_t>(frame.baseSeq + idx)});
-                    entry->childMasks.push_back(0);
                 }
             }
         }
@@ -2656,15 +2653,20 @@ private:
                     static_cast<std::uint32_t>(frame.baseSeq + futureIdx)};
                 shrinkExpectedForSubtree(wave, waveCtx, futureKey, lane);
             }
-            if (auto pendingIt = frame.pendingCases.find(lane);
-                pendingIt != frame.pendingCases.end()) {
+            entry = resolveSwitchEntry();
+            if (!entry || !entry->switchFrame)
+                llvm::report_fatal_error(
+                    "handleSwitchYield: missing switch frame after shrink");
+            auto &frameAfter = *entry->switchFrame;
+            if (auto pendingIt = frameAfter.pendingCases.find(lane);
+                pendingIt != frameAfter.pendingCases.end()) {
                 if (auto *pendingBlock = getBlock(waveCtx, pendingIt->second))
                     pendingBlock->continuations.erase(lane);
-                frame.pendingCases.erase(pendingIt);
+                frameAfter.pendingCases.erase(pendingIt);
             }
-            if (!blockCtx->parentKey)
+            if (!parentKey)
                 llvm::report_fatal_error("handleSwitchYield: missing parent key");
-            auto parentIt = waveCtx.blocks.find(*blockCtx->parentKey);
+            auto parentIt = waveCtx.blocks.find(*parentKey);
             if (parentIt == waveCtx.blocks.end())
                 llvm::report_fatal_error("handleSwitchYield: missing parent block");
             auto &parentEnv = parentIt->second.valueEnvs[lane];
@@ -2680,17 +2682,24 @@ private:
             return StepType::halt();
         }
 
+        const auto currentSwitchOp = blockCtx->switchOp;
+        const auto currentLoopOp = blockCtx->loopOp;
+        const auto currentOwnerLoopFrameId = blockCtx->ownerLoopFrameId;
+
         unsigned nextIdx = caseIdx + 1;
         DynamicBlockKey nextKey{frame.caseBlocks[nextIdx],
                                 static_cast<std::uint32_t>(frame.baseSeq + nextIdx)};
         auto &nextCtx = waveCtx.blocks[nextKey];
+        auto *currentCtx = getBlock(waveCtx, key);
+        if (!currentCtx)
+            llvm::report_fatal_error("handleSwitchYield: missing current block after insert");
         nextCtx.block = nextKey.block;
         nextCtx.sequenceId = nextKey.sequenceId;
         nextCtx.parentKey = entry->parent;
         std::uint64_t expected =
             entry->expectedMask ? entry->expectedMask
-                                : (blockCtx->expectedMask ? blockCtx->expectedMask
-                                                          : blockCtx->activeMask);
+                                : (currentCtx->expectedMask ? currentCtx->expectedMask
+                                                            : currentCtx->activeMask);
         if (nextCtx.expectedMask == 0)
             nextCtx.expectedMask = expected;
         nextCtx.expectedMask |= laneBit;
@@ -2699,9 +2708,9 @@ private:
         nextCtx.kind = (nextIdx == static_cast<unsigned>(defaultIndex))
                            ? DynamicBlockKind::SwitchDefault
                            : DynamicBlockKind::SwitchCase;
-        nextCtx.switchOp = blockCtx->switchOp;
-        nextCtx.loopOp = blockCtx->loopOp;
-        nextCtx.ownerLoopFrameId = blockCtx->ownerLoopFrameId;
+        nextCtx.switchOp = currentSwitchOp;
+        nextCtx.loopOp = currentLoopOp;
+        nextCtx.ownerLoopFrameId = currentOwnerLoopFrameId;
         nextCtx.ifOp = nullptr;
 
         auto &env = nextCtx.valueEnvs[lane];
@@ -2718,10 +2727,10 @@ private:
                 pendingBlock->continuations.erase(lane);
         }
         frame.pendingCases[lane] = key;
-        blockCtx->continuations[lane] = StepType::halt();
+        currentCtx->continuations[lane] = StepType::halt();
 
-        blockCtx->activeMask &= ~laneBit;
-        blockCtx->completedMask |= laneBit;
+        currentCtx->activeMask &= ~laneBit;
+        currentCtx->completedMask |= laneBit;
         waveCtx.lanes[lane].currentBlock = nextKey;
 
         SemanticsContext laneCtx = context;
@@ -2827,6 +2836,7 @@ private:
         auto *blockCtx = getBlock(waveCtx, key);
         if (!blockCtx || !blockCtx->loopOp)
             llvm::report_fatal_error("handleLoopBreak: invalid loop block context");
+        const mlir::Operation *loopOp = blockCtx->loopOp;
         std::uint64_t laneBit = 1ull << lane;
 
         llvm::SmallVector<ValueType, 4> results;
@@ -2871,10 +2881,10 @@ private:
                          << " expected=" << fmt(blockCtx->expectedMask)
                          << "\n";
         }
-        shrinkExpectedForLoopLane(wave, waveCtx, blockCtx->loopOp, lane);
+        shrinkExpectedForLoopLane(wave, waveCtx, loopOp, lane);
         handleReconvergence(wave, waveCtx, key, lane);
         (void)popLoopEntryIfComplete(
-            waveCtx, findLoopEntry(waveCtx, key, blockCtx->loopOp));
+            waveCtx, findLoopEntry(waveCtx, key, loopOp));
         return StepType::halt();
     }
 
@@ -3075,7 +3085,9 @@ private:
         // references. Insert both children before taking references.
         waveCtx.blocks.try_emplace(thenKey);
         waveCtx.blocks.try_emplace(elseKey);
-        auto &parentBlockCtx = waveCtx.blocks.find(key)->second;
+        auto *parentBlockCtx = getBlock(waveCtx, key);
+        if (!parentBlockCtx)
+            llvm::report_fatal_error("handleIfSplit: missing parent block after insert");
         
         auto findMergeEntry = [&](WaveContext<ValueType, StepType> &ctx)
             -> MergeStackEntry<ValueType, StepType> * {
@@ -3127,8 +3139,8 @@ private:
         child.activeMask |= (1ull << lane);
         // child.completedMask &= ~(1ull << lane);
         child.kind = DynamicBlockKind::IfThen;
-        if (auto envIt = parentBlockCtx.valueEnvs.find(lane);
-            envIt != parentBlockCtx.valueEnvs.end()) {
+        if (auto envIt = parentBlockCtx->valueEnvs.find(lane);
+            envIt != parentBlockCtx->valueEnvs.end()) {
             child.valueEnvs[lane] = envIt->second;
         }
             // Ensure sibling exists so we can clear this lane from its expected set.
@@ -3154,9 +3166,18 @@ private:
             }
             shrinkExpectedForSubtree(wave, waveCtx, elseKey, lane);
 
+            entry = findMergeEntry(waveCtx);
+            if (!entry)
+                llvm::report_fatal_error("handleIfSplit: missing merge entry after shrink");
+            auto *childAfter = getBlock(waveCtx, thenKey);
+            if (!childAfter)
+                llvm::report_fatal_error("handleIfSplit: missing then block after shrink");
+            parentBlockCtx = getBlock(waveCtx, key);
+            if (!parentBlockCtx)
+                llvm::report_fatal_error("handleIfSplit: missing parent block after shrink");
+
             if (!llvm::is_contained(entry->pendingChildren, thenKey)) {
                 entry->pendingChildren.push_back(thenKey);
-                entry->childMasks.push_back(child.activeMask);
             }
             // entry->expectedMask |= laneMask;
 
@@ -3172,15 +3193,16 @@ private:
             SemanticsContext laneCtx = context;
             laneCtx.overrideMode.reset();
             laneCtx.suppressStepTrace = false;
-            laneCtx.activeMask = child.activeMask;
+            laneCtx.activeMask = childAfter->activeMask;
             laneCtx.expectedMask =
-                child.expectedMask ? child.expectedMask : child.activeMask;
+                childAfter->expectedMask ? childAfter->expectedMask
+                                         : childAfter->activeMask;
             laneCtx.laneId = lane;
             mlir::Block *childBlock = const_cast<mlir::Block *>(thenKey.block);
             StepType childStep = makeNextOp(wave, thenKey, childBlock,
                                             childBlock->begin(), laneCtx, lane);
             enqueue(wave, thenKey, lane, std::move(childStep));
-            parentBlockCtx.activeMask &= ~(1ull << lane);
+            parentBlockCtx->activeMask &= ~(1ull << lane);
             logMergeStackState<ValueType, StepType>(waveCtx);
             return StepType::halt();
         }
@@ -3200,8 +3222,8 @@ private:
         child.activeMask |= (1ull << lane);
         // child.completedMask &= ~(1ull << lane);
         child.kind = DynamicBlockKind::IfElse;
-        if (auto envIt = parentBlockCtx.valueEnvs.find(lane);
-            envIt != parentBlockCtx.valueEnvs.end()) {
+        if (auto envIt = parentBlockCtx->valueEnvs.find(lane);
+            envIt != parentBlockCtx->valueEnvs.end()) {
             child.valueEnvs[lane] = envIt->second;
         }
         auto &thenCtx = waveCtx.blocks[thenKey];
@@ -3224,9 +3246,18 @@ private:
             }
             shrinkExpectedForSubtree(wave, waveCtx, thenKey, lane);
 
+            entry = findMergeEntry(waveCtx);
+            if (!entry)
+                llvm::report_fatal_error("handleIfSplit: missing merge entry after shrink");
+            auto *childAfter = getBlock(waveCtx, elseKey);
+            if (!childAfter)
+                llvm::report_fatal_error("handleIfSplit: missing else block after shrink");
+            parentBlockCtx = getBlock(waveCtx, key);
+            if (!parentBlockCtx)
+                llvm::report_fatal_error("handleIfSplit: missing parent block after shrink");
+
             if (!llvm::is_contained(entry->pendingChildren, elseKey)) {
                 entry->pendingChildren.push_back(elseKey);
-                entry->childMasks.push_back(child.activeMask);
             }
             // entry->expectedMask |= laneMask;
 
@@ -3242,25 +3273,26 @@ private:
             SemanticsContext laneCtx = context;
             laneCtx.overrideMode.reset();
             laneCtx.suppressStepTrace = false;
-            laneCtx.activeMask = child.activeMask;
+            laneCtx.activeMask = childAfter->activeMask;
             laneCtx.expectedMask =
-                child.expectedMask ? child.expectedMask : child.activeMask;
+                childAfter->expectedMask ? childAfter->expectedMask
+                                         : childAfter->activeMask;
             laneCtx.laneId = lane;
             mlir::Block *childBlock = const_cast<mlir::Block *>(elseKey.block);
             StepType childStep = makeNextOp(wave, elseKey, childBlock,
                                             childBlock->begin(), laneCtx, lane);
             enqueue(wave, elseKey, lane, std::move(childStep));
-            parentBlockCtx.activeMask &= ~(1ull << lane);
+            parentBlockCtx->activeMask &= ~(1ull << lane);
                 logMergeStackState<ValueType, StepType>(waveCtx);
             return StepType::halt();
         }
 
         // No else region and condition false: just resume parent continuation.
-        auto contIt = parentBlockCtx.continuations.find(lane);
-        if (contIt != parentBlockCtx.continuations.end()) {
-            parentBlockCtx.activeMask |= (1ull << lane);
+        auto contIt = parentBlockCtx->continuations.find(lane);
+        if (contIt != parentBlockCtx->continuations.end()) {
+            parentBlockCtx->activeMask |= (1ull << lane);
             pushReady(wave, key, lane, std::move(contIt->second));
-            parentBlockCtx.continuations.erase(contIt);
+            parentBlockCtx->continuations.erase(contIt);
         }
         return StepType::halt();
     }
@@ -3331,6 +3363,9 @@ private:
         }
 
         auto &calleeBlockCtx = waveCtx.blocks[calleeKey];
+        auto *callerAfterInsert = getBlock(waveCtx, key);
+        if (!callerAfterInsert)
+            llvm::report_fatal_error("call: missing caller block after callee insert");
         calleeBlockCtx.block = calleeKey.block;
         calleeBlockCtx.sequenceId = calleeKey.sequenceId;
         calleeBlockCtx.kind = DynamicBlockKind::Plain;
@@ -3356,7 +3391,7 @@ private:
         for (unsigned i = 0; i < entryBlock.getNumArguments(); ++i)
             env[entryBlock.getArgument(i)] = argValues[i];
 
-        callerBlockCtx->activeMask &= ~(1ull << lane);
+        callerAfterInsert->activeMask &= ~(1ull << lane);
 
         CallFrame<ValueType> frame;
         frame.callerKey = key;
@@ -3454,6 +3489,12 @@ private:
     }
 
     llvm::Error processReady(ReadyContinuation<ValueType, StepType> item) {
+        if (item.lane >= 64) {
+            return llvm::make_error<llvm::StringError>(
+                llvm::Twine("processReady: lane out of range: ") +
+                    llvm::Twine(item.lane),
+                llvm::inconvertibleErrorCode());
+        }
         ensureWaveBlock(item.wave, item.block, item.lane);
         auto &waveCtx = state_.waves[item.wave];
         auto &laneCtx = waveCtx.lanes[item.lane];
@@ -3494,7 +3535,6 @@ private:
             else
                 blockCtx->expectedMask = blockCtx->activeMask;
             blockCtx->completedMask &= ~laneBit;
-            waveCtx.currentMask = blockCtx->activeMask;
         }
         if (EnableCPSDebugLogs) {
             cpsDebugStream() << "[CPS] run lane=" << item.lane
@@ -3847,6 +3887,9 @@ private:
 
     void pushReady(WaveId wave, const DynamicBlockKey &block, LaneId lane,
                    StepType step) {
+        if (lane >= 64)
+            llvm::report_fatal_error(
+                llvm::Twine("pushReady: lane out of range: ") + llvm::Twine(lane));
         auto &waveCtx = state_.waves[wave];
         auto &laneCtx = waveCtx.lanes[lane];
         std::uint64_t epoch = ++laneCtx.readyEpoch;
@@ -3968,6 +4011,7 @@ private:
                         waveCtx.collectives.erase(it++);
                         handleControlFlowCollective(waveId, controlBlock, controlOp,
                                                     expectedMask);
+                        it = waveCtx.collectives.begin();
                         continue;
                     }
                 } else if (isWaveCollective) {
@@ -4172,6 +4216,7 @@ private:
                         waveCtx.collectives.erase(it++);
                         handleControlFlowCollective(waveId, controlBlock, controlOp,
                                                     expectedMask);
+                        it = waveCtx.collectives.begin();
                         continue;
                     }
                 } else if (isWaveCollective) {
@@ -4301,7 +4346,8 @@ private:
             if (it == waveCtx.blocks.end())
                 return std::nullopt;
             const auto &ctx = it->second;
-            if (ctx.loopOp == loopOp && ctx.isLoopBody)
+            if (ctx.loopOp == loopOp &&
+                ctx.kind == DynamicBlockKind::LoopBody)
                 return key;
             if (!ctx.parentKey)
                 return std::nullopt;
@@ -4415,6 +4461,7 @@ private:
                         waveCtx.collectives.erase(it++);
                         handleControlFlowCollective(waveId, controlBlock, controlOp,
                                                     expectedMask);
+                        it = waveCtx.collectives.begin();
                         continue;
                     }
                 } else if (isWaveCollective) {
@@ -4628,42 +4675,13 @@ private:
                         cpsDebugStream() << " " << l;
                     }
                     cpsDebugStream() << "\n";
-                    // logMergeStackState<ValueType, StepType>(waveCtx);
                 }
-                // Enqueue any remaining parent continuations for lanes that have
-                // not been resumed yet.
-                // auto parentBlockIt2 = waveCtx.blocks.find(parentKey);
-                // if (parentBlockIt2 != waveCtx.blocks.end()) {
-                //     auto &parentBlock = parentBlockIt2->second;
-                //     std::uint64_t mask = it->expectedMask;
-                //     while (mask) {
-                //         unsigned l = std::countr_zero(mask);
-                //         mask &= mask - 1;
-                //         auto contIt = parentBlock.continuations.find(l);
-                //         if (contIt != parentBlock.continuations.end()) {
-                //             parentBlock.activeMask |= (1ull << l);
-                //             waveCtx.lanes[l].currentBlock = parentKey;
-                //             state_.readyQueue.push_back(
-                //                 ReadyContinuation<ValueType, StepType>{waveId, parentKey, l,
-                //                                                        contIt->second});
-                //             if (EnableCPSDebugLogs) {
-                //                 cpsDebugStream() << "[CPS] enqueue parent cont lane=" << l
-                //                              << " parent=" << parentKey.block
-                //                              << " seq=" << parentKey.sequenceId << "\n";
-                //                 dumpReadyQueue();
-                //             }
-                //             parentBlock.continuations.erase(contIt);
-                //         }
-                //     }
-                // }
                 auto base = it.base();
                 waveCtx.mergeStack.erase(--base);
             }
             dumpReadyQueue();
             break;
         }
-        // logMergeStackState<ValueType, StepType>(waveCtx);
-
     }
 
     SimtStepSemanticsAdaptor<SemanticsT> adaptor_;
@@ -4671,7 +4689,6 @@ private:
     TraceSink *traceSink_ = nullptr;
     StateType state_;
     ScheduleMode scheduleMode_ = ScheduleMode::Deterministic;
-    std::uint64_t scheduleSeed_ = 0;
     std::mt19937_64 rng_{0};
 };
 
