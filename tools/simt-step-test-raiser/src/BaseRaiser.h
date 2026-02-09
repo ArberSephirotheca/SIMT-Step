@@ -44,6 +44,7 @@ namespace simt::test_raiser {
         std::vector<std::vector<int64_t>> input;
         int subgroupWidth;
         bool noF64;
+        bool noWrapper;
     };
 
     class BaseRaiser {

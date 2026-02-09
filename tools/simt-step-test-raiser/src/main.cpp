@@ -117,16 +117,21 @@ auto makeTranslateFunction(
     LogicalResult func(Operation*, raw_ostream&, simt::test_raiser::HarnessProps),
     llvm::cl::opt<std::string>& bufferInitYaml,
     llvm::cl::opt<int>& subgroupWidth,
-    llvm::cl::opt<bool>& noFloat64){
-    return [&bufferInitYaml, &subgroupWidth, &noFloat64, func](Operation *op, raw_ostream &output) {
+    llvm::cl::opt<bool>& noFloat64,
+    llvm::cl::opt<bool>& noInterpreter,
+    llvm::cl::opt<bool>& noWrapper){
+    return [&, func](Operation *op, raw_ostream &output) {
                 std::vector<std::vector<int64_t>> expbuf = {};
                 std::vector<std::vector<int64_t>> inbuf = {};
-                if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml, subgroupWidth))) return failure();
+                if (!noInterpreter){
+                    if(failed(getExpectedBuffer(op, expbuf, inbuf, bufferInitYaml, subgroupWidth))) return failure();
+                }
                 simt::test_raiser::HarnessProps props {
                     .expected = expbuf,
                     .input = inbuf,
                     .subgroupWidth = subgroupWidth,
-                    .noF64 = noFloat64
+                    .noF64 = noFloat64,
+                    .noWrapper = noWrapper
                 };
                 return func(op, output, props);
         };
@@ -154,11 +159,25 @@ int main(int argc, char** argv){
         llvm::cl::init(false)
     );
 
+    llvm::cl::opt<bool> noInterpreter(
+        "no-interpreter",
+        llvm::cl::desc(
+            "Do not run interpeter to get expected values"),
+        llvm::cl::init(false)
+    );
+
+    llvm::cl::opt<bool> noWrapper(
+        "no-wrapper",
+        llvm::cl::desc(
+            "Do not emit the Python wrapper (when possible). Only works for GLSL, CUDA, and HIP."),
+        llvm::cl::init(false)
+    );
+
     TranslateFromMLIRRegistration t_glsl(
         "mlir-to-glsl-amber", "translate mlir to GLSL with Amber harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedGLSL, 
-            bufferInitYaml, subgroupWidth, noFloat64),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
         insertSimtDialects
     );
 
@@ -166,7 +185,7 @@ int main(int argc, char** argv){
         "mlir-to-cuda", "translate mlir to CUDA with a CUDA test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedCUDA, 
-            bufferInitYaml, subgroupWidth, noFloat64),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
         insertSimtDialects
     );
 
@@ -174,7 +193,7 @@ int main(int argc, char** argv){
         "mlir-to-hip", "translate mlir to HIP with a HIP test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedHIP, 
-            bufferInitYaml, subgroupWidth, noFloat64),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
         insertSimtDialects
     );
 
