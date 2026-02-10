@@ -103,6 +103,52 @@ RunSnapshot captureSnapshot(const simt::semantics::SimpleProgramRunner &runner) 
 bool compareSnapshots(const RunSnapshot &a,
                       const RunSnapshot &b,
                       std::string &reason) {
+    auto compareLanes = [&](const RunSnapshot &lhs, const RunSnapshot &rhs) {
+        if (lhs.lanes.size() != rhs.lanes.size()) {
+            reason = "lane snapshot size mismatch";
+            return false;
+        }
+        for (std::size_t i = 0; i < lhs.lanes.size(); ++i) {
+            const auto &l = lhs.lanes[i];
+            const auto &r = rhs.lanes[i];
+            if (l.wave != r.wave || l.lane != r.lane) {
+                reason = "lane order mismatch";
+                return false;
+            }
+            if (l.hasReturned != r.hasReturned ||
+                l.returnValue != r.returnValue) {
+                reason = "lane return mismatch";
+                return false;
+            }
+        }
+        return true;
+    };
+    auto compareBuffers = [&](const RunSnapshot &lhs, const RunSnapshot &rhs) {
+        if (lhs.buffers.size() != rhs.buffers.size()) {
+            reason = "buffer count mismatch";
+            return false;
+        }
+        for (std::size_t i = 0; i < lhs.buffers.size(); ++i) {
+            const auto &l = lhs.buffers[i];
+            const auto &r = rhs.buffers[i];
+            if (l.argIndex != r.argIndex) {
+                reason = "buffer arg mismatch";
+                return false;
+            }
+            if (l.entries != r.entries) {
+                reason = "buffer contents mismatch";
+                return false;
+            }
+        }
+        return true;
+    };
+
+    return compareLanes(a, b) && compareBuffers(a, b);
+}
+
+bool compareLaneSnapshots(const RunSnapshot &a,
+                          const RunSnapshot &b,
+                          std::string &reason) {
     if (a.lanes.size() != b.lanes.size()) {
         reason = "lane snapshot size mismatch";
         return false;
@@ -117,22 +163,6 @@ bool compareSnapshots(const RunSnapshot &a,
         if (lhs.hasReturned != rhs.hasReturned ||
             lhs.returnValue != rhs.returnValue) {
             reason = "lane return mismatch";
-            return false;
-        }
-    }
-    if (a.buffers.size() != b.buffers.size()) {
-        reason = "buffer count mismatch";
-        return false;
-    }
-    for (std::size_t i = 0; i < a.buffers.size(); ++i) {
-        const auto &lhs = a.buffers[i];
-        const auto &rhs = b.buffers[i];
-        if (lhs.argIndex != rhs.argIndex) {
-            reason = "buffer arg mismatch";
-            return false;
-        }
-        if (lhs.entries != rhs.entries) {
-            reason = "buffer contents mismatch";
             return false;
         }
     }
@@ -206,6 +236,10 @@ int main(int argc, char **argv) {
                                 llvm::cl::init(false));
     llvm::cl::opt<bool> runInterp("run", llvm::cl::desc("Run generated module in interpreter"),
                                   llvm::cl::init(false));
+    llvm::cl::opt<bool> oracleCheckBuffers(
+        "oracle-check-buffers",
+        llvm::cl::desc("Force determinism oracle to compare memory buffers even with independent memory mode"),
+        llvm::cl::init(false));
     llvm::cl::opt<std::uint64_t> seedOpt("seed", llvm::cl::desc("Seed for RNG (0=deterministic)"),
                                          llvm::cl::init(0));
     llvm::cl::opt<unsigned> trials(
@@ -478,12 +512,22 @@ int main(int argc, char **argv) {
     auto baseline = runTrial(baseSeed, traceWriter.get());
     if (!baseline)
         return 1;
+    bool compareBuffersInOracle =
+        oracleCheckBuffers ||
+        execPolicy.memoryOps != simt::semantics::ExecutionMode::Independent;
+    if (trials > 1 && !compareBuffersInOracle) {
+        llvm::errs()
+            << "[oracle] skipping buffer determinism check (independent memory mode)\n";
+    }
     for (unsigned trial = 1; trial < trials; ++trial) {
         auto snap = runTrial(baseSeed + trial, nullptr);
         if (!snap)
             return 1;
         std::string reason;
-        if (!compareSnapshots(*baseline, *snap, reason)) {
+        bool same = compareBuffersInOracle
+                        ? compareSnapshots(*baseline, *snap, reason)
+                        : compareLaneSnapshots(*baseline, *snap, reason);
+        if (!same) {
             llvm::errs() << "determinism oracle failed: " << reason
                          << " (trial " << trial << ")\n";
             return 2;

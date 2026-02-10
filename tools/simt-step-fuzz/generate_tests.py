@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -147,6 +148,22 @@ def main():
         default=10000,
         help="Max attempts before giving up",
     )
+    parser.add_argument(
+        "--save-failures",
+        action="store_true",
+        help="Save failed attempts as MLIR/YAML/log artifacts",
+    )
+    parser.add_argument(
+        "--failure-dir",
+        default=None,
+        help="Output directory for failed attempts (default: <out-dir>/failures)",
+    )
+    parser.add_argument(
+        "--save-failure-limit",
+        type=int,
+        default=0,
+        help="Max failed attempts to save (0 means unlimited)",
+    )
     args = parser.parse_args()
 
     if args.profile is not None:
@@ -233,9 +250,63 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = out_dir / "manifest.jsonl"
+    failure_dir = out_dir / "failures"
+    if args.failure_dir is not None:
+        failure_dir = Path(args.failure_dir)
+    if args.save_failures:
+        failure_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.save_failure_limit < 0:
+        parser.error("--save-failure-limit must be >= 0")
+
+    def append_generation_options(cmd, predicate_yaml=None):
+        if args.break_continue_rate is not None:
+            cmd.append(f"--break-continue-rate={args.break_continue_rate}")
+        if args.complex_helper:
+            cmd.append("--complex-helper")
+        if args.helper_subgroup_ids:
+            cmd.append("--helper-subgroup-ids")
+        if args.helper_max_depth is not None:
+            cmd.append(f"--helper-max-depth={args.helper_max_depth}")
+        if args.helper_min_control_ops is not None:
+            cmd.append(f"--helper-min-control-ops={args.helper_min_control_ops}")
+        if args.no_subgroup_in_switch:
+            cmd.append("--no-subgroup-in-switch")
+        if args.post_switch_wave_op_rate is not None:
+            cmd.append(f"--post-switch-wave-op-rate={args.post_switch_wave_op_rate}")
+        if args.non_uniform_helper_call_rate is not None:
+            cmd.append(
+                f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
+            )
+        if args.helper_call_post_switch_rate is not None:
+            cmd.append(
+                f"--helper-call-post-switch-rate={args.helper_call_post_switch_rate}"
+            )
+        if args.helper_call_max_depth is not None:
+            cmd.append(f"--helper-call-max-depth={args.helper_call_max_depth}")
+        if args.helper_call_nest_loop_rate is not None:
+            cmd.append(
+                f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
+            )
+        if args.predicate_buffer:
+            cmd.append("--predicate-buffer")
+            if predicate_yaml:
+                cmd.append(f"--predicate-yaml={predicate_yaml}")
+
+    def write_process_log(path, cmd, result):
+        log_text = [
+            f"cmd: {' '.join(shlex.quote(piece) for piece in cmd)}",
+            f"returncode: {result.returncode}",
+            "stdout:",
+            result.stdout,
+            "stderr:",
+            result.stderr,
+        ]
+        path.write_text("\n".join(log_text), encoding="utf-8")
 
     count = 0
     attempts = 0
+    saved_failures = 0
     seed = args.seed_start
     with manifest_path.open("a", encoding="utf-8") as manifest:
         while count < args.count and attempts < args.max_attempts:
@@ -250,44 +321,7 @@ def main():
                 f"--schedule-seed={args.schedule_seed}",
                 "--random-schedule",
             ]
-            if args.break_continue_rate is not None:
-                validate_cmd.append(
-                    f"--break-continue-rate={args.break_continue_rate}"
-                )
-            if args.complex_helper:
-                validate_cmd.append("--complex-helper")
-            if args.helper_subgroup_ids:
-                validate_cmd.append("--helper-subgroup-ids")
-            if args.helper_max_depth is not None:
-                validate_cmd.append(f"--helper-max-depth={args.helper_max_depth}")
-            if args.helper_min_control_ops is not None:
-                validate_cmd.append(
-                    f"--helper-min-control-ops={args.helper_min_control_ops}"
-                )
-            if args.no_subgroup_in_switch:
-                validate_cmd.append("--no-subgroup-in-switch")
-            if args.post_switch_wave_op_rate is not None:
-                validate_cmd.append(
-                    f"--post-switch-wave-op-rate={args.post_switch_wave_op_rate}"
-                )
-            if args.non_uniform_helper_call_rate is not None:
-                validate_cmd.append(
-                    f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
-                )
-            if args.helper_call_post_switch_rate is not None:
-                validate_cmd.append(
-                    f"--helper-call-post-switch-rate={args.helper_call_post_switch_rate}"
-                )
-            if args.helper_call_max_depth is not None:
-                validate_cmd.append(
-                    f"--helper-call-max-depth={args.helper_call_max_depth}"
-                )
-            if args.helper_call_nest_loop_rate is not None:
-                validate_cmd.append(
-                    f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
-                )
-            if args.predicate_buffer:
-                validate_cmd.append("--predicate-buffer")
+            append_generation_options(validate_cmd)
             if args.collective_cf:
                 validate_cmd.append("--collective-cf")
             if args.sync_cf:
@@ -298,6 +332,34 @@ def main():
                 validate_cmd.append("--sync-mem")
             validate = run(validate_cmd)
             if validate.returncode != 0:
+                should_save = args.save_failures and (
+                    args.save_failure_limit == 0
+                    or saved_failures < args.save_failure_limit
+                )
+                if should_save:
+                    fail_stem = f"attempt_{attempts:06d}_seed_{seed}"
+                    fail_mlir = failure_dir / f"{fail_stem}.mlir"
+                    fail_validate_log = failure_dir / f"{fail_stem}.validate.log"
+                    fail_dump_log = failure_dir / f"{fail_stem}.dump.log"
+                    fail_yaml = ""
+                    if args.predicate_buffer:
+                        fail_yaml = str(failure_dir / f"{fail_stem}.yaml")
+                    dump_cmd = [
+                        str(fuzzer),
+                        f"--seed={seed}",
+                        f"--lanes={args.lanes}",
+                        f"--subgroup-width={args.subgroup_width}",
+                        "--print-ir",
+                    ]
+                    append_generation_options(
+                        dump_cmd, predicate_yaml=(fail_yaml if fail_yaml else None)
+                    )
+                    dumped = run(dump_cmd)
+                    write_process_log(fail_validate_log, validate_cmd, validate)
+                    write_process_log(fail_dump_log, dump_cmd, dumped)
+                    if dumped.returncode == 0 and dumped.stdout.strip():
+                        fail_mlir.write_text(dumped.stdout, encoding="utf-8")
+                    saved_failures += 1
                 seed += args.seed_step
                 continue
 
@@ -308,43 +370,12 @@ def main():
                 f"--subgroup-width={args.subgroup_width}",
                 "--print-ir",
             ]
-            if args.break_continue_rate is not None:
-                gen_cmd.append(f"--break-continue-rate={args.break_continue_rate}")
-            if args.complex_helper:
-                gen_cmd.append("--complex-helper")
-            if args.helper_subgroup_ids:
-                gen_cmd.append("--helper-subgroup-ids")
-            if args.helper_max_depth is not None:
-                gen_cmd.append(f"--helper-max-depth={args.helper_max_depth}")
-            if args.helper_min_control_ops is not None:
-                gen_cmd.append(
-                    f"--helper-min-control-ops={args.helper_min_control_ops}"
-                )
-            if args.no_subgroup_in_switch:
-                gen_cmd.append("--no-subgroup-in-switch")
-            if args.post_switch_wave_op_rate is not None:
-                gen_cmd.append(
-                    f"--post-switch-wave-op-rate={args.post_switch_wave_op_rate}"
-                )
-            if args.non_uniform_helper_call_rate is not None:
-                gen_cmd.append(
-                    f"--non-uniform-helper-call-rate={args.non_uniform_helper_call_rate}"
-                )
-            if args.helper_call_post_switch_rate is not None:
-                gen_cmd.append(
-                    f"--helper-call-post-switch-rate={args.helper_call_post_switch_rate}"
-                )
-            if args.helper_call_max_depth is not None:
-                gen_cmd.append(f"--helper-call-max-depth={args.helper_call_max_depth}")
-            if args.helper_call_nest_loop_rate is not None:
-                gen_cmd.append(
-                    f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
-                )
             predicate_yaml = ""
             if args.predicate_buffer:
                 predicate_yaml = f"{out_dir}/test_{count:03d}_seed_{seed}.yaml"
-                gen_cmd.append("--predicate-buffer")
-                gen_cmd.append(f"--predicate-yaml={predicate_yaml}")
+            append_generation_options(
+                gen_cmd, predicate_yaml=(predicate_yaml if predicate_yaml else None)
+            )
             generated = run(gen_cmd)
             if generated.returncode != 0 or not generated.stdout.strip():
                 seed += args.seed_step
