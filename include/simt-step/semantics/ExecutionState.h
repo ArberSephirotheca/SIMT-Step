@@ -134,6 +134,7 @@ struct CallFrame {
     DynamicBlockKey callerKey;
     mlir::Block *callerBlock = nullptr;
     mlir::Block::iterator resumeIt;
+    const mlir::Operation *callOp = nullptr;
     llvm::SmallVector<mlir::Value, 4> results;
     std::string calleeName;
 };
