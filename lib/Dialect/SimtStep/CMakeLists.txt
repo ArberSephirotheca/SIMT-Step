@@ -1,17 +1,19 @@
 set(LLVM_TARGET_DEFINITIONS
     ${PROJECT_SOURCE_DIR}/include/simt-step/Dialect/SimtStep/SimtStep.td)
 
-set(MLIR_TABLEGEN_INCLUDE_DIRECTORIES
+set(_simt_tablegen_include_dirs
     ${MLIR_MAIN_INCLUDE_DIR}
+    ${MLIR_INCLUDE_DIRS}
     ${LLVM_MAIN_INCLUDE_DIR}
+    ${LLVM_INCLUDE_DIRS}
     ${PROJECT_SOURCE_DIR}/include)
+list(FILTER _simt_tablegen_include_dirs EXCLUDE REGEX "^$")
+list(REMOVE_DUPLICATES _simt_tablegen_include_dirs)
 
-set(_simt_tablegen_includes
-    -I${MLIR_MAIN_INCLUDE_DIR}
-    -I${LLVM_MAIN_INCLUDE_DIR}
-    -I${PROJECT_SOURCE_DIR}/include)
+set(MLIR_TABLEGEN_INCLUDE_DIRECTORIES ${_simt_tablegen_include_dirs})
 
-foreach(inc_dir ${LLVM_INCLUDE_DIRS})
+set(_simt_tablegen_includes)
+foreach(inc_dir IN LISTS _simt_tablegen_include_dirs)
     list(APPEND _simt_tablegen_includes -I${inc_dir})
 endforeach()
 

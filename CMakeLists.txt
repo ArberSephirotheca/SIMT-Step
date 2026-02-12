@@ -19,6 +19,9 @@ project(SIMTStep LANGUAGES C CXX)
 # Allow build to locate LLVM/MLIR from common install prefixes if the user
 # hasn't provided explicit cache entries. Matches the Rust config defaults.
 set(_simt_llvm_prefixes)
+list(APPEND _simt_llvm_prefixes
+    "${PROJECT_SOURCE_DIR}/llvm-project/build"
+    "${PROJECT_SOURCE_DIR}/llvm-project/install")
 if (DEFINED ENV{LLVM_PREFIX})
     list(APPEND _simt_llvm_prefixes "$ENV{LLVM_PREFIX}")
 endif()
@@ -30,6 +33,9 @@ foreach(_prefix IN LISTS _simt_llvm_prefixes)
     endif()
     if (NOT MLIR_DIR AND EXISTS "${_prefix}/lib/cmake/mlir")
         set(MLIR_DIR "${_prefix}/lib/cmake/mlir" CACHE PATH "" FORCE)
+    endif()
+    if (NOT Clang_DIR AND EXISTS "${_prefix}/lib/cmake/clang")
+        set(Clang_DIR "${_prefix}/lib/cmake/clang" CACHE PATH "" FORCE)
     endif()
     if (EXISTS "${_prefix}/lib/cmake")
         list(APPEND CMAKE_PREFIX_PATH "${_prefix}/lib/cmake")
