@@ -100,13 +100,17 @@ namespace simt::test_raiser {
             Creates or gets a unique number for each value, which will be used to
             create a variable for it.
             */
+            int addValueNumber(Value v);
             int getOrAddValueNumber(Value v);
+            int getValueNumber(Value v);
 
             /*
             Same as `getOrAddValueNumber`, but returns string in the form
             `"v{value number}"`
             */
+            std::string addValueName(Value v);
             std::string getOrAddValueName(Value v);
+            std::string getValueName(Value v);
 
             // Emits the language-specific type name for a Type
             virtual LogicalResult emitType(Type type){return failure();}
@@ -194,6 +198,8 @@ namespace simt::test_raiser {
             virtual LogicalResult printOp(WaveAllOp& op) = 0;
             virtual LogicalResult printOp(WaveAnyOp& op) = 0;
             virtual LogicalResult printOp(GroupIdOp& op) = 0;
+            virtual LogicalResult printOp(GroupThreadIdOp& op) { return failure(); }
+            virtual LogicalResult printOp(GroupIndexOp& op) { return failure(); }
             // virtual LogicalResult printOp(FenceOp& op) = 0;
             // virtual LogicalResult printOp(BarrierOp& op) = 0;
 

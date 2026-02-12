@@ -603,7 +603,7 @@ LogicalResult emitModuleAsMsl(ModuleOp module, llvm::raw_ostream &os) {
         return failure();
     }
 
-    int64_t ntx = 1, nty = 1, ntz = 1;
+    [[maybe_unused]] int64_t ntx = 1, nty = 1, ntz = 1;
     std::uint32_t subgroupWidth = 8;
     if (auto attr = func->getAttr("simt.num_threads")) {
         if (auto denseAttr = mlir::dyn_cast<DenseI64ArrayAttr>(attr)) {

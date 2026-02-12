@@ -50,9 +50,28 @@ int BaseRaiser::addValueNumber(Value v){
     return value_map[v] = value_counter++;
 }
 
+int BaseRaiser::getOrAddValueNumber(Value v){
+    if (auto it = value_map.find(v); it != value_map.end())
+        return it->second;
+    return addValueNumber(v);
+}
+
+int BaseRaiser::getValueNumber(Value v){
+    if (auto it = value_map.find(v); it != value_map.end())
+        return it->second;
+    llvm_unreachable("Requested value number before declaration");
+}
+
+std::string BaseRaiser::addValueName(Value v){
+    return "v" + std::to_string(addValueNumber(v));
+}
 
 std::string BaseRaiser::getOrAddValueName(Value v){
     return "v" + std::to_string(getOrAddValueNumber(v));
+}
+
+std::string BaseRaiser::getValueName(Value v){
+    return "v" + std::to_string(getValueNumber(v));
 }
 
 LogicalResult BaseRaiser::emitConst(Type t, int64_t v){
@@ -159,7 +178,7 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
             BufferAtomicAddOp, IfOp, YieldOp, LoopOp, ConditionOp,
             BreakOp, ContinueOp, SwitchOp, WaveCountBitsOp,
             LaneIdOp, SubgroupIdOp, WaveAllOp, WaveAnyOp,
-            GroupIdOp
+            GroupIdOp, GroupThreadIdOp, GroupIndexOp
             >(
                 [&](auto op){return printOp(op);})
         

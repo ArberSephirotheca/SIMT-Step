@@ -16,6 +16,7 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
             "glsl-amber") echo "amber" ;;
             "cuda") echo "cu" ;;
             "hip") echo "hip" ;;
+            "msl") echo "mm" ;;
         esac
     )
     if [[ files =~ "*" ]]; then
@@ -47,6 +48,15 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
             scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.hip
             ssh skagle@waterthrush.be.ucsc.edu hipcc -w testout.hip
             cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S ./a.out
+        elif [ $lang == "msl" ]; then
+            if ! command -v xcrun >/dev/null 2>&1; then
+                echo "xcrun not found; cannot build/run generated MSL harness"
+                continue
+            fi
+            xcrun clang++ -std=c++17 -x objective-c++ $outfile -framework Metal -framework Foundation -o /tmp/simt_step_msl_test
+            if [ $? -eq 0 ]; then
+                /tmp/simt_step_msl_test
+            fi
         fi
         if [ $? -ne 0 ]; then
             echo "Output in: $outfile"
