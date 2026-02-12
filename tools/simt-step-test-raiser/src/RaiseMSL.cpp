@@ -24,6 +24,7 @@ public:
     using BaseRaiser::BaseRaiser;
 
     unsigned subgroupWidth = 32;
+    bool inMainFunction = false;
 
     LogicalResult emitHarness(Operation *op, HarnessProps props) override {
         std::vector<int64_t> bufferIndices;
@@ -272,8 +273,7 @@ private:
         os << "  return tid / SIMT_SUBGROUP_WIDTH;\n";
         os << "}\n";
         os << "static inline int simt_wave_count_bits(bool pred) {\n";
-        os << "  uint mask = simd_ballot(pred);\n";
-        os << "  return static_cast<int>(popcount(mask));\n";
+        os << "  return static_cast<int>(simd_sum(pred ? 1u : 0u));\n";
         os << "}\n\n";
         return success();
     }
@@ -294,14 +294,85 @@ private:
     }
 
     LogicalResult printOp(func::FuncOp &op) override {
-        if (op.getSymName() != "main")
-            os << "inline ";
-        return BaseRaiser::printOp(op);
+        bool prevInMain = inMainFunction;
+        inMainFunction = (op.getSymName() == "main");
+
+        if (inMainFunction) {
+            LogicalResult mainRes = BaseRaiser::printOp(op);
+            inMainFunction = prevInMain;
+            return mainRes;
+        }
+
+        os << "inline ";
+        assert(op.getFunctionType().getNumResults() <= 1);
+        if (op.getFunctionType().getNumResults() == 0) {
+            os << "void";
+        } else {
+            if (failed(emitType(op.getFunctionType().getResult(0)))) {
+                inMainFunction = prevInMain;
+                return failure();
+            }
+        }
+        os << " " << op.getSymName() << "(";
+        for (auto [i, arg] : llvm::enumerate(op.getArguments())) {
+            if (failed(emitType(arg.getType()))) {
+                inMainFunction = prevInMain;
+                return failure();
+            }
+            os << " " << getOrAddValueName(arg);
+            if (i + 1 < op.getNumArguments())
+                os << ", ";
+        }
+        if (op.getNumArguments() > 0)
+            os << ", ";
+        os << "int __simt_tid";
+        os << ")";
+        os << "{\n";
+        os.indent();
+        if (failed(emitRegion(op.getRegion()))) {
+            inMainFunction = prevInMain;
+            return failure();
+        }
+        os.unindent();
+        os << "}\n\n";
+
+        inMainFunction = prevInMain;
+        return success();
+    }
+
+    LogicalResult printOp(func::CallOp &op) override {
+        assert(op->getNumResults() <= 1);
+
+        if (op->getNumResults() == 1) {
+            if (failed(emitValueDefine(op.getResult(0))))
+                return failure();
+        }
+        os << op.getCallee() << "(";
+        for (auto [i, arg] : llvm::enumerate(op.getArgOperands())) {
+            os << getOrAddValueName(arg);
+            if (i + 1 < op.getArgOperands().size())
+                os << ", ";
+        }
+        if (op.getCallee() != "main") {
+            if (!op.getArgOperands().empty())
+                os << ", ";
+            os << (inMainFunction ? "static_cast<int>(__simt_tid3.x)" : "__simt_tid");
+        }
+        os << ")";
+        return success();
     }
 
     LogicalResult printOp(DispatchThreadIdOp &op) override {
         if (failed(emitValueDefine(op.getResult())))
             return failure();
+        if (!inMainFunction) {
+            if (isa<mlir::VectorType>(op.getResult().getType())) {
+                os << "int3(__simt_tid, 0, 0)";
+            } else {
+                os << "__simt_tid";
+            }
+            return success();
+        }
         if (isa<mlir::VectorType>(op.getResult().getType())) {
             os << "int3(static_cast<int>(__simt_tid3.x), "
                   "static_cast<int>(__simt_tid3.y), "
@@ -327,14 +398,22 @@ private:
     LogicalResult printOp(LaneIdOp &op) override {
         if (failed(emitValueDefine(op.getResult())))
             return failure();
-        os << "simt_lane_id(static_cast<int>(__simt_tid3.x))";
+        if (inMainFunction) {
+            os << "simt_lane_id(static_cast<int>(__simt_tid3.x))";
+        } else {
+            os << "simt_lane_id(__simt_tid)";
+        }
         return success();
     }
 
     LogicalResult printOp(SubgroupIdOp &op) override {
         if (failed(emitValueDefine(op.getResult())))
             return failure();
-        os << "simt_subgroup_id(static_cast<int>(__simt_tid3.x))";
+        if (inMainFunction) {
+            os << "simt_subgroup_id(static_cast<int>(__simt_tid3.x))";
+        } else {
+            os << "simt_subgroup_id(__simt_tid)";
+        }
         return success();
     }
 
