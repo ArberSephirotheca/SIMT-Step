@@ -68,11 +68,11 @@ private:
         os << "#include <cstdint>\n";
         os << "#include <cstdio>\n\n";
 
-        os << "static const char *kShaderSource = R\"__SIMT_STEP_MSL__(\n";
+        os << "static const char *kShaderSource = R\"MSL(\n";
         os << shaderText;
         if (!shaderText.empty() && shaderText.back() != '\n')
             os << "\n";
-        os << ")__SIMT_STEP_MSL__\";\n\n";
+        os << ")MSL\";\n\n";
 
         os << "int main() {\n";
         os.indent();
