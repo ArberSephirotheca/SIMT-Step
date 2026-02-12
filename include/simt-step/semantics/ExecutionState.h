@@ -78,6 +78,11 @@ struct DynamicBlock {
     // Active loop frame per loop op for this parent dynamic block.
     llvm::DenseMap<const mlir::Operation *, LoopFrameId> activeLoopFrames;
     llvm::DenseMap<const mlir::Operation *, std::uint32_t> controlTokens;
+    // Active control-flow epoch participant mask for each control op in this
+    // dynamic block instance.
+    llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlEpochExpectedMask;
+    // Monotonic epoch counter per control op for debug/tracing.
+    llvm::DenseMap<const mlir::Operation *, std::uint32_t> controlEpochVersion;
     llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlReadyMask;
     // Lanes that have already executed a specific control op in this dynamic block.
     llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlExecutedMask;

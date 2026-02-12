@@ -553,7 +553,8 @@ public:
                                     llvm::report_fatal_error(
                                         "collective memory op: missing collective effect");
                                 CollectiveKey collectKey =
-                                    makeCollectiveKey(*collective, key);
+                                    ensureCollectiveEpochForLane(
+                                        *waveCtx, key, *collective, lane);
                                 waveCtx->collectiveTokenToOp[collectKey] = &*it;
                                 auto &syncPoint = waveCtx->collectives[collectKey];
                                 auto idxOrErr =
@@ -633,7 +634,8 @@ public:
                                     "collective wave op: failed to evaluate operand");
                             }
                             CollectiveKey collectKey =
-                                makeCollectiveKey(*collective, key);
+                                ensureCollectiveEpochForLane(
+                                    *waveCtx, key, *collective, lane);
                             waveCtx->collectiveTokenToOp[collectKey] = &*it;
                             auto &syncPoint = waveCtx->collectives[collectKey];
                             syncPoint.operands[lane] = std::move(*predOrErr);
@@ -854,6 +856,119 @@ private:
                 llvm::hash_combine(token, block.sequenceId, blockPtr)));
     }
 
+    static CollectiveKey makeControlCollectiveKey(std::uint32_t token,
+                                                  const DynamicBlockKey &block) {
+        CollectiveEffect effect;
+        effect.operation = 0;
+        effect.token = token;
+        return makeCollectiveKey(effect, block);
+    }
+
+    CollectiveKey ensureCollectiveEpochForLane(
+        WaveContext<ValueType, StepType> &waveCtx,
+        const DynamicBlockKey &blockKey,
+        CollectiveEffect &effect,
+        LaneId lane) {
+        CollectiveKey key = makeCollectiveKey(effect, blockKey);
+        auto syncIt = waveCtx.collectives.find(key);
+        if (syncIt == waveCtx.collectives.end())
+            return key;
+
+        auto &syncPoint = syncIt->second;
+        bool hasCompletedResults = !syncPoint.results.empty();
+        bool laneKnownToEpoch =
+            syncPoint.arrivals.contains(lane) ||
+            syncPoint.continuations.contains(lane) ||
+            syncPoint.results.contains(lane);
+        if (!hasCompletedResults || laneKnownToEpoch)
+            return key;
+
+        // A previous epoch for this op/key has already produced results and
+        // this lane is a fresh arrival. Fork into a new token so we do not mix
+        // late arrivals with the completed epoch's result set.
+        effect.token = waveCtx.nextControlToken++;
+        return makeCollectiveKey(effect, blockKey);
+    }
+
+    static std::uint64_t deriveControlEpochMask(
+        const DynamicBlock<ValueType, StepType> &blockCtx,
+        const SemanticsContext &context,
+        std::uint64_t laneBit) {
+        std::uint64_t mask = blockCtx.expectedMask;
+        if (mask == 0)
+            mask = context.expectedMask ? context.expectedMask : context.activeMask;
+        if (mask == 0)
+            mask = laneBit;
+        return mask;
+    }
+
+    void closeControlEpoch(WaveContext<ValueType, StepType> &waveCtx,
+                           const DynamicBlockKey &blockKey,
+                           DynamicBlock<ValueType, StepType> &blockCtx,
+                           const mlir::Operation *op,
+                           bool erasePendingCollective) {
+        auto tokenIt = blockCtx.controlTokens.find(op);
+        if (tokenIt != blockCtx.controlTokens.end()) {
+            CollectiveKey key = makeControlCollectiveKey(tokenIt->second, blockKey);
+            waveCtx.controlTokenToOp.erase(key);
+            if (erasePendingCollective)
+                waveCtx.collectives.erase(key);
+        }
+        blockCtx.controlTokens.erase(op);
+        blockCtx.controlEpochExpectedMask.erase(op);
+    }
+
+    void pruneControlEpochLane(WaveContext<ValueType, StepType> &waveCtx,
+                               const DynamicBlockKey &blockKey,
+                               DynamicBlock<ValueType, StepType> &blockCtx,
+                               LaneId lane) {
+        std::uint64_t laneBit = 1ull << lane;
+        for (auto it = blockCtx.controlEpochExpectedMask.begin();
+             it != blockCtx.controlEpochExpectedMask.end();) {
+            std::uint64_t updatedMask = it->second & ~laneBit;
+            if (updatedMask != 0) {
+                it->second = updatedMask;
+                ++it;
+                continue;
+            }
+            const mlir::Operation *op = it->first;
+            ++it;
+            closeControlEpoch(waveCtx, blockKey, blockCtx, op,
+                              /*erasePendingCollective=*/true);
+        }
+    }
+
+    void restoreLaneInBlockEpochsAndCollectives(
+        WaveContext<ValueType, StepType> &waveCtx,
+        const DynamicBlockKey &blockKey,
+        LaneId lane) {
+        auto *blockCtx = getBlock(waveCtx, blockKey);
+        if (!blockCtx)
+            return;
+        std::uint64_t laneBit = 1ull << lane;
+        blockCtx->expectedMask |= laneBit;
+
+        for (auto &epoch : blockCtx->controlEpochExpectedMask) {
+            epoch.second |= laneBit;
+            auto tokenIt = blockCtx->controlTokens.find(epoch.first);
+            if (tokenIt == blockCtx->controlTokens.end())
+                continue;
+            CollectiveKey ckey = makeControlCollectiveKey(tokenIt->second, blockKey);
+            auto collIt = waveCtx.collectives.find(ckey);
+            if (collIt != waveCtx.collectives.end())
+                collIt->second.expectedMask |= laneBit;
+        }
+
+        for (auto &entry : waveCtx.collectives) {
+            if (entry.second.block == blockKey)
+                entry.second.expectedMask |= laneBit;
+        }
+        for (auto &entry : waveCtx.syncPoints) {
+            if (entry.second.block == blockKey)
+                entry.second.expectedMask |= laneBit;
+        }
+    }
+
     static bool isMemoryOp(mlir::Operation *op) {
         auto name = op->getName().getStringRef();
         return name == "simt_step.buffer.load" || name == "simt_step.buffer.store";
@@ -1037,36 +1152,114 @@ private:
         auto readyIt = blockCtx->controlReadyMask.find(op);
         if (readyIt != blockCtx->controlReadyMask.end()) {
             if (readyIt->second & laneBit) {
+                if (EnableCPSDebugLogs) {
+                    cpsDebugStream() << "[CPS] control ready bypass op="
+                                     << op->getName().getStringRef()
+                                     << " lane=" << lane
+                                     << " ready=0b" << formatMaskBits(readyIt->second, 32)
+                                     << " block=" << key.block
+                                     << " seq=" << key.sequenceId << "\n";
+                }
                 readyIt->second &= ~laneBit;
                 if (readyIt->second == 0)
                     blockCtx->controlReadyMask.erase(readyIt);
                 return std::nullopt;
-            }
+                }
         }
 
-        std::uint64_t expected =
-            context.expectedMask ? context.expectedMask : context.activeMask;
-        if (expected == 0)
-            expected = laneBit;
-        // A control op is single-shot per dynamic block instance. Exclude lanes
-        // that already executed this op from the next collective epoch.
-        expected &= ~blockCtx->controlExecutedMask.lookup(op);
-        if ((expected & laneBit) == 0)
-            return StepType::halt();
-
+        std::uint64_t expected = 0;
         std::uint32_t token = 0;
-        auto tokenIt = blockCtx->controlTokens.find(op);
-        if (tokenIt == blockCtx->controlTokens.end()) {
+        bool openedEpoch = false;
+        auto epochIt = blockCtx->controlEpochExpectedMask.find(op);
+        if (epochIt == blockCtx->controlEpochExpectedMask.end()) {
+            if (blockCtx->controlTokens.contains(op)) {
+                if (EnableCPSDebugLogs) {
+                    cpsDebugStream() << "[CPS] warning: stale control epoch token "
+                                     << "for op=" << op->getName().getStringRef()
+                                     << " block=" << key.block
+                                     << " seq=" << key.sequenceId
+                                     << " (repairing)\n";
+                }
+                closeControlEpoch(waveCtx, key, *blockCtx, op,
+                                  /*erasePendingCollective=*/true);
+            }
+            expected = deriveControlEpochMask(*blockCtx, context, laneBit);
+            // A control op is single-shot per dynamic block instance. Exclude
+            // lanes that already executed this op from the next collective epoch.
+            expected &= ~blockCtx->controlExecutedMask.lookup(op);
+            if (expected == 0)
+                return StepType::halt();
             token = waveCtx.nextControlToken++;
             blockCtx->controlTokens[op] = token;
+            blockCtx->controlEpochExpectedMask[op] = expected;
+            ++blockCtx->controlEpochVersion[op];
+            openedEpoch = true;
+            if (EnableCPSDebugLogs) {
+                cpsDebugStream() << "[CPS] open control epoch op="
+                                 << op->getName().getStringRef()
+                                 << " token=" << token
+                                 << " version=" << blockCtx->controlEpochVersion.lookup(op)
+                                 << " expected=0b" << formatMaskBits(expected, 32)
+                                 << " block=" << key.block
+                                 << " seq=" << key.sequenceId << "\n";
+            }
         } else {
-            token = tokenIt->second;
+            expected = epochIt->second;
+            auto tokenIt = blockCtx->controlTokens.find(op);
+            if (tokenIt == blockCtx->controlTokens.end()) {
+                token = waveCtx.nextControlToken++;
+                blockCtx->controlTokens[op] = token;
+                if (EnableCPSDebugLogs) {
+                    cpsDebugStream() << "[CPS] warning: control epoch missing token "
+                                     << "for op=" << op->getName().getStringRef()
+                                     << " block=" << key.block
+                                     << " seq=" << key.sequenceId
+                                     << " (recreated token=" << token << ")\n";
+                }
+            } else {
+                token = tokenIt->second;
+            }
         }
+        if ((expected & laneBit) == 0) {
+            if (EnableCPSDebugLogs) {
+                cpsDebugStream() << "[CPS] control gate halt (lane not in epoch) op="
+                                 << op->getName().getStringRef()
+                                 << " lane=" << lane
+                                 << " expected=0b" << formatMaskBits(expected, 32)
+                                 << " executed=0b"
+                                 << formatMaskBits(blockCtx->controlExecutedMask.lookup(op), 32)
+                                 << " blockExpected=0b"
+                                 << formatMaskBits(blockCtx->expectedMask, 32)
+                                 << " blockActive=0b"
+                                 << formatMaskBits(blockCtx->activeMask, 32)
+                                 << " block=" << key.block
+                                 << " seq=" << key.sequenceId << "\n";
+            }
+            auto nextIt = std::next(it);
+            if (nextIt == block->end())
+                return StepType::halt();
+            return StepType::continueWith(
+                [this, wave, key, block, nextIt, context, lane]() mutable
+                -> StepType {
+                    SemanticsContext resumeCtx = context;
+                    resumeCtx.overrideMode.reset();
+                    return makeNextOp(wave, key, block, nextIt, resumeCtx, lane);
+                });
+        }
+
         CollectiveEffect effect;
         effect.operation = 0;
         effect.activeMask = expected;
         effect.token = token;
         CollectiveKey collectKey = makeCollectiveKey(effect, key);
+        if (openedEpoch && EnableCPSDebugLogs &&
+            waveCtx.collectives.find(collectKey) != waveCtx.collectives.end()) {
+            cpsDebugStream() << "[CPS] warning: newly opened control epoch collides "
+                             << "with existing collective key=" << collectKey
+                             << " op=" << op->getName().getStringRef()
+                             << " block=" << key.block
+                             << " seq=" << key.sequenceId << "\n";
+        }
         waveCtx.controlTokenToOp[collectKey] = op;
 
         if (traceSink_) {
@@ -1114,22 +1307,68 @@ private:
             }
         }
 
-        std::uint64_t expected =
-            context.expectedMask ? context.expectedMask : context.activeMask;
-        if (expected == 0)
-            expected = laneBit;
-        expected &= ~blockCtx->controlExecutedMask.lookup(op);
-        if ((expected & laneBit) == 0)
-            return StepType::halt();
-
+        std::uint64_t expected = 0;
         std::uint32_t token = 0;
-        auto tokenIt = blockCtx->controlTokens.find(op);
-        if (tokenIt == blockCtx->controlTokens.end()) {
+        auto epochIt = blockCtx->controlEpochExpectedMask.find(op);
+        if (epochIt == blockCtx->controlEpochExpectedMask.end()) {
+            if (blockCtx->controlTokens.contains(op)) {
+                if (EnableCPSDebugLogs) {
+                    cpsDebugStream() << "[CPS] warning: stale sync epoch token "
+                                     << "for op=" << op->getName().getStringRef()
+                                     << " block=" << key.block
+                                     << " seq=" << key.sequenceId
+                                     << " (repairing)\n";
+                }
+                closeControlEpoch(waveCtx, key, *blockCtx, op,
+                                  /*erasePendingCollective=*/true);
+            }
+            expected = deriveControlEpochMask(*blockCtx, context, laneBit);
+            expected &= ~blockCtx->controlExecutedMask.lookup(op);
+            if (expected == 0)
+                return StepType::halt();
             token = waveCtx.nextControlToken++;
             blockCtx->controlTokens[op] = token;
+            blockCtx->controlEpochExpectedMask[op] = expected;
+            ++blockCtx->controlEpochVersion[op];
+            if (EnableCPSDebugLogs) {
+                cpsDebugStream() << "[CPS] open sync epoch op="
+                                 << op->getName().getStringRef()
+                                 << " token=" << token
+                                 << " version=" << blockCtx->controlEpochVersion.lookup(op)
+                                 << " expected=0b" << formatMaskBits(expected, 32)
+                                 << " block=" << key.block
+                                 << " seq=" << key.sequenceId << "\n";
+            }
         } else {
-            token = tokenIt->second;
+            expected = epochIt->second;
+            auto tokenIt = blockCtx->controlTokens.find(op);
+            if (tokenIt == blockCtx->controlTokens.end()) {
+                token = waveCtx.nextControlToken++;
+                blockCtx->controlTokens[op] = token;
+                if (EnableCPSDebugLogs) {
+                    cpsDebugStream() << "[CPS] warning: sync epoch missing token "
+                                     << "for op=" << op->getName().getStringRef()
+                                     << " block=" << key.block
+                                     << " seq=" << key.sequenceId
+                                     << " (recreated token=" << token << ")\n";
+                }
+            } else {
+                token = tokenIt->second;
+            }
         }
+        if ((expected & laneBit) == 0) {
+            auto nextIt = std::next(it);
+            if (nextIt == block->end())
+                return StepType::halt();
+            return StepType::continueWith(
+                [this, wave, key, block, nextIt, context, lane]() mutable
+                -> StepType {
+                    SemanticsContext resumeCtx = context;
+                    resumeCtx.overrideMode.reset();
+                    return makeNextOp(wave, key, block, nextIt, resumeCtx, lane);
+                });
+        }
+
         waveCtx.syncTokenToOp[token] = op;
 
         SynchronizationEffect effect;
@@ -1170,15 +1409,32 @@ private:
         mlir::Block *block = const_cast<mlir::Block *>(key.block);
         auto it = op->getIterator();
 
-        std::uint64_t evalExpected =
-            expectedMask ? expectedMask
-                         : (blockCtx->expectedMask ? blockCtx->expectedMask
-                                                   : blockCtx->activeMask);
+        std::uint64_t evalExpected = 0;
+        if (auto epochIt = blockCtx->controlEpochExpectedMask.find(op);
+            epochIt != blockCtx->controlEpochExpectedMask.end()) {
+            evalExpected = epochIt->second;
+        } else {
+            evalExpected =
+                expectedMask ? expectedMask
+                             : (blockCtx->expectedMask ? blockCtx->expectedMask
+                                                       : blockCtx->activeMask);
+            if (EnableCPSDebugLogs) {
+                cpsDebugStream() << "[CPS] warning: control collective completed "
+                                 << "without active epoch state for op="
+                                 << op->getName().getStringRef()
+                                 << " block=" << key.block
+                                 << " seq=" << key.sequenceId
+                                 << " expected=0b" << formatMaskBits(evalExpected, 32)
+                                 << "\n";
+            }
+        }
         std::uint64_t evalActive =
             expectedMask ? expectedMask : blockCtx->activeMask;
         if (blockCtx->expectedMask == 0)
             blockCtx->expectedMask = evalExpected;
         blockCtx->controlExecutedMask[op] |= evalExpected;
+        closeControlEpoch(waveCtx, key, *blockCtx, op,
+                          /*erasePendingCollective=*/false);
 
         llvm::DenseMap<LaneId, bool> ifDecisions;
         llvm::DenseMap<LaneId, std::int64_t> switchDecisions;
@@ -1222,7 +1478,7 @@ private:
                 llvm::report_fatal_error("collective-cf: missing block context");
             std::uint64_t laneBit = 1ull << lane;
             blockCtx->activeMask |= laneBit;
-            blockCtx->expectedMask |= laneBit;
+            blockCtx->expectedMask |= evalExpected;
             SemanticsContext laneCtx;
             laneCtx.activeMask = evalActive;
             laneCtx.expectedMask = evalExpected;
@@ -1974,8 +2230,10 @@ private:
             bool isNew = inserted;
             bodyCtx.block = bodyKey.block;
             bodyCtx.sequenceId = bodyKey.sequenceId;
-            if (bodyCtx.expectedMask == 0)
+            if (isNew)
                 bodyCtx.expectedMask = inheritedExpected;
+            else if (bodyCtx.expectedMask == 0)
+                bodyCtx.expectedMask = laneBit;
             bodyCtx.expectedMask |= laneBit;
             bodyCtx.activeMask |= laneBit;
             bodyCtx.loopOp = loopOp;
@@ -1987,6 +2245,7 @@ private:
             } else {
                 bodyCtx.loopIteration.reset();
             }
+            restoreLaneInBlockEpochsAndCollectives(waveCtx, bodyKey, lane);
 
             auto &env = bodyCtx.valueEnvs[lane];
             auto bodyArgs =
@@ -2151,13 +2410,22 @@ private:
         if (nextPrep.sequenceId >= loopFrame.prepareKey.sequenceId)
             loopIteration =
                 (nextPrep.sequenceId - loopFrame.prepareKey.sequenceId) / 2;
+        // Include lanes that are already assigned to this iteration and lanes
+        // that have not progressed beyond it yet. Exclude lanes that are
+        // known to be strictly ahead of this iteration sequence.
         std::uint64_t nextExpected = 0;
-        for (const auto &it : loopFrame.laneNextSeq) {
-            if (it.second == nextSeq)
-                nextExpected |= (1ull << it.first);
+        std::uint64_t candidateMask = entry->expectedMask ? entry->expectedMask
+                                                          : laneBit;
+        std::uint64_t mask = candidateMask;
+        while (mask) {
+            LaneId candidateLane = static_cast<LaneId>(std::countr_zero(mask));
+            mask &= mask - 1;
+            auto seqIt = loopFrame.laneNextSeq.find(candidateLane);
+            if (seqIt == loopFrame.laneNextSeq.end() ||
+                seqIt->second <= nextSeq) {
+                nextExpected |= (1ull << candidateLane);
+            }
         }
-        if (entry->expectedMask)
-            nextExpected &= entry->expectedMask;
         if (nextExpected == 0)
             nextExpected = laneBit;
 
@@ -2177,7 +2445,9 @@ private:
         } else {
             prepCtx.parentKey = key;
         }
-        prepCtx.expectedMask |= nextExpected;
+        if (!insertedPrep && prepCtx.expectedMask == 0)
+            prepCtx.expectedMask = laneBit;
+        prepCtx.expectedMask |= laneBit;
         prepCtx.activeMask |= laneBit;
         prepCtx.completedMask &= ~laneBit;
         prepCtx.loopOp = loopOp;
@@ -2198,7 +2468,9 @@ private:
         } else {
             bodyCtx.parentKey = nextPrep;
         }
-        bodyCtx.expectedMask |= nextExpected;
+        if (!insertedBody && bodyCtx.expectedMask == 0)
+            bodyCtx.expectedMask = laneBit;
+        bodyCtx.expectedMask |= laneBit;
         bodyCtx.activeMask &= ~laneBit;
         bodyCtx.completedMask &= ~laneBit;
         bodyCtx.loopOp = loopOp;
@@ -2207,6 +2479,9 @@ private:
         bodyCtx.ifOp = nullptr;
         bodyCtx.loopIteration = loopIteration;
         bodyCtx.kind = DynamicBlockKind::LoopBody;
+
+        restoreLaneInBlockEpochsAndCollectives(waveCtx, nextPrep, lane);
+        restoreLaneInBlockEpochsAndCollectives(waveCtx, nextBody, lane);
 
         assert(!(prepCtx.loopOp && prepCtx.switchOp) &&
                "dynamic block cannot have both loopOp and switchOp");
@@ -2355,12 +2630,18 @@ private:
             loopIteration =
                 (nextPrep.sequenceId - loopFrameAfter.prepareKey.sequenceId) / 2;
         std::uint64_t nextExpected = 0;
-        for (const auto &it : loopFrameAfter.laneNextSeq) {
-            if (it.second == nextSeq)
-                nextExpected |= (1ull << it.first);
+        std::uint64_t candidateMask =
+            entry->expectedMask ? entry->expectedMask : laneBit;
+        std::uint64_t mask = candidateMask;
+        while (mask) {
+            LaneId candidateLane = static_cast<LaneId>(std::countr_zero(mask));
+            mask &= mask - 1;
+            auto seqIt = loopFrameAfter.laneNextSeq.find(candidateLane);
+            if (seqIt == loopFrameAfter.laneNextSeq.end() ||
+                seqIt->second <= nextSeq) {
+                nextExpected |= (1ull << candidateLane);
+            }
         }
-        if (entry->expectedMask)
-            nextExpected &= entry->expectedMask;
         nextExpected |= laneBit;
 
         // NOTE: `waveCtx.blocks` is a DenseMap; inserting can rehash and invalidate
@@ -2379,7 +2660,9 @@ private:
         } else {
             prepCtx.parentKey = bodyKey;
         }
-        prepCtx.expectedMask |= nextExpected;
+        if (!insertedPrep && prepCtx.expectedMask == 0)
+            prepCtx.expectedMask = laneBit;
+        prepCtx.expectedMask |= laneBit;
         prepCtx.activeMask |= laneBit;
         prepCtx.completedMask &= ~laneBit;
         prepCtx.loopOp = loopOp;
@@ -2399,7 +2682,9 @@ private:
         } else {
             bodyCtx.parentKey = nextPrep;
         }
-        bodyCtx.expectedMask |= nextExpected;
+        if (!insertedBody && bodyCtx.expectedMask == 0)
+            bodyCtx.expectedMask = laneBit;
+        bodyCtx.expectedMask |= laneBit;
         bodyCtx.activeMask &= ~laneBit;
         bodyCtx.completedMask &= ~laneBit;
         bodyCtx.loopOp = loopOp;
@@ -2407,6 +2692,9 @@ private:
         bodyCtx.ifOp = nullptr;
         bodyCtx.loopIteration = loopIteration;
         bodyCtx.kind = DynamicBlockKind::LoopBody;
+
+        restoreLaneInBlockEpochsAndCollectives(waveCtx, nextPrep, lane);
+        restoreLaneInBlockEpochsAndCollectives(waveCtx, nextBody, lane);
 
         if (insertedPrep && !llvm::is_contained(entry->pendingChildren, nextPrep)) {
             entry->pendingChildren.push_back(nextPrep);
@@ -3061,6 +3349,7 @@ private:
                                             : parentBlock.activeMask);
         std::uint64_t laneMask =
             parentExpected ? (parentExpected & (1ull << lane)) : (1ull << lane);
+        std::uint64_t laneBit = 1ull << lane;
         const mlir::Operation *enclosingLoopOp = parentBlock.loopOp;
         std::optional<LoopFrameId> enclosingLoopFrameId =
             parentBlock.ownerLoopFrameId;
@@ -3112,6 +3401,29 @@ private:
 
         DynamicBlockKey thenKey{&ifOp.getThenRegion().front(), baseSeq};
         DynamicBlockKey elseKey{&ifOp.getElseRegion().front(), baseSeq + 1};
+
+        // No else region and condition is false: the lane skips the then-region
+        // entirely, so prune it from any existing then-subtree expectations.
+        if (!takeThen && !takeElse) {
+            shrinkExpectedForSubtree(wave, waveCtx, thenKey, lane);
+            for (auto it = waveCtx.mergeStack.rbegin();
+                 it != waveCtx.mergeStack.rend(); ++it) {
+                if (it->loopFrame || it->switchFrame || it->parent != key)
+                    continue;
+                if (it->ifOp && it->ifOp != ifOp.getOperation())
+                    continue;
+                it->expectedMask &= ~laneMask;
+                it->completedMask &= ~laneMask;
+                break;
+            }
+            auto contIt = parentBlock.continuations.find(lane);
+            if (contIt != parentBlock.continuations.end()) {
+                parentBlock.activeMask |= laneBit;
+                pushReady(wave, key, lane, std::move(contIt->second));
+                parentBlock.continuations.erase(contIt);
+            }
+            return StepType::halt();
+        }
 
         // NOTE: `waveCtx.blocks` is a DenseMap; inserting can rehash and invalidate
         // references. Insert both children before taking references.
@@ -3724,6 +4036,9 @@ private:
             auto &syncPoint = waveCtx.collectives[collectKey];
             syncPoint.effect = *collective;
             syncPoint.block = block;
+            std::uint64_t laneBit = 1ull << lane;
+            // Park the lane while it is suspended on this collective.
+            blockCtx->activeMask &= ~laneBit;
             if (syncPoint.expectedMask == 0) {
                 std::uint64_t fallbackMask =
                     blockCtx->expectedMask ? blockCtx->expectedMask : blockCtx->activeMask;
@@ -3844,6 +4159,9 @@ private:
             auto &syncPoint = waveCtx.syncPoints[key];
             syncPoint.effect = *sync;
             syncPoint.block = block;
+            std::uint64_t laneBit = 1ull << lane;
+            // Park the lane while it is suspended on this synchronization point.
+            blockCtx->activeMask &= ~laneBit;
             if (syncPoint.expectedMask == 0) {
                 std::uint64_t fallbackMask =
                     blockCtx->expectedMask ? blockCtx->expectedMask : blockCtx->activeMask;
@@ -3870,6 +4188,8 @@ private:
                             syncPoint.expectedMask;
                         blockCtx->controlReadyMask[controlOp] |=
                             syncPoint.expectedMask;
+                        closeControlEpoch(waveCtx, block, *blockCtx, controlOp,
+                                          /*erasePendingCollective=*/false);
                     }
                 }
                 std::uint64_t mask = syncPoint.expectedMask;
@@ -3988,6 +4308,7 @@ private:
                 }
                 ++it;
             }
+            pruneControlEpochLane(waveCtx, entry.first, entry.second, lane);
         }
         for (auto &entry : waveCtx.mergeStack) {
             entry.expectedMask &= ~laneBit;
@@ -4194,6 +4515,7 @@ private:
                     }
                     ++it;
                 }
+                pruneControlEpochLane(waveCtx, entry.first, entry.second, lane);
             }
         }
         for (auto &entry : waveCtx.mergeStack) {
@@ -4457,6 +4779,7 @@ private:
                     }
                     ++it;
                 }
+                pruneControlEpochLane(waveCtx, entry.first, entry.second, lane);
             }
         }
         for (auto it = waveCtx.collectives.begin();

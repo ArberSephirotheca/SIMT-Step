@@ -580,7 +580,7 @@ auto SimpleSemantics::handleBufferStore(mlir::Operation *op,
     if (op->getNumOperands() != 3)
         return StepType::halt();
     std::uint64_t expectedMask =
-        context.expectedMask ? context.expectedMask : context.activeMask;
+        context.activeMask ? context.activeMask : context.expectedMask;
     if (expectedMask == 0)
         expectedMask = 1ull << context.laneId;
 
