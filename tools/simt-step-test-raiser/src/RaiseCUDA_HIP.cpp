@@ -10,6 +10,8 @@
 #include "llvm/Support/LogicalResult.h"
 #include <cstddef>
 #include <cstdio>
+#include <ctime>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -37,6 +39,11 @@ LogicalResult emitHarness(
     HarnessProps props) override {
 
     std::string name = RT == RaiserType::CUDA ? "cuda" : "hip";
+
+    if (!props.noWrapper){
+        os << "import subprocess\nimport os\n";
+        os << "PROGRAM = r\"\"\"\\\n";
+    }
 
     std::vector<int64_t> bufferIndicies;
     if(failed(getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
@@ -90,6 +97,32 @@ LogicalResult emitHarness(
     }
 
     os.unindent() << "}";
+
+    if (!props.noWrapper){
+        std::string ext = RT == RaiserType::CUDA ? "cu" : "hip";
+        
+        std::random_device dev;
+        std::mt19937 rng(dev());
+        std::uniform_int_distribution<std::mt19937::result_type> dist6(10000000,99999999);
+        std::string fname = "testout" + std::to_string(dist6(rng));
+
+        os << "\"\"\"\n";
+        os << "if __name__ == \"__main__\":\n";
+        os.indent();
+        os << "with open(\"" << fname << "." << ext << "\", \"w\") as f: f.write(PROGRAM)\n";
+        os << "try:\n";
+        os.indent();
+        os << "subprocess.run([\"" << (RT == RaiserType::CUDA ? "nvcc\", \"-w" : "hipcc\", \"-w") << "\", \"" 
+                << fname << "." << ext << "\", \"-o\", \"" << fname << ".out\"], env=os.environ)\n";
+        os << "subprocess.run([\"./" << fname << ".out\"], check=True, env=os.environ)\n";
+        os.unindent();
+        os << "finally:\n";
+        os.indent();
+        os << "os.remove(\"" << fname << "." << ext << "\")\n";
+        os << "os.remove(\"" << fname << ".out\")\n";
+        os.unindent();
+        os.unindent();
+    }
 
     return success();
 }

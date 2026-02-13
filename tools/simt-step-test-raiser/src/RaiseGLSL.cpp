@@ -11,6 +11,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
+#include <random>
 
 
 using namespace simt::test_raiser;
@@ -26,7 +27,34 @@ using BaseRaiser::BaseRaiser;
 std::map<std::string, std::vector<int>> funcBufferMaps;
 
 LogicalResult emitHarness(Operation* op, HarnessProps props) override {
-    return emitAmberHarness(*this, op, "GLSL", props);
+    if (!props.noWrapper){
+        os << "import subprocess\nimport os\n";
+        os << "PROGRAM = \"\"\"\\\n";
+    }
+    if (failed(emitAmberHarness(*this, op, "GLSL", props))) return failure();
+    if (!props.noWrapper){
+
+        std::random_device dev;
+        std::mt19937 rng(dev());
+        std::uniform_int_distribution<std::mt19937::result_type> dist6(10000000,99999999);
+        std::string fname = "testout" + std::to_string(dist6(rng));
+
+        os << "\"\"\"\n";
+        os << "if __name__ == \"__main__\":\n";
+        os.indent();
+        os << "with open(\"" << fname << ".amber\", \"w\") as f: f.write(PROGRAM)\n";
+        // os << "assert os.environ[\"AMBERPATH\"], \"Please specify a path to amber in $AMBERPATH\"\n";
+        os << "try:\n";
+        os.indent();
+        os << "subprocess.run([\"amber\", \"" << fname << ".amber\"], shell=True)\n";
+        os.unindent();
+        os << "finally:\n";
+        os.indent();
+        os << "os.remove(\"" << fname << ".amber\")";
+        os.unindent();
+        os.unindent();
+    }
+    return success();
 }
 
 private:

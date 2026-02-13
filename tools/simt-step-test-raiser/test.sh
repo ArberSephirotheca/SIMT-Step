@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# cmake --build build -t simt-step-test-raiser
-# if [ $? -ne 0 ]; then
-#     exit
-# fi
+cmake --build build -t simt-step-test-raiser
+if [ $? -ne 0 ]; then
+    exit
+fi
 
 files=${1:-*}
 lang=${2:-"glsl-amber"}
