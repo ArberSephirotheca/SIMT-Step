@@ -670,10 +670,10 @@ LogicalResult emitAmberHarness(
         b.buffer_sizes.push_back(buffer.size());
     }
 
-    b.os << "#!amber\n"
-            "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n"
-            "DEVICE_FEATURE shaderInt64\n";
+    b.os << "#!amber\n";
     if (!props.noF64) b.os << "DEVICE_FEATURE shaderFloat64\n";
+    if (!props.noI64) b.os << "DEVICE_FEATURE shaderInt64\n";
+    if (!props.noSizeControl) b.os << "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n";
     b.os << "SET ENGINE_DATA fence_timeout_ms 10000\n"
             "SHADER compute compute_shader " << lang << " TARGET_ENV vulkan1.1\n";
     
@@ -697,11 +697,14 @@ LogicalResult emitAmberHarness(
     for (size_t i = 0; i < props.expected.size(); i++){
         b.os << "  BIND BUFFER actual" << i << " AS storage DESCRIPTOR_SET 0 BINDING " << i << "\n";
     }
-    b.os << "SUBGROUP compute_shader\n";
-    b.os.indent() << "REQUIRED_SIZE " << props.subgroupWidth << "\n";
-    b.os.unindent() << "END\n";
+    if (props.noSizeControl){
+        b.os << "SUBGROUP compute_shader\n";
+        b.os.indent() << "REQUIRED_SIZE " << props.subgroupWidth << "\n";
+        b.os.unindent() << "END\n";
+    }
+    
     b.os << "END\n"
-        << "RUN pipeline 1 1 1\n";
+            "RUN pipeline 1 1 1\n";
     
     for (size_t i = 0; i < props.expected.size(); i++){
         b.os << "EXPECT expected" << i << " EQ_BUFFER actual" << i << "\n";

@@ -2,6 +2,7 @@
 #include "RaiseGLSL.h"
 #include "RaiseCUDA_HIP.h"
 #include "RaiseMSL.h"
+#include "RaiseHLSL.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SemanticsContext.h"
@@ -120,7 +121,9 @@ auto makeTranslateFunction(
     llvm::cl::opt<int>& subgroupWidth,
     llvm::cl::opt<bool>& noFloat64,
     llvm::cl::opt<bool>& noInterpreter,
-    llvm::cl::opt<bool>& noWrapper){
+    llvm::cl::opt<bool>& noWrapper,
+    llvm::cl::opt<bool>& noInt64,
+    llvm::cl::opt<bool>& noSizeControl){
     return [&, func](Operation *op, raw_ostream &output) {
                 std::vector<std::vector<int64_t>> expbuf = {};
                 std::vector<std::vector<int64_t>> inbuf = {};
@@ -132,7 +135,9 @@ auto makeTranslateFunction(
                     .input = inbuf,
                     .subgroupWidth = subgroupWidth,
                     .noF64 = noFloat64,
-                    .noWrapper = noWrapper
+                    .noWrapper = noWrapper,
+                    .noI64 = noInt64,
+                    .noSizeControl = noSizeControl
                 };
                 return func(op, output, props);
         };
@@ -160,6 +165,22 @@ int main(int argc, char** argv){
         llvm::cl::init(false)
     );
 
+    llvm::cl::opt<bool> noInt64(
+        "no-i64",
+        llvm::cl::desc(
+            "Does not require device to support 64-bit integers. "
+            "Scripts that use them will not work."),
+        llvm::cl::init(false)
+    );
+
+    llvm::cl::opt<bool> noSizeControl(
+        "no-sizecontrol",
+        llvm::cl::desc(
+            "Does not require device to support subgroup size control. "
+            "Scripts that use them will not work."),
+        llvm::cl::init(false)
+    );
+
     llvm::cl::opt<bool> noInterpreter(
         "no-interpreter",
         llvm::cl::desc(
@@ -178,7 +199,7 @@ int main(int argc, char** argv){
         "mlir-to-glsl-amber", "translate mlir to GLSL with Amber harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedGLSL, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -186,7 +207,7 @@ int main(int argc, char** argv){
         "mlir-to-cuda", "translate mlir to CUDA with a CUDA test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedCUDA, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -194,7 +215,23 @@ int main(int argc, char** argv){
         "mlir-to-hip", "translate mlir to HIP with a HIP test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedHIP, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
+        insertSimtDialects
+    );
+
+    TranslateFromMLIRRegistration t_hlsl_amber(
+        "mlir-to-hlsl-amber", "translate mlir to HLSL with a Amber test harness",
+        makeTranslateFunction(
+            simt::test_raiser::emitRaisedHLSLAmber, 
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
+        insertSimtDialects
+    );
+
+    TranslateFromMLIRRegistration t_hlsl(
+        "mlir-to-hlsl", "translate mlir to HLSL with a C++ test harness",
+        makeTranslateFunction(
+            simt::test_raiser::emitRaisedHLSL, 
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -202,7 +239,7 @@ int main(int argc, char** argv){
         "mlir-to-msl", "translate mlir to MSL with Metal test harness (or shader-only with --no-wrapper)",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedMSL,
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 

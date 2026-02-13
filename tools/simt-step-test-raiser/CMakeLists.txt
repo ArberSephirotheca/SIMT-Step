@@ -6,6 +6,7 @@ add_executable(simt-step-test-raiser
     src/RaiseGLSL.cpp
     src/RaiseCUDA_HIP.cpp
     src/RaiseMSL.cpp
+    src/RaiseHLSL.cpp
 )
 
 llvm_update_compile_flags(simt-step-test-raiser)
@@ -36,8 +37,4 @@ target_compile_definitions(simt-step-test-raiser
 
 mlir_check_link_libraries(simt-step-test-raiser)
 
-<<<<<<< HEAD
 install(TARGETS simt-step-test-raiser RUNTIME DESTINATION bin)
-=======
-install(TARGETS simt-step-test-raiser RUNTIME DESTINATION bin)
->>>>>>> origin/CPSInterpeter-reimp

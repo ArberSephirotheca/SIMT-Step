@@ -45,6 +45,8 @@ namespace simt::test_raiser {
         int subgroupWidth;
         bool noF64;
         bool noWrapper;
+        bool noI64;
+        bool noSizeControl;
     };
 
     class BaseRaiser {

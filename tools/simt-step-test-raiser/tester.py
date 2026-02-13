@@ -17,8 +17,10 @@ FailInfo = namedtuple("FailInfo", ["file", "passed_raiser", "stdout", "stderr"])
 
 TARGETS = {
     "glsl-amber": TProps("amber", "../amber/out/Debug/amber", [], []),
+    "hlsl-amber": TProps("amber", "../amber/out/Debug/amber", [], []),
     "cuda": TProps("cu", "nvcc", ["-o", "/tmp/{0}.out"], ["/tmp/{0}.out"]),
     "hip": TProps("hip", "hipcc", ["-o", "/tmp/{0}.out"], ["/tmp/{0}.out"]),
+    "msl": TProps("py", "python3", [], []),
     "python": TProps("py", "python3", [], [])
 }
 
