@@ -7,6 +7,8 @@ add_library(simt-frontends-common STATIC
 target_include_directories(simt-frontends-common
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
+        ${CLANG_INCLUDE_DIRS}
+        ${LLVM_INCLUDE_DIRS}
 )
 
 target_link_libraries(simt-frontends-common

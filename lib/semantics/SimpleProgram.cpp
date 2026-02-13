@@ -97,7 +97,6 @@ llvm::Error SimpleProgramRunner::runBlock(mlir::Block *block,
         waveCtx.waveId = wave;
         waveCtx.subgroupWidth = subgroupWidth;
         waveCtx.policy = context.policy;
-        waveCtx.currentMask = laneMask;
 
         auto &dynamicBlock = waveCtx.blocks[entryKey];
         dynamicBlock.block = block;
@@ -139,6 +138,60 @@ llvm::Error SimpleProgramRunner::runBlock(mlir::Block *block,
     for (const auto &waveIt : state.waves) {
         const auto &waveCtx = waveIt.second;
         if (!waveCtx.collectives.empty() || !waveCtx.syncPoints.empty()) {
+            for (const auto &collectIt : waveCtx.collectives) {
+                std::uint64_t arrivedMask = 0;
+                for (LaneId lane : collectIt.second.arrivals)
+                    arrivedMask |= (1ull << lane);
+                llvm::errs() << "pending collective: wave=" << waveIt.first
+                             << " key=" << collectIt.first
+                             << " blockSeq=" << collectIt.second.block.sequenceId
+                             << " block=" << collectIt.second.block.block
+                             << " expected=" << collectIt.second.expectedMask
+                             << " arrived=" << arrivedMask
+                             << " arrivals=" << collectIt.second.arrivals.size();
+                auto opIt = waveCtx.collectiveTokenToOp.find(collectIt.first);
+                if (opIt != waveCtx.collectiveTokenToOp.end() && opIt->second) {
+                    llvm::errs() << " op="
+                                 << const_cast<mlir::Operation *>(opIt->second)
+                                        ->getName()
+                                        .getStringRef();
+                } else {
+                    auto ctrlIt = waveCtx.controlTokenToOp.find(collectIt.first);
+                    if (ctrlIt != waveCtx.controlTokenToOp.end() && ctrlIt->second) {
+                        llvm::errs() << " controlOp="
+                                     << const_cast<mlir::Operation *>(ctrlIt->second)
+                                            ->getName()
+                                            .getStringRef();
+                    }
+                }
+                llvm::errs() << "\n";
+            }
+            for (const auto &syncIt : waveCtx.syncPoints) {
+                std::uint64_t arrivedMask = 0;
+                for (LaneId lane : syncIt.second.arrivals)
+                    arrivedMask |= (1ull << lane);
+                llvm::errs() << "pending sync: wave=" << waveIt.first
+                             << " key=" << syncIt.first
+                             << " blockSeq=" << syncIt.second.block.sequenceId
+                             << " block=" << syncIt.second.block.block
+                             << " expected=" << syncIt.second.expectedMask
+                             << " arrived=" << arrivedMask
+                             << " arrivals=" << syncIt.second.arrivals.size()
+                             << "\n";
+            }
+            for (const auto &laneIt : waveCtx.lanes) {
+                llvm::errs() << "lane state: wave=" << waveIt.first
+                             << " lane=" << laneIt.first
+                             << " hasReturned=" << (laneIt.second.hasReturned ? 1 : 0);
+                if (laneIt.second.currentBlock) {
+                    llvm::errs() << " currentBlockSeq="
+                                 << laneIt.second.currentBlock->sequenceId
+                                 << " currentBlock="
+                                 << laneIt.second.currentBlock->block;
+                }
+                llvm::errs() << " callDepth="
+                             << laneIt.second.callStack.size() << "\n";
+            }
             return llvm::make_error<llvm::StringError>(
                 "runBlock: wave left pending collectives or sync points",
                 llvm::inconvertibleErrorCode());
@@ -163,6 +216,18 @@ llvm::Error SimpleProgramRunner::runBlock(mlir::Block *block,
                     llvm::inconvertibleErrorCode());
             }
             if (!laneIt->second.hasReturned) {
+                llvm::errs() << "non-returned lane: wave=" << waveMaskIt.first
+                             << " lane=" << lane << " phase="
+                             << static_cast<unsigned>(laneIt->second.phase)
+                             << " callDepth="
+                             << laneIt->second.callStack.size();
+                if (laneIt->second.currentBlock) {
+                    llvm::errs() << " currentBlockSeq="
+                                 << laneIt->second.currentBlock->sequenceId
+                                 << " currentBlock="
+                                 << laneIt->second.currentBlock->block;
+                }
+                llvm::errs() << "\n";
                 return llvm::make_error<llvm::StringError>(
                     "runBlock: lane did not return",
                     llvm::inconvertibleErrorCode());

@@ -1,0 +1,69 @@
+# Reduced repro for:
+#   cuda-tests_post_switch_help/test_061_seed_61.cuda
+#
+# Key pattern in the original:
+#   - Kernel has a uniform loop that calls helper0 twice.
+#   - helper0 has a non-uniform loop bound (lane-dependent trip count).
+#   - wave_count_bits(true) is implemented with __activemask().
+#   - The second helper call overwrites the first call's stored result because
+#     fast lanes reach call #2 earlier, and slow lanes reach call #2 later.
+#
+# Expected (runner / "logical mask"): 28 lanes participate at the wave op.
+# Actual (CUDA / __activemask): only the slow cohort (7 lanes) is active at the
+# wave op when the second call overwrites the probe.
+#
+# Probe: scratch[260] (lane tid==4 stored at 256+tid).
+
+BUFFER scratch TYPE i32 SIZE 512
+BUFFER exp_scratch TYPE i32 SIZE 512
+
+FILL scratch 0
+FILL exp_scratch 0
+INIT exp_scratch 260 28
+
+KERNEL simt_kernel
+#include <cuda_runtime.h>
+
+static __device__ __forceinline__ int wave_count_bits_true() {
+  unsigned mask = __activemask();
+  return __popc(__ballot_sync(mask, true));
+}
+
+static __device__ __forceinline__ void helper(int tid, int *scratch, int iters) {
+  for (int i = 0; i < iters; ++i) {
+    int c = wave_count_bits_true();
+    if (i == 0 && tid == 4)
+      scratch[256 + tid] = c;
+  }
+}
+
+extern "C" __global__ void simt_kernel(int *scratch) {
+  int tid = (int)(blockIdx.x * blockDim.x + threadIdx.x);
+
+  // Only 28 lanes participate: tid 4..31.
+  if (tid < 4)
+    return;
+
+  // A divergent switch creates a slow cohort (7 lanes: 4,8,12,...,28).
+  int iters = 1;
+  switch (tid & 3) {
+  case 0:
+    iters = 1000;
+    break;
+  default:
+    iters = 1;
+    break;
+  }
+
+  // Uniform trip count, but non-uniform helper time => call #2 is reached under
+  // a smaller active mask for the slow cohort. This overwrites scratch[260].
+  for (int call = 0; call < 2; ++call)
+    helper(tid, scratch, iters);
+}
+ENDKERNEL
+
+BIND scratch ARG 0
+
+LAUNCH GRID 1 1 1 BLOCK 32 1 1
+
+EXPECT_BUFFER scratch exp_scratch

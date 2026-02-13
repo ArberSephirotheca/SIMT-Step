@@ -1,6 +1,7 @@
 #include "BaseRaiser.h"
 #include "RaiseGLSL.h"
 #include "RaiseCUDA_HIP.h"
+#include "RaiseMSL.h"
 #include "mlir/IR/Operation.h"
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "simt-step/semantics/SemanticsContext.h"
@@ -169,7 +170,7 @@ int main(int argc, char** argv){
     llvm::cl::opt<bool> noWrapper(
         "no-wrapper",
         llvm::cl::desc(
-            "Do not emit the Python wrapper (when possible). Only works for GLSL, CUDA, and HIP."),
+            "Do not emit the Python wrapper (when possible). Only works for GLSL, CUDA, HIP, and MSL."),
         llvm::cl::init(false)
     );
 
@@ -193,6 +194,14 @@ int main(int argc, char** argv){
         "mlir-to-hip", "translate mlir to HIP with a HIP test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedHIP, 
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
+        insertSimtDialects
+    );
+
+    TranslateFromMLIRRegistration t_msl(
+        "mlir-to-msl", "translate mlir to MSL with Metal test harness (or shader-only with --no-wrapper)",
+        makeTranslateFunction(
+            simt::test_raiser::emitRaisedMSL,
             bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper),
         insertSimtDialects
     );

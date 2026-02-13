@@ -16,5 +16,6 @@ Agent.md
 /fuzz-test*
 __pycache__/
 *.pyc
+.cache
 
 .cache

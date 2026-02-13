@@ -97,6 +97,7 @@ be rejected.
 - `--non-uniform-helper-call-rate p`: probability in `[0,1]` to call `helper0` under a non-uniform `if` so wave ops inside the helper see the branch active mask.
 - `--helper-call-max-depth N`: max nesting depth for the helper call site (>=1). `1` means “just the outer conditional call”; larger values wrap the call in nested `if`/`loop`.
 - `--helper-call-nest-loop-rate p`: probability in `[0,1]` to use a `loop` wrapper (vs an `if`) when nesting the helper call (only relevant when `--helper-call-max-depth > 1`).
+- `--helper-call-post-switch-rate p`: probability in `[0,1]` to emit a `switch` *immediately before* the helper call site (the call happens after the switch, never inside cases). This stresses reconvergence-after-switch in the presence of non-uniform helper calls.
 
 ### Predicate buffer / YAML
 - `--predicate-buffer`: make `@main` take a predicate buffer and write `test_*.yaml`.
@@ -144,6 +145,19 @@ python3 tools/simt-step-fuzz/generate_tests.py \
   --count 100 --lanes 64 --subgroup-width 32 --trials 3 --schedule-seed 1 \
   --predicate-buffer \
   --non-uniform-helper-call-rate 1.0 \
+  --helper-call-max-depth 3 \
+  --helper-call-nest-loop-rate 0.5 \
+  --collective-cf
+```
+
+Non-uniform helper call with a switch immediately before the call site (tests reconvergence-after-switch before entering helper):
+
+```sh
+python3 tools/simt-step-fuzz/generate_tests.py \
+  --count 100 --lanes 64 --subgroup-width 32 --trials 3 --schedule-seed 1 \
+  --predicate-buffer \
+  --non-uniform-helper-call-rate 1.0 \
+  --helper-call-post-switch-rate 1.0 \
   --helper-call-max-depth 3 \
   --helper-call-nest-loop-rate 0.5 \
   --collective-cf
@@ -199,3 +213,20 @@ Notes:
   exists next to `test_*.cuda`.
 - If NVRTC cannot find `cuda_runtime.h`, pass `--cuda-include /path/to/cuda/include`
   (the tool tries to auto-detect common install paths).
+
+## Metal raiser (MSL)
+
+To emit Metal Shading Language for a module:
+
+```sh
+build/tools/simt-step-raise/simt-step-raise --target=msl input.mlir > out.metal
+```
+
+## Fuzz generator presets
+
+`generate_tests.py` supports preset profiles:
+
+```sh
+python3 tools/simt-step-fuzz/generate_tests.py --profile=safe
+python3 tools/simt-step-fuzz/generate_tests.py --profile=aggressive
+```

@@ -29,6 +29,7 @@ struct ExecutionPolicy;
 using LaneId = std::uint32_t;
 using WaveId = std::uint32_t;
 using CollectiveKey = std::uint64_t;
+using LoopFrameId = std::uint64_t;
 
 template <typename ValueT>
 class Step;
@@ -63,10 +64,9 @@ struct DynamicBlock {
 
     std::optional<DynamicBlockKey> parentKey;
     const mlir::Operation *loopOp = nullptr;
+    std::optional<LoopFrameId> ownerLoopFrameId;
     const mlir::Operation *switchOp = nullptr;
     const mlir::Operation *ifOp = nullptr;
-    bool isLoopPrepare = false;
-    bool isLoopBody = false;
     std::optional<std::uint32_t> loopIteration;
 
     DynamicBlockKind kind = DynamicBlockKind::Plain;
@@ -75,18 +75,32 @@ struct DynamicBlock {
     llvm::DenseMap<LaneId, StepT> pendingOps;
     llvm::DenseMap<LaneId, llvm::DenseMap<mlir::Value, ValueT>> valueEnvs;
     llvm::DenseMap<const mlir::Operation *, DynamicBlockKey> callChildren;
+    // Active loop frame per loop op for this parent dynamic block.
+    llvm::DenseMap<const mlir::Operation *, LoopFrameId> activeLoopFrames;
     llvm::DenseMap<const mlir::Operation *, std::uint32_t> controlTokens;
+    // Active control-flow epoch participant mask for each control op in this
+    // dynamic block instance.
+    llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlEpochExpectedMask;
+    // Monotonic epoch counter per control op for debug/tracing.
+    llvm::DenseMap<const mlir::Operation *, std::uint32_t> controlEpochVersion;
     llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlReadyMask;
+    // Lanes that have already executed a specific control op in this dynamic block.
+    llvm::DenseMap<const mlir::Operation *, std::uint64_t> controlExecutedMask;
+    // Lanes that have already completed a specific collective op in this block.
+    llvm::DenseMap<const mlir::Operation *, std::uint64_t> collectiveExecutedMask;
 };
 
-template <typename ValueT>
+template <typename ValueT, typename StepT>
 struct LoopFrameState {
+    LoopFrameId frameId = 0;
     const mlir::Operation *loopOp = nullptr;
     DynamicBlockKey prepareKey;
     DynamicBlockKey bodyKey;
     // Per-lane next sequence id for the next iteration prep/body.
     llvm::DenseMap<LaneId, std::uint32_t> laneNextSeq;
     llvm::DenseMap<LaneId, llvm::SmallVector<ValueT, 4>> carried;
+    // Continuation to execute after the loop exits for each lane.
+    llvm::DenseMap<LaneId, StepT> exitContinuations;
 };
 
 template <typename ValueT>
@@ -120,19 +134,12 @@ struct SynchronizationSyncPoint {
     llvm::DenseMap<LaneId, StepT> continuations;
 };
 
-template <typename StepT>
-struct ControlFlowSyncPoint {
-    std::uint64_t expectedMask = 0;
-    std::uint64_t readyMask = 0;
-    llvm::DenseSet<LaneId> arrivals;
-    llvm::DenseMap<LaneId, StepT> continuations;
-};
-
 template <typename ValueT>
 struct CallFrame {
     DynamicBlockKey callerKey;
     mlir::Block *callerBlock = nullptr;
     mlir::Block::iterator resumeIt;
+    const mlir::Operation *callOp = nullptr;
     llvm::SmallVector<mlir::Value, 4> results;
     std::string calleeName;
 };
@@ -143,6 +150,7 @@ struct LaneContext {
     bool hasReturned = false;
     std::optional<ValueT> returnValue;
     std::optional<DynamicBlockKey> currentBlock;
+    std::uint64_t readyEpoch = 0;
     enum class Phase { Running, Waiting, Completed } phase = Phase::Running;
     llvm::SmallVector<CallFrame<ValueT>, 4> callStack;
 };
@@ -151,10 +159,9 @@ template <typename ValueT, typename StepT>
 struct MergeStackEntry {
     DynamicBlockKey parent;
     llvm::SmallVector<DynamicBlockKey, 4> pendingChildren;
-    llvm::SmallVector<std::uint64_t, 4> childMasks;
     std::uint64_t expectedMask = 0;
     std::uint64_t completedMask = 0;
-    std::optional<LoopFrameState<ValueT>> loopFrame;
+    std::optional<LoopFrameState<ValueT, StepT>> loopFrame;
     std::optional<SwitchFrameState<ValueT>> switchFrame;
     const mlir::Operation *ifOp = nullptr;
 };
@@ -163,13 +170,14 @@ template <typename ValueT, typename StepT>
 struct WaveContext {
     std::uint32_t waveId = 0;
     std::uint32_t subgroupWidth = 0;
-    std::uint64_t currentMask = 0;
     llvm::DenseMap<DynamicBlockKey, DynamicBlock<ValueT, StepT>> blocks;
     llvm::SmallVector<MergeStackEntry<ValueT, StepT>, 8> mergeStack;
     llvm::DenseMap<CollectiveKey, CollectiveSyncPoint<ValueT, StepT>> collectives;
     llvm::DenseMap<std::uint32_t, SynchronizationSyncPoint<ValueT, StepT>> syncPoints;
     llvm::DenseMap<LaneId, LaneContext<ValueT, StepT>> lanes;
     std::uint32_t nextCallSeq = 1;
+    std::uint32_t nextDynamicSeq = 1;
+    LoopFrameId nextLoopFrameId = 1;
     std::uint32_t nextControlToken = 1;
     llvm::DenseMap<CollectiveKey, const mlir::Operation *> controlTokenToOp;
     llvm::DenseMap<std::uint32_t, const mlir::Operation *> syncTokenToOp;
@@ -182,6 +190,7 @@ struct ReadyContinuation {
     WaveId wave = 0;
     DynamicBlockKey block;
     LaneId lane = 0;
+    std::uint64_t epoch = 0;
     StepT resume;
 };
 
@@ -189,7 +198,6 @@ template <typename ValueT, typename StepT>
 struct InterpreterState {
     llvm::DenseMap<WaveId, WaveContext<ValueT, StepT>> waves;
     std::deque<ReadyContinuation<ValueT, StepT>> readyQueue;
-    StepT pendingStep;
 };
 
 using DefaultValue = SemValue;

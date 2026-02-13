@@ -1,0 +1,49 @@
+# Reduced repro for:
+#   cuda-tests_post_switch_help/test_098_seed_98.cuda
+#
+# Expected (runner / collective-cf): wave_count_bits(true) sees 28 participants.
+# Actual (CUDA / __activemask): the 21-lane fast cohort runs ahead and sees 21.
+#
+# Probe: lane 0 stores the value into scratch[36] at (outer=1, inner=0).
+
+BUFFER scratch TYPE i32 SIZE 37
+BUFFER exp_scratch TYPE i32 SIZE 37
+
+FILL scratch 0
+FILL exp_scratch 0
+INIT exp_scratch 36 28
+
+KERNEL simt_kernel
+#include <cuda_runtime.h>
+
+static __device__ __forceinline__ int wave_count_bits_true() {
+  unsigned mask = __activemask();
+  return __popc(__ballot_sync(mask, true));
+}
+
+extern "C" __global__ void simt_kernel(int *scratch) {
+  int tid = (int)(blockIdx.x * blockDim.x + threadIdx.x);
+
+  // 28 participants: lanes 28..31 do not execute the wave op.
+  if (tid >= 28)
+    return;
+
+  // 21 fast lanes (0..20) reach the probe earlier than lanes 21..27.
+  int iters = (tid < 21) ? 2 : 4;
+  for (int outer = 0; outer < iters; ++outer) {
+    for (int inner = 0; inner < iters; ++inner) {
+      if (outer == 1 && inner == 0) {
+        int c = wave_count_bits_true();
+        if (tid == 0)
+          scratch[36] = c;
+      }
+    }
+  }
+}
+ENDKERNEL
+
+BIND scratch ARG 0
+
+LAUNCH GRID 1 1 1 BLOCK 32 1 1
+
+EXPECT_BUFFER scratch exp_scratch
