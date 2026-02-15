@@ -695,14 +695,14 @@ LogicalResult emitAmberHarness(
     b.os << "PIPELINE compute pipeline\n"
         "  ATTACH compute_shader\n";
     for (size_t i = 0; i < props.expected.size(); i++){
-        b.os << "  BIND BUFFER actual" << i << " AS storage DESCRIPTOR_SET 0 BINDING " << i << "\n";
+        b.os << "  BIND BUFFER actual" << i << " AS storage" << (lang == "HLSL" ? "_texel_buffer" : "") << " DESCRIPTOR_SET 0 BINDING " << i << "\n";
     }
-    if (props.noSizeControl){
+    if (!props.noSizeControl){
         b.os << "SUBGROUP compute_shader\n";
         b.os.indent() << "REQUIRED_SIZE " << props.subgroupWidth << "\n";
         b.os.unindent() << "END\n";
     }
-    
+
     b.os << "END\n"
             "RUN pipeline 1 1 1\n";
     

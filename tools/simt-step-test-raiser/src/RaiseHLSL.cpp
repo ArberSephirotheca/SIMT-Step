@@ -7,12 +7,18 @@
 #include "simt-step/Dialect/SimtStep/SimtStepDialect.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
 #include <random>
+#include <string>
 
+#define HLSL_INIT_ARGS \
+        "uint3 thread_id : SV_DispatchThreadID, "\
+        "uint3 group_id : SV_GroupID, uint group_index : SV_GroupIndex, "\
+        "uint3 group_thread_id : SV_GroupThreadID"
 
 using namespace simt::test_raiser;
 using namespace llvm;
@@ -27,40 +33,62 @@ using BaseRaiser::BaseRaiser;
 
 std::map<std::string, std::vector<int>> funcBufferMaps;
 
+int subgroupSize;
+
 LogicalResult emitHarness(Operation* op, HarnessProps props) override {
-    if (!props.noWrapper){
-        os << "import subprocess\nimport os\n";
-        os << "PROGRAM = \"\"\"\\\n";
-    }
-    if (failed(emitAmberHarness(*this, op, "HLSL", props))) return failure();
-    if (!props.noWrapper){
+    subgroupSize = props.subgroupWidth;
+    if (useAmber){
+        if (!props.noWrapper){
+            os << "import subprocess\nimport os\n";
+            os << "PROGRAM = \"\"\"\\\n";
+        }
+        if (failed(emitAmberHarness(*this, op, "HLSL", props))) return failure();
+        if (!props.noWrapper){
 
-        std::random_device dev;
-        std::mt19937 rng(dev());
-        std::uniform_int_distribution<std::mt19937::result_type> dist6(10000000,99999999);
-        std::string fname = "testout" + std::to_string(dist6(rng));
+            std::random_device dev;
+            std::mt19937 rng(dev());
+            std::uniform_int_distribution<std::mt19937::result_type> dist6(10000000,99999999);
+            std::string fname = "testout" + std::to_string(dist6(rng));
 
-        os << "\"\"\"\n";
-        os << "if __name__ == \"__main__\":\n";
-        os.indent();
-        os << "with open(\"" << fname << ".amber\", \"w\") as f: f.write(PROGRAM)\n";
-        // os << "assert os.environ[\"AMBERPATH\"], \"Please specify a path to amber in $AMBERPATH\"\n";
-        os << "try:\n";
-        os.indent();
-        os << "subprocess.run([\"amber\", \"" << fname << ".amber\"], shell=True)\n";
-        os.unindent();
-        os << "finally:\n";
-        os.indent();
-        os << "os.remove(\"" << fname << ".amber\")";
-        os.unindent();
-        os.unindent();
+            os << "\"\"\"\n";
+            os << "if __name__ == \"__main__\":\n";
+            os.indent();
+            os << "with open(\"" << fname << ".amber\", \"w\") as f: f.write(PROGRAM)\n";
+            // os << "assert os.environ[\"AMBERPATH\"], \"Please specify a path to amber in $AMBERPATH\"\n";
+            os << "try:\n";
+            os.indent();
+            os << "subprocess.run([\"amber\", \"" << fname << ".amber\"])\n";
+            os.unindent();
+            os << "finally:\n";
+            os.indent();
+            os << "os.remove(\"" << fname << ".amber\")";
+            os.unindent();
+            os.unindent();
+        }
     }
     return success();
 }
 
 private:
 LogicalResult emitMainFuncTop(func::FuncOp& f) override {
-    os << "void main()";
+    os << "[numthreads(" << ntx << "," << nty << "," << ntz << ")]\n";
+    os << "void main(" HLSL_INIT_ARGS ")";
+    return success();
+}
+
+LogicalResult emitConst(Type t, APFloat v) override {
+    switch (t.getIntOrFloatBitWidth()){
+        case 32:
+            os << v << "f";
+            break;
+        case 64:
+            os << v;
+            break;
+        default:
+            llvm_unreachable("Unable to emit conststant");
+            break;
+    }
+
     return success();
 }
 
@@ -97,12 +125,17 @@ LogicalResult emitType(Type type) override {
         if (vectype.getShape().size() != 1 || len > 4 || len < 2){
             llvm_unreachable("Unsupported vector shape");
         }
-        if (vectype.getElementType().isInteger()) os << "i";
-        os << "vec" << len;
+        if(failed(emitType(vectype.getElementType()))) return failure();
+        os << len;
     } else if (auto indextype = dyn_cast<mlir::IndexType>(type)){
         os << "uint";
+    } else if (auto rsrctype = dyn_cast<simt::dialect::ResourceType>(type)){
+        os << "RWBuffer<";
+        if(failed(emitType(rsrctype.getElementType()))) return failure();
+        os << ">";
     } else {
-        llvm_unreachable("Unsupported type");
+        os << "void";
+        // llvm_unreachable("Unsupported type");
     }
 
     return success();
@@ -118,9 +151,10 @@ LogicalResult emitShaderPrologue(Operation* op) override {
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
             assert(t.getMemorySpace() == simt::dialect::MemorySpace::Global);
 
-            os << "layout(set = 0, binding = " << locs << ") buffer Buf" << std::to_string(locs) <<  " { ";
+            os << "RWBuffer<";
             if (failed(emitType(t.getElementType()))) return failure();
-            os << " " << addValueName(v) << "[" << buffer_sizes[locs] << "];};\n";
+            os << "> " << addValueName(v) << " : register(u" << locs << ");\n";
+
 
             locs++;
         }
@@ -138,35 +172,27 @@ LogicalResult emitCast(Value in, Value out) override {
 
 /////////////// 'arith' dialect ///////////////
 LogicalResult printOp(arith::RemFOp &op) override {
-    return emitFuncCall(op.getResult(), "mod", {op->getOperand(0), op->getOperand(1)});
+    return emitFuncCall(op.getResult(), "fmod", {op->getOperand(0), op->getOperand(1)});
 }
 
 /////////////// 'func' dialect ///////////////
-LogicalResult printOp(func::FuncOp &op) override {
+LogicalResult printOp(func::FuncOp& op) override{
     if (op.getSymName() == "main"){
         if (failed(emitMainFuncTop(op))) return failure();
     } else {
-        // This portion handles replacing the buffer arguments with the buffers
-        // themselves, and removing them from the function signature before running
-        // the normal function printer.
         assert(op.getFunctionType().getNumResults() <= 1);
         if (op.getFunctionType().getNumResults() == 0){
             os << "void";
         } else {
             if (failed(emitType(op.getFunctionType().getResult(0)))) return failure();
         }
-        os << " " << op.getSymName() << "(";
-        int seen = 0;
+        os << " " << op.getSymName() << "(" HLSL_INIT_ARGS;
+        if (op.getNumArguments()) os << ", ";
         for (auto arg : op.getArguments()){
-            if (!isa<simt::dialect::ResourceType>(arg.getType())){
-                if (failed(emitType(arg.getType()))) return failure();
-                os << " " << addValueName(arg);
-                if (arg.getArgNumber() < op.getNumArguments() - 1){
-                    os << ", ";
-                }
-            } else {
-                value_map[arg] = funcBufferMaps[op.getSymName().str()][seen];
-                seen++;
+            if (failed(emitType(arg.getType()))) return failure();
+            os << " " << addValueName(arg);
+            if (arg.getArgNumber() < op.getNumArguments() - 1){
+                os << ", ";
             }
         }
         os << ")";
@@ -176,6 +202,22 @@ LogicalResult printOp(func::FuncOp &op) override {
     if (failed(emitRegion(op.getRegion()))) return failure();
     os.unindent();
     os << "}\n\n";
+    return success();
+}
+
+LogicalResult printOp(func::CallOp& op) override {
+    if (op->getNumResults() > 0){
+        assert(op->getNumResults() == 1);
+        if(failed(emitValueDefine(op->getResult(0)))) return failure();
+    }
+
+    os << op.getCallee().str() << "(thread_id, group_id, group_index, group_thread_id";
+    for (auto [i, arg] : llvm::enumerate(op.getArgOperands())){
+        os << ", ";
+        os << getValueName(arg);
+    }
+    os << ")";
+
     return success();
 }
 
@@ -193,7 +235,7 @@ LogicalResult emitConstVec(Value v, std::string name){
 }
 
 LogicalResult printOp(DispatchThreadIdOp& op) override {
-    return emitConstVec(op.getResult(), "gl_GlobalInvocationID");
+    return emitConstVec(op.getResult(), "thread_id");
 }
 
 LogicalResult printOp(BufferAtomicAddOp& op) override {
@@ -208,38 +250,38 @@ LogicalResult printOp(BufferAtomicAddOp& op) override {
 LogicalResult printOp(WaveCountBitsOp& op) override {
     if (failed(emitValueDefine(op.getResult()))) return failure();
     if (failed(emitType(op.getResult().getType()))) return failure();
-    os << "(subgroupBallotBitCount(subgroupBallot(";
+    os << "(WaveActiveCountBits(";
     os << getValueName(op.getOperand());
-    os << ")))";
+    os << "))";
     return success();
 }
 
 LogicalResult printOp(LaneIdOp& op) override {
-    return emitConstVec(op.getResult(), "gl_SubgroupInvocationID");
+    return emitConstVec(op.getResult(), "group_index % " + std::to_string(subgroupSize));
 }
 
 LogicalResult printOp(SubgroupIdOp& op) override {
-    return emitConstVec(op.getResult(), "gl_SubgroupID");
+    return emitConstVec(op.getResult(), "group_index / " + std::to_string(subgroupSize));
 }
 
 LogicalResult printOp(WaveAllOp& op) override {
-    return emitFuncCall(op.getResult(), "subgroupAll", {op.getOperand()});
+    return emitFuncCall(op.getResult(), "WaveActiveAllTrue", {op.getOperand()});
 }
 
 LogicalResult printOp(WaveAnyOp& op) override {
-    return emitFuncCall(op.getResult(), "subgroupAny", {op.getOperand()});
+    return emitFuncCall(op.getResult(), "WaveActiveAnyTrue", {op.getOperand()});
 }
 
 LogicalResult printOp(GroupIdOp& op) override {
-    return emitConstVec(op.getResult(), "gl_WorkGroupID");
+    return emitConstVec(op.getResult(), "group_id");
 }
 
 LogicalResult printOp(GroupThreadIdOp& op) override {
-    return emitConstVec(op.getResult(), "gl_LocalInvocationID");
+    return emitConstVec(op.getResult(), "group_thread_id");
 }
 
 LogicalResult printOp(GroupIndexOp& op) override {
-    return emitConstVec(op.getResult(), "gl_SubgroupInvocationID");
+    return emitConstVec(op.getResult(), "group_index");
 }
 
 };

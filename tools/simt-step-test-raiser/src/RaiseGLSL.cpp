@@ -46,7 +46,7 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
         // os << "assert os.environ[\"AMBERPATH\"], \"Please specify a path to amber in $AMBERPATH\"\n";
         os << "try:\n";
         os.indent();
-        os << "subprocess.run([\"amber\", \"" << fname << ".amber\"], shell=True)\n";
+        os << "subprocess.run([\"amber\", \"" << fname << ".amber\"])\n";
         os.unindent();
         os << "finally:\n";
         os.indent();
