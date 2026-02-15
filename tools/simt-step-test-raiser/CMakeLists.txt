@@ -36,8 +36,4 @@ target_compile_definitions(simt-step-test-raiser
 
 mlir_check_link_libraries(simt-step-test-raiser)
 
-<<<<<<< HEAD
 install(TARGETS simt-step-test-raiser RUNTIME DESTINATION bin)
-=======
-install(TARGETS simt-step-test-raiser RUNTIME DESTINATION bin)
->>>>>>> origin/CPSInterpeter-reimp
