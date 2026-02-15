@@ -2287,7 +2287,7 @@ private:
         loopFrame.laneNextSeq.erase(lane);
         loopFrame.carried.erase(lane);
         (void)enqueueLoopExitContinuation(wave, waveCtx, *entry, lane);
-        shrinkExpectedForLoopLane(wave, waveCtx, loopOp, lane);
+        shrinkExpectedForLoopLane(wave, waveCtx, loopFrame.frameId, lane);
         handleReconvergence(wave, waveCtx, key, lane);
         (void)popLoopEntryIfComplete(
             waveCtx, findLoopEntry(waveCtx, key, loopOp));
@@ -2386,11 +2386,17 @@ private:
             cpsDebugStream() << "\n";
         }
 
+        std::uint32_t nextSeq =
+            loopFrame.laneNextSeq.try_emplace(lane, key.sequenceId + 2).first->second;
+
         blockCtx->activeMask &= ~laneBit;
         blockCtx->completedMask |= laneBit;
         // This lane leaves the current body iteration and should no longer be
-        // counted by collectives nested under this dynamic body subtree.
-        shrinkExpectedForSubtree(wave, waveCtx, key, lane);
+        // counted by collectives nested under this dynamic body subtree. Keep
+        // future iterations of the same loop frame intact so this lane can
+        // re-enroll before those control epochs close.
+        shrinkExpectedForSubtree(wave, waveCtx, key, lane, loopFrame.frameId,
+                                 nextSeq);
 
         if (EnableCPSDebugLogs) {
             auto fmt = [&](std::uint64_t m) { return formatMaskBits(m, 32); };
@@ -2401,8 +2407,6 @@ private:
                          << "\n";
         }
 
-        std::uint32_t nextSeq =
-            loopFrame.laneNextSeq.try_emplace(lane, key.sequenceId + 2).first->second;
         DynamicBlockKey nextPrep{loopFrame.prepareKey.block, nextSeq};
         DynamicBlockKey nextBody{loopFrame.bodyKey.block,
                                  static_cast<std::uint32_t>(nextSeq + 1)};
@@ -2614,7 +2618,7 @@ private:
         blockCtx->completedMask |= laneBit;
         // This lane exits the current iteration immediately. Clear stale state
         // for this loop op before re-enrolling the lane on the next iteration.
-        shrinkExpectedForLoopLane(wave, waveCtx, loopOp, lane);
+        shrinkExpectedForLoopLane(wave, waveCtx, loopFrameId, lane);
 
         entry = findLoopEntryByFrameId(waveCtx, loopFrameId);
         if (!entry || !entry->loopFrame)
@@ -3196,7 +3200,7 @@ private:
                          << " expected=" << fmt(blockCtx->expectedMask)
                          << "\n";
         }
-        shrinkExpectedForLoopLane(wave, waveCtx, loopOp, lane);
+        shrinkExpectedForLoopLane(wave, waveCtx, loopFrame.frameId, lane);
         handleReconvergence(wave, waveCtx, key, lane);
         (void)popLoopEntryIfComplete(
             waveCtx, findLoopEntry(waveCtx, key, loopOp));
@@ -4477,13 +4481,35 @@ private:
         }
     }
 
-    void shrinkExpectedForSubtree(WaveId waveId,
-                                  WaveContext<ValueType, StepType> &waveCtx,
-                                  const DynamicBlockKey &root,
-                                  LaneId lane) {
+    void shrinkExpectedForSubtree(
+        WaveId waveId,
+        WaveContext<ValueType, StepType> &waveCtx,
+        const DynamicBlockKey &root,
+        LaneId lane,
+        std::optional<LoopFrameId> preserveLoopFrame = std::nullopt,
+        std::optional<std::uint32_t> preserveSeqFloor = std::nullopt) {
         std::uint64_t laneBit = 1ull << lane;
+        auto isPreservedFuturePath = [&](const DynamicBlockKey &candidate) {
+            if (!preserveLoopFrame || !preserveSeqFloor)
+                return false;
+            DynamicBlockKey cur = candidate;
+            while (true) {
+                auto it = waveCtx.blocks.find(cur);
+                if (it == waveCtx.blocks.end())
+                    return false;
+                const auto &ctx = it->second;
+                if (ctx.ownerLoopFrameId &&
+                    *ctx.ownerLoopFrameId == *preserveLoopFrame &&
+                    ctx.sequenceId >= *preserveSeqFloor)
+                    return true;
+                if (cur == root || !ctx.parentKey)
+                    return false;
+                cur = *ctx.parentKey;
+            }
+        };
         auto inSubtree = [&](const DynamicBlockKey &key) {
-            return isDynamicDescendant(waveCtx, key, root);
+            return isDynamicDescendant(waveCtx, key, root) &&
+                   !isPreservedFuturePath(key);
         };
 
         for (auto &entry : waveCtx.blocks) {
@@ -4697,14 +4723,15 @@ private:
         }
     }
 
-    bool isUnderLoop(WaveContext<ValueType, StepType> &waveCtx,
-                     DynamicBlockKey key,
-                     const mlir::Operation *loopOp) {
+    bool isUnderLoopFrame(WaveContext<ValueType, StepType> &waveCtx,
+                          DynamicBlockKey key,
+                          LoopFrameId frameId) {
         while (true) {
             auto it = waveCtx.blocks.find(key);
             if (it == waveCtx.blocks.end())
                 return false;
-            if (it->second.loopOp == loopOp)
+            if (it->second.ownerLoopFrameId &&
+                *it->second.ownerLoopFrameId == frameId)
                 return true;
             if (!it->second.parentKey)
                 return false;
@@ -4732,13 +4759,11 @@ private:
 
     void shrinkExpectedForLoopLane(WaveId waveId,
                                    WaveContext<ValueType, StepType> &waveCtx,
-                                   const mlir::Operation *loopOp,
+                                   LoopFrameId loopFrameId,
                                    LaneId lane) {
-        if (!loopOp)
-            return;
         std::uint64_t laneBit = 1ull << lane;
         for (auto &entry : waveCtx.mergeStack) {
-            if (entry.loopFrame && entry.loopFrame->loopOp == loopOp) {
+            if (entry.loopFrame && entry.loopFrame->frameId == loopFrameId) {
                 entry.expectedMask &= ~laneBit;
                 entry.completedMask &= ~laneBit;
                 entry.loopFrame->laneNextSeq.erase(lane);
@@ -4746,13 +4771,14 @@ private:
                 entry.loopFrame->exitContinuations.erase(lane);
                 continue;
             }
-            if (!entry.loopFrame && isUnderLoop(waveCtx, entry.parent, loopOp)) {
+            if (!entry.loopFrame &&
+                isUnderLoopFrame(waveCtx, entry.parent, loopFrameId)) {
                 entry.expectedMask &= ~laneBit;
                 entry.completedMask &= ~laneBit;
             }
         }
         for (auto &entry : waveCtx.blocks) {
-            if (isUnderLoop(waveCtx, entry.first, loopOp)) {
+            if (isUnderLoopFrame(waveCtx, entry.first, loopFrameId)) {
                 entry.second.expectedMask &= ~laneBit;
                 entry.second.completedMask &= ~laneBit;
                 entry.second.continuations.erase(lane);
@@ -4784,7 +4810,7 @@ private:
         }
         for (auto it = waveCtx.collectives.begin();
              it != waveCtx.collectives.end();) {
-            if (!isUnderLoop(waveCtx, it->second.block, loopOp)) {
+            if (!isUnderLoopFrame(waveCtx, it->second.block, loopFrameId)) {
                 ++it;
                 continue;
             }
@@ -4911,7 +4937,7 @@ private:
 
         for (auto it = waveCtx.syncPoints.begin();
              it != waveCtx.syncPoints.end();) {
-            if (!isUnderLoop(waveCtx, it->second.block, loopOp)) {
+            if (!isUnderLoopFrame(waveCtx, it->second.block, loopFrameId)) {
                 ++it;
                 continue;
             }
