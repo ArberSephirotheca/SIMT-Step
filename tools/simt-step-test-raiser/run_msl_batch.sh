@@ -70,7 +70,6 @@ for mlir in "${MLIR_FILES[@]}"; do
     "$RAISER_BIN"
     "$mlir"
     --mlir-to-msl
-    --no-wrapper
     --no-f64
     "--subgroup-width=$SUBGROUP_WIDTH"
     -o "$mm"
