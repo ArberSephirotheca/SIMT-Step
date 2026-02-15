@@ -2617,8 +2617,11 @@ private:
         blockCtx->activeMask &= ~laneBit;
         blockCtx->completedMask |= laneBit;
         // This lane exits the current iteration immediately. Clear stale state
-        // for this loop op before re-enrolling the lane on the next iteration.
-        shrinkExpectedForLoopLane(wave, waveCtx, loopFrameId, lane);
+        // from the current dynamic body subtree, but keep future iterations of
+        // the same loop frame intact so this lane can re-enroll before nested
+        // control epochs there close.
+        shrinkExpectedForSubtree(wave, waveCtx, bodyKey, lane, loopFrameId,
+                                 nextSeq);
 
         entry = findLoopEntryByFrameId(waveCtx, loopFrameId);
         if (!entry || !entry->loopFrame)
