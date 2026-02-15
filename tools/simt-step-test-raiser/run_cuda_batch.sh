@@ -36,7 +36,10 @@ run_and_log() {
   return ${PIPESTATUS[0]}
 }
 
-mapfile -t MLIR_FILES < <(compgen -G "$INPUT_GLOB" | sort)
+MLIR_FILES=()
+while IFS= read -r _f; do
+  MLIR_FILES+=("$_f")
+done < <(compgen -G "$INPUT_GLOB" | sort)
 if [[ ${#MLIR_FILES[@]} -eq 0 ]]; then
   echo "error: no inputs matched glob: $INPUT_GLOB" >&2
   exit 1
