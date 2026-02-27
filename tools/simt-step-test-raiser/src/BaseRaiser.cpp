@@ -667,7 +667,8 @@ LogicalResult emitAmberHarness(
     b.ntz = ntz;
 
     for (auto buffer : props.expected){
-        b.buffer_sizes.push_back(buffer.size());
+        // GLSL does not support 0 length arrays
+        b.buffer_sizes.push_back(buffer.size() ? buffer.size() : 1);
     }
 
     b.os << "#!amber\n";
@@ -686,9 +687,17 @@ LogicalResult emitAmberHarness(
     int bnum = 0;
     for (auto [outbuffer, inbuffer] : llvm::zip(props.expected, props.input)){
         b.os << "BUFFER actual" << bnum << " DATA_TYPE int32 DATA\n  ";
-        for (int i : inbuffer) b.os << i << " ";
+        if (inbuffer.size()){
+            for (int i : inbuffer) b.os << i << " ";
+        } else {
+            b.os << "0";
+        }
         b.os << "\nEND\nBUFFER expected" << bnum << " DATA_TYPE int32 DATA\n  ";
-        for (int i : outbuffer) b.os << i << " ";
+        if (outbuffer.size()){
+            for (int i : outbuffer) b.os << i << " ";
+        } else {
+            b.os << "0";
+        }
         b.os << "\nEND\n";
         bnum++;
     }

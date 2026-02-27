@@ -12,8 +12,14 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LogicalResult.h"
+#include "llvm/Support/raw_ostream.h"
+#include <cstddef>
+#include <cstdio>
+#include <fstream>
 #include <random>
 #include <string>
+#include <system_error>
+#include <vector>
 
 #define HLSL_INIT_ARGS \
         "uint3 thread_id : SV_DispatchThreadID, "\
@@ -35,7 +41,17 @@ std::map<std::string, std::vector<int>> funcBufferMaps;
 
 int subgroupSize;
 
+template <typename T>
+void emitCommaSep(std::vector<T> buf){
+    for (size_t i = 0; i < buf.size(); i++){
+        os << buf[i];
+        if (i < buf.size() - 1) os << ", ";
+    }
+}
+
 LogicalResult emitHarness(Operation* op, HarnessProps props) override {
+    std::vector<int64_t> bufferIndicies;
+    if (failed(getMainInfo(op, ntx, nty, ntz, bufferIndicies))) return failure();
     subgroupSize = props.subgroupWidth;
     if (useAmber){
         if (!props.noWrapper){
@@ -65,6 +81,71 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
             os.unindent();
             os.unindent();
         }
+    } else {
+
+        std::random_device dev;
+        std::mt19937 rng(dev());
+        std::uniform_int_distribution<std::mt19937::result_type> dist6(10000000,99999999);
+        std::string fname = "testout" + std::to_string(dist6(rng));
+
+        for (auto buffer : props.expected){
+            buffer_sizes.push_back(buffer.size());
+        }
+
+        if (!props.noWrapper){
+            os << "import subprocess as sp\nimport os\n";
+            os << "PROGRAM = r\"\"\"";
+        }
+
+        os << "#include <vector>\nconst char shaderData[] = R\"(\n";
+        if (failed(emitShaderPrologue(op))) return failure();
+        if (failed(emitOp(op))) return failure();
+        os << ")\";\n";
+
+        os << "std::vector<std::vector<int>> inbuf = {\n";
+        os.indent();
+        for (auto buf : props.input){
+            os << "{";
+            emitCommaSep(buf);
+            os << "},\n";
+        }
+        os.unindent();
+        os << "};\n";
+
+        os << "std::vector<std::vector<int>> expected = {\n";
+        os.indent();
+        for (auto buf : props.expected){
+            os << "{";
+            emitCommaSep(buf);
+            os << "},\n";
+        }
+        os.unindent();
+        os << "};\n";
+
+        std::string s;
+        std::ifstream driverFile(SIMT_RAISER_RESOURCE_PATH "/HLSLDriver.cpp");
+        while (std::getline(driverFile, s, '\n')){
+            os << s << "\n";
+        }
+
+        if (!props.noWrapper){
+            os << "\"\"\"\n\n";
+            os << "if __name__ == \"__main__\":\n";
+            os.indent();
+            os << "with open('" << fname << ".cpp', 'w') as f: f.write(PROGRAM)\n";
+            os << "try:\n";
+            os.indent();
+            os << "sp.run(['cl', '/EHsc', '/O2', '" << fname << ".cpp'], check=True, env=os.environ.copy())\n";
+            os << "sp.run(['" << fname << ".exe'], check=True, env=os.environ.copy())\n";
+            os.unindent() << "finally:\n";
+            os.indent();
+            os << "os.remove('" << fname << ".cpp')\n"
+                  "if os.path.exists('" << fname << ".exe'): os.remove('" << fname << ".exe')\n"
+                  "if os.path.exists('" << fname << ".obj'): os.remove('" << fname << ".obj')\n";
+            os.unindent();
+            os.unindent();
+        }
+
     }
     return success();
 }
@@ -130,12 +211,11 @@ LogicalResult emitType(Type type) override {
     } else if (auto indextype = dyn_cast<mlir::IndexType>(type)){
         os << "uint";
     } else if (auto rsrctype = dyn_cast<simt::dialect::ResourceType>(type)){
-        os << "RWBuffer<";
+        os << (useAmber ? "RWBuffer<" : "RWStructuredBuffer<");
         if(failed(emitType(rsrctype.getElementType()))) return failure();
         os << ">";
     } else {
-        os << "void";
-        // llvm_unreachable("Unsupported type");
+        llvm_unreachable("Unsupported type");
     }
 
     return success();
@@ -151,7 +231,7 @@ LogicalResult emitShaderPrologue(Operation* op) override {
         if (auto t = dyn_cast<simt::dialect::ResourceType>(v.getType())){
             assert(t.getMemorySpace() == simt::dialect::MemorySpace::Global);
 
-            os << "RWBuffer<";
+            os << (useAmber ? "RWBuffer<" : "RWStructuredBuffer<");
             if (failed(emitType(t.getElementType()))) return failure();
             os << "> " << addValueName(v) << " : register(u" << locs << ");\n";
 

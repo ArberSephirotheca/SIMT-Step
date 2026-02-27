@@ -1,16 +1,9 @@
 #!/bin/bash
 
-<<<<<<< HEAD
 cmake --build build -t simt-step-test-raiser
 if [ $? -ne 0 ]; then
     exit
 fi
-=======
-# cmake --build build -t simt-step-test-raiser
-# if [ $? -ne 0 ]; then
-#     exit
-# fi
->>>>>>> origin/CPSInterpeter-reimp
 
 files=${1:-*}
 lang=${2:-"glsl-amber"}
@@ -23,10 +16,6 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
             "glsl-amber") echo "amber" ;;
             "cuda") echo "cu" ;;
             "hip") echo "hip" ;;
-<<<<<<< HEAD
-=======
-            "msl") echo "mm" ;;
->>>>>>> origin/CPSInterpeter-reimp
         esac
     )
     if [[ files =~ "*" ]]; then
@@ -58,8 +47,6 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
             scp $outfile skagle@waterthrush.be.ucsc.edu:~/testout.hip
             ssh skagle@waterthrush.be.ucsc.edu hipcc -w testout.hip
             cat ../pass | ssh skagle@waterthrush.be.ucsc.edu sudo -S ./a.out
-<<<<<<< HEAD
-=======
         elif [ $lang == "msl" ]; then
             if ! command -v xcrun >/dev/null 2>&1; then
                 echo "xcrun not found; cannot build/run generated MSL harness"
@@ -69,7 +56,6 @@ for testfile in tools/simt-step-test-raiser/tests/$files.mlir; do
             if [ $? -eq 0 ]; then
                 /tmp/simt_step_msl_test
             fi
->>>>>>> origin/CPSInterpeter-reimp
         fi
         if [ $? -ne 0 ]; then
             echo "Output in: $outfile"

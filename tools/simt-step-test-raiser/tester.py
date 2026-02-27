@@ -16,8 +16,9 @@ TProps = namedtuple("TargetProps", ["ext", "runner_name", "extra_cmd", "final"])
 FailInfo = namedtuple("FailInfo", ["file", "passed_raiser", "stdout", "stderr"])
 
 TARGETS = {
-    "glsl-amber": TProps("amber", "../amber/out/Debug/amber", [], []),
-    "hlsl-amber": TProps("amber", "../amber/out/Debug/amber", [], []),
+    "glsl-amber": TProps("amber", "amber", [], []),
+    "hlsl-amber": TProps("amber", "amber", [], []),
+    "hlsl-directx": TProps("cpp", "cl", ['/EHsc', '/O2'], ['{0}.exe']),
     "cuda": TProps("cu", "nvcc", ["-o", "/tmp/{0}.out"], ["/tmp/{0}.out"]),
     "hip": TProps("hip", "hipcc", ["-o", "/tmp/{0}.out"], ["/tmp/{0}.out"]),
     "msl": TProps("py", "python3", [], []),
@@ -36,7 +37,7 @@ def run_raiser(file: Path, args: argparse.Namespace, failures: mp.Queue[FailInfo
     if not args.no_yaml and buffer_yaml.exists():
         raiser_cmd += ["--buffer-init-yaml", str(buffer_yaml)]
     
-    raiser_out_dir = args.output_dir if not args.ssh_dest else "/tmp"
+    raiser_out_dir = args.output_dir if not args.ssh_dest else "/tmp/glsl-fuzz"
     raiser_cmd += ["-o", raiser_out_dir + "/" + Path(no_ext).name + "." + TARGETS[args.target if args.no_wrapper else "python"].ext]
     
     raiser_process = sp.run(raiser_cmd, capture_output=True, env=os.environ.copy())
@@ -52,9 +53,6 @@ def run_runner(file: Path, args: argparse.Namespace, failures: mp.Queue[FailInfo
     raiser_out_dir = args.output_dir if not args.ssh_dest else "/tmp"
     to_run = Path(raiser_out_dir) / Path(no_ext.name + "." + TARGETS[true_target].ext)
     assert to_run.exists()
-
-    if args.ssh_dest:
-        sp.run(["scp", str(to_run), f"{args.ssh_dest}:{args.output_dir}"], check=True, capture_output=True, env=os.environ.copy())
 
     runner_cmd = [TARGETS[true_target].runner_name, str(to_run)] + args.runner_options.split() 
     runner_cmd += [s.format(no_ext.name) for s in TARGETS[true_target].extra_cmd]
@@ -80,10 +78,16 @@ def run_runner(file: Path, args: argparse.Namespace, failures: mp.Queue[FailInfo
 
     return True
 
-def worker(args: tuple[Path, argparse.Namespace, mp.Queue[FailInfo]]):
-    file, args, failures = args
-    if not run_raiser(file, args, failures): return
-    if not run_runner(file, args, failures): return
+def raiser_worker(args: tuple[Path, argparse.Namespace, mp.Queue[FailInfo]]):
+    return run_raiser(*args)
+
+
+def runner_worker(args: tuple[Path, argparse.Namespace, mp.Queue[FailInfo]]):
+    return run_runner(*args)
+
+def both_worker(args: tuple[Path, argparse.Namespace, mp.Queue[FailInfo]]):
+    if not run_raiser(*args): return
+    if not run_runner(*args): return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("tester.py")
@@ -122,6 +126,12 @@ if __name__ == "__main__":
                         help="Number of jobs to split the work",
                         default=1,
                         type=int)
+    parser.add_argument("-L", "--log-location",
+                        help="File to output failure log to. Default is stdout",
+                        default=None)
+    parser.add_argument("--raise-only",
+                        help="Only run the raiser on the files",
+                        action="store_true")
     
     args = parser.parse_args()
 
@@ -137,18 +147,31 @@ if __name__ == "__main__":
                 if not run_raiser(file, args, failures):
                     if "raiser" in args.stop_if_fails: break
                     else: continue
-                if not run_runner(file, args, failures):
-                    if "runner" in args.stop_if_fails: break
-                    else: continue
+                if not args.raise_only:
+                    if not run_runner(file, args, failures):
+                        if "runner" in args.stop_if_fails: break
+                        else: continue
         else:
-            process_map(worker, [(file, args, failures) for file in to_process], max_workers=args.jobs)
-            # with mp.Pool(args.jobs) as pool:
-            #     pool.map(worker, [(file, args, failures) for file in to_process])
+            if args.raise_only:
+                process_map(raiser_worker, [(file, args, failures) for file in to_process], max_workers=args.jobs)
+            elif args.ssh_dest:
+                raiser_outs = process_map(raiser_worker, [(file, args, failures) for file in to_process], max_workers=args.jobs)
+                true_target = args.target if args.no_wrapper else "python"
+                raiser_out_dir = args.output_dir if not args.ssh_dest else "/tmp"
+                sp.run(["scp", "-C"]
+                    + [Path(raiser_out_dir) / Path(Path(str(file).rsplit(".", 1)[0]).name + "." + TARGETS[true_target].ext) 
+                        for i, file in enumerate(to_process) if raiser_outs[i]]
+                        + [f"{args.ssh_dest}:{args.output_dir}"], check=True, capture_output=True, env=os.environ.copy())
+
+                runner_outs = process_map(runner_worker, [(file, args, failures) for i, file in enumerate(to_process) if raiser_outs[i]], max_workers=args.jobs)
+            else:
+                process_map(both_worker, [(file, args, failures) for file in to_process], max_workers=args.jobs)
     except KeyboardInterrupt:
         pass
     
-    print(f"\n\nFailures: {failures.qsize()}/{len(to_process)}\n---------------------------------------")
-    for i in range(failures.qsize()):
-        f = failures.get_nowait()
-        print(f"\n{f.file}:\nPassed Raiser: {f.passed_raiser}\n------ stdout ------\n{f.stdout.decode()}\n------ stderr ------\n{f.stderr.decode()}")
+    with open(args.log_location or "/dev/stdout", "w") as logout:
+        print(f"\n\nFailures: {failures.qsize()}/{len(to_process)}\n---------------------------------------", file=logout)
+        for i in range(failures.qsize()):
+            f = failures.get_nowait()
+            print(f"\n{f.file}:\nPassed Raiser: {f.passed_raiser}\n------ stdout ------\n{f.stdout.decode()}\n------ stderr ------\n{f.stderr.decode()}", file=logout)
         

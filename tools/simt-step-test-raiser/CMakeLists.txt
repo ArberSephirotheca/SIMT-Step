@@ -33,6 +33,7 @@ target_include_directories(simt-step-test-raiser
 target_compile_definitions(simt-step-test-raiser
     PRIVATE
         SIMT_STEP_RUNNER_PATH="${CMAKE_SOURCE_DIR}/build/tools/simt-step-runner/simt-step-runner"
+        SIMT_RAISER_RESOURCE_PATH="${CMAKE_SOURCE_DIR}/tools/simt-step-test-raiser/src/resources"
 )
 
 mlir_check_link_libraries(simt-step-test-raiser)

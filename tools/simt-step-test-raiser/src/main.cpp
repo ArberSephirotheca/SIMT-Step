@@ -10,6 +10,7 @@
 #include "simt-step/Runner/InitYaml.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
 #include <llvm/Support/CommandLine.h>
 #include <mlir/Tools/mlir-translate/Translation.h>
@@ -94,6 +95,7 @@ llvm::LogicalResult getExpectedBuffer(
             for (auto &ientry : buf.entries){
                 init_entries.push_back({bufopt.argIndex, ientry.index, ientry.value});
             }
+
             options.perBuffer.push_back(bufopt);
         }
     }
@@ -228,7 +230,7 @@ int main(int argc, char** argv){
     );
 
     TranslateFromMLIRRegistration t_hlsl(
-        "mlir-to-hlsl", "translate mlir to HLSL with a C++ test harness",
+        "mlir-to-hlsl-directx", "translate mlir to HLSL with a DirectX C++ test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedHLSL, 
             bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),

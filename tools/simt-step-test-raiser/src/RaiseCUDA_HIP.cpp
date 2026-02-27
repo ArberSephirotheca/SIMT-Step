@@ -90,7 +90,7 @@ LogicalResult emitHarness(
         os << name + "Memcpy(host_actual" << i << ", dev_actual" << i << ", sizeof(host_actual" << i << "), " + name + "MemcpyDeviceToHost);\n";
         os << "for (int i = 0; i < " << props.expected[i].size() << "; i++){\n";
         os.indent() << "if (expected" << i << "[i] != host_actual" << i << "[i]){\n";
-        os.indent() << "printf(\"[%d]: expected=%d actual=%d\\n\", i, expected" << i << "[i], host_actual" << i << "[i]);\n";
+        os.indent() << "fprintf(stderr, \"[%d]: expected=%d actual=%d\\n\", i, expected" << i << "[i], host_actual" << i << "[i]);\n";
         os << "assert(expected" << i << "[i] == host_actual" << i << "[i]);\n";
         os.unindent() << "}\n";
         os.unindent() << "}\n";
