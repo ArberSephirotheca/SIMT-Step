@@ -92,21 +92,28 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
             buffer_sizes.push_back(buffer.size());
         }
 
-        if (!props.noWrapper){
-            os << "import subprocess as sp\nimport os\n";
-            os << "PROGRAM = r\"\"\"";
+        if (props.noWrapper){
+            fprintf(stderr, "HLSL DirectX target requires Python wrapper.");
+            return failure();
         }
 
-        os << "#include <vector>\nconst char shaderData[] = R\"(\n";
+        os << "import subprocess as sp\nimport os\n";
+        os << "PROGRAM = r\"\"\"";
         if (failed(emitShaderPrologue(op))) return failure();
         if (failed(emitOp(op))) return failure();
-        os << ")\";\n";
+        os << "\"\"\"\nDRIVER = r\"\"\"";
+
+        os << "#include <vector>\n#define FNAME L\"" << fname << ".hlsl\"\n";
 
         os << "std::vector<std::vector<int>> inbuf = {\n";
         os.indent();
         for (auto buf : props.input){
             os << "{";
-            emitCommaSep(buf);
+            if (buf.empty()){
+                os << "0";    
+            } else {
+                emitCommaSep(buf);
+            }
             os << "},\n";
         }
         os.unindent();
@@ -116,7 +123,11 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
         os.indent();
         for (auto buf : props.expected){
             os << "{";
-            emitCommaSep(buf);
+            if (buf.empty()){
+                os << "0";    
+            } else {
+                emitCommaSep(buf);
+            }
             os << "},\n";
         }
         os.unindent();
@@ -128,23 +139,23 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
             os << s << "\n";
         }
 
-        if (!props.noWrapper){
-            os << "\"\"\"\n\n";
-            os << "if __name__ == \"__main__\":\n";
-            os.indent();
-            os << "with open('" << fname << ".cpp', 'w') as f: f.write(PROGRAM)\n";
-            os << "try:\n";
-            os.indent();
-            os << "sp.run(['cl', '/EHsc', '/O2', '" << fname << ".cpp'], check=True, env=os.environ.copy())\n";
-            os << "sp.run(['" << fname << ".exe'], check=True, env=os.environ.copy())\n";
-            os.unindent() << "finally:\n";
-            os.indent();
-            os << "os.remove('" << fname << ".cpp')\n"
-                  "if os.path.exists('" << fname << ".exe'): os.remove('" << fname << ".exe')\n"
-                  "if os.path.exists('" << fname << ".obj'): os.remove('" << fname << ".obj')\n";
-            os.unindent();
-            os.unindent();
-        }
+        os << "\"\"\"\n\n";
+        os << "if __name__ == \"__main__\":\n";
+        os.indent();
+        os << "with open('" << fname << ".cpp', 'w') as f: f.write(DRIVER)\n";
+        os << "with open('" << fname << ".hlsl', 'w') as f: f.write(PROGRAM)\n";
+        os << "try:\n";
+        os.indent();
+        os << "sp.run(['cl', '/EHsc', '" << fname << ".cpp'], check=True, env=os.environ.copy())\n";
+        os << "sp.run(['" << fname << ".exe'], check=True, env=os.environ.copy())\n";
+        os.unindent() << "finally:\n";
+        os.indent();
+        os << "os.remove('" << fname << ".cpp')\n"
+              "if os.path.exists('" << fname << ".exe'): os.remove('" << fname << ".exe')\n"
+              "if os.path.exists('" << fname << ".obj'): os.remove('" << fname << ".obj')\n"
+              "if os.path.exists('" << fname << ".hlsl'): os.remove('" << fname << ".hlsl')\n";
+        os.unindent();
+        os.unindent();
 
     }
     return success();
