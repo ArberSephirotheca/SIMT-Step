@@ -1,0 +1,3 @@
+$ build/tools/simt-step-test-raiser/simt-step-test-raiser fuzz-tests-uniform/test_062_seed_62.mlir --mlir-to-msl --no-f64 --subgroup-width=32 -o /Users/zheyuan/SIMT-Step/msl-tests/test_062_seed_62.mm --buffer-init-yaml fuzz-tests-uniform/test_062_seed_62.yaml
+$ xcrun clang++ -std=c++17 -x objective-c++ /Users/zheyuan/SIMT-Step/msl-tests/test_062_seed_62.mm -framework Metal -framework Foundation -o /Users/zheyuan/SIMT-Step/msl-bin/test_062_seed_62.out
+$ /Users/zheyuan/SIMT-Step/msl-bin/test_062_seed_62.out

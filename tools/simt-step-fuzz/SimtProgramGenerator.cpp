@@ -47,6 +47,21 @@ struct BuildState {
     Value tid;
     Value outWave;
     unsigned switchDepth = 0;
+    unsigned divergenceDepth = 0;
+};
+
+struct DivergenceScope {
+    unsigned *depth = nullptr;
+
+    explicit DivergenceScope(unsigned *depth) : depth(depth) {
+        if (this->depth)
+            ++(*this->depth);
+    }
+
+    ~DivergenceScope() {
+        if (depth)
+            --(*depth);
+    }
 };
 
 static Value makeI32(OpBuilder &b, Location loc, int v) {
@@ -151,12 +166,29 @@ struct HelperBuildState {
     int *waveId = nullptr;
     llvm::SmallVector<Value, 4> loopIters;
     unsigned switchDepth = 0;
+    unsigned divergenceDepth = 0;
 };
 
 static Value buildHelperValue(OpBuilder &b, Location loc, HelperBuildState &st);
 
-static Value emitHelperWaveCount(OpBuilder &b, Location loc, HelperBuildState &st) {
+static bool canEmitSubgroupCollective(const BuildState &st) {
     if (st.cfg.noSubgroupOpsInSwitch && st.switchDepth > 0)
+        return false;
+    if (st.cfg.uniformSubgroupOnly && st.divergenceDepth > 0)
+        return false;
+    return true;
+}
+
+static bool canEmitSubgroupCollective(const HelperBuildState &st) {
+    if (st.cfg.noSubgroupOpsInSwitch && st.switchDepth > 0)
+        return false;
+    if (st.cfg.uniformSubgroupOnly && st.divergenceDepth > 0)
+        return false;
+    return true;
+}
+
+static Value emitHelperWaveCount(OpBuilder &b, Location loc, HelperBuildState &st) {
+    if (!canEmitSubgroupCollective(st))
         return buildHelperValue(b, loc, st);
     st.waveOps++;
     Value count = b.create<simt::dialect::WaveCountBitsOp>(loc, b.getI32Type(),
@@ -258,14 +290,20 @@ static Value buildHelperSwitch(OpBuilder &b, Location loc, HelperBuildState &st,
         }
         OpBuilder cb(&blk, blk.begin());
         st.switchDepth++;
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value bodyVal = buildHelperPattern(cb, loc, st, depth + 1, maxDepth);
         st.switchDepth--;
         auto yield = cb.create<simt::dialect::YieldOp>(loc, ValueRange{bodyVal});
         yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
         ++caseIdx;
     }
-    if (st.cfg.postSwitchWaveOpRate > 0.0 &&
+    bool emitPostSwitch = st.cfg.uniformSubgroupOnly;
+    if (!emitPostSwitch && st.cfg.postSwitchWaveOpRate > 0.0 &&
         st.rng.chance(st.cfg.postSwitchWaveOpRate)) {
+        emitPostSwitch = true;
+    }
+    if (emitPostSwitch) {
         emitHelperWaveCount(b, loc, st);
     }
     return switchOp.getResult(0);
@@ -292,15 +330,21 @@ static Value buildHelperIf(OpBuilder &b, Location loc, HelperBuildState &st,
     {
         auto &thenBlock = ifOp.getThenRegion().front();
         OpBuilder tb(&thenBlock, thenBlock.begin());
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value v = buildHelperPattern(tb, loc, st, depth + 1, maxDepth);
         tb.create<simt::dialect::YieldOp>(loc, ValueRange{v});
     }
     {
         auto &elseBlock = ifOp.getElseRegion().front();
         OpBuilder eb(&elseBlock, elseBlock.begin());
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value v = buildHelperPattern(eb, loc, st, depth + 1, maxDepth);
         eb.create<simt::dialect::YieldOp>(loc, ValueRange{v});
     }
+    if (st.cfg.uniformSubgroupOnly)
+        emitHelperWaveCount(b, loc, st);
     return ifOp.getResult(0);
 }
 
@@ -351,6 +395,8 @@ static Value buildHelperLoop(OpBuilder &b, Location loc, HelperBuildState &st,
     {
         auto &body = loop.getBodyRegion().front();
         OpBuilder bb(&body, body.begin());
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value idx = body.getArgument(1);
 
         st.loopIters.push_back(idx);
@@ -375,16 +421,24 @@ static Value buildHelperLoop(OpBuilder &b, Location loc, HelperBuildState &st,
             bb.create<simt::dialect::YieldOp>(loc, ValueRange{nextAcc, nextIdx});
         }
     }
+    if (st.cfg.uniformSubgroupOnly)
+        emitHelperWaveCount(b, loc, st);
     return loop.getResult(0);
 }
 
 static Value buildHelperPattern(OpBuilder &b, Location loc, HelperBuildState &st,
                                unsigned depth, unsigned maxDepth) {
-    if (depth >= maxDepth)
+    if (depth >= maxDepth) {
+        if (st.cfg.uniformSubgroupOnly)
+            return buildHelperValue(b, loc, st);
         return emitHelperWaveCount(b, loc, st);
+    }
     int choice = st.rng.pick(0, 3); // 0 leaf, 1 if, 2 loop, 3 switch
-    if (choice == 0)
+    if (choice == 0) {
+        if (st.cfg.uniformSubgroupOnly)
+            return buildHelperValue(b, loc, st);
         return emitHelperWaveCount(b, loc, st);
+    }
     if (choice == 1)
         return buildHelperIf(b, loc, st, depth, maxDepth);
     if (choice == 2)
@@ -515,7 +569,7 @@ static Value makeNonUniformBound(OpBuilder &b, Location loc, RNG &rng,
 
 static void emitWaveCount(OpBuilder &b, Location loc, BuildState &st,
                           Value predicate, Value iteration = nullptr) {
-    if (st.cfg.noSubgroupOpsInSwitch && st.switchDepth > 0)
+    if (!canEmitSubgroupCollective(st))
         return;
     (void)predicate; // ignore caller-provided predicate; always count active lanes.
     int lanes = static_cast<int>(st.cfg.numThreads[0]);
@@ -642,6 +696,8 @@ static Value buildSwitch(OpBuilder &b, Location loc, BuildState &st,
         }
         OpBuilder cb(&blk, blk.begin());
         st.switchDepth++;
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value bodyVal = buildPattern(cb, loc, st, depth + 1, maxDepth);
         if (emitWaveInCase[caseIdx])
             emitWaveCount(cb, loc, st, makeBool(cb, loc, true));
@@ -650,8 +706,12 @@ static Value buildSwitch(OpBuilder &b, Location loc, BuildState &st,
         yield->setAttr("fallthrough", b.getBoolAttr(fallthroughCase[caseIdx]));
         ++caseIdx;
     }
-    if (st.cfg.postSwitchWaveOpRate > 0.0 &&
+    bool emitPostSwitch = st.cfg.uniformSubgroupOnly;
+    if (!emitPostSwitch && st.cfg.postSwitchWaveOpRate > 0.0 &&
         st.rng.chance(st.cfg.postSwitchWaveOpRate)) {
+        emitPostSwitch = true;
+    }
+    if (emitPostSwitch) {
         emitWaveCount(b, loc, st, makeBool(b, loc, true));
     }
     return switchOp.getResult(0);
@@ -670,12 +730,16 @@ static Value buildIf(OpBuilder &b, Location loc, BuildState &st, unsigned depth,
     {
         auto &blk = ifOp.getThenRegion().front();
         OpBuilder tb(&blk, blk.begin());
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value v = buildPattern(tb, loc, st, depth + 1, maxDepth);
         tb.create<simt::dialect::YieldOp>(loc, ValueRange{v});
     }
     {
         auto &blk = ifOp.getElseRegion().front();
         OpBuilder eb(&blk, blk.begin());
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value v = buildPattern(eb, loc, st, depth + 1, maxDepth);
         eb.create<simt::dialect::YieldOp>(loc, ValueRange{v});
     }
@@ -742,6 +806,8 @@ static Value buildLoop(OpBuilder &b, Location loc, BuildState &st, unsigned dept
     {
         auto &body = loop.getBodyRegion().front();
         OpBuilder bb(&body, body.begin());
+        DivergenceScope divergence(st.cfg.uniformSubgroupOnly ? &st.divergenceDepth
+                                                              : nullptr);
         Value acc = body.getArgument(0);
         Value idx = body.getArgument(1);
         Value inner = (depth + 1 < maxDepth && st.rng.coin())
@@ -750,7 +816,8 @@ static Value buildLoop(OpBuilder &b, Location loc, BuildState &st, unsigned dept
         Value sum = bb.create<arith::AddIOp>(loc, acc, inner);
         Value one = makeI32(bb, loc, 1);
         Value nextIdx = bb.create<arith::AddIOp>(loc, idx, one);
-        emitWaveCount(bb, loc, st, makeBool(bb, loc, true), idx);
+        if (!st.cfg.uniformSubgroupOnly)
+            emitWaveCount(bb, loc, st, makeBool(bb, loc, true), idx);
         // Optionally emit a structured continue/break to exercise loop control.
         bool emitCtrl = false;
         if (st.cfg.breakContinueRate < 0.0) {
@@ -769,6 +836,8 @@ static Value buildLoop(OpBuilder &b, Location loc, BuildState &st, unsigned dept
             bb.create<simt::dialect::YieldOp>(loc, ValueRange{sum, nextIdx});
         }
     }
+    if (st.cfg.uniformSubgroupOnly)
+        emitWaveCount(b, loc, st, makeBool(b, loc, true));
     return loop.getResult(0);
 }
 
@@ -1300,7 +1369,8 @@ createRicherRandomModule(mlir::MLIRContext &context,
                 loadPredicateI32(builder, loc, st, valueBase, st.tid));
         }
     }
-    bool wrapHelper = cfg.nonUniformHelperCallRate > 0.0 &&
+    bool wrapHelper = !cfg.uniformSubgroupOnly &&
+                      cfg.nonUniformHelperCallRate > 0.0 &&
                       st.rng.chance(cfg.nonUniformHelperCallRate);
     if (!wrapHelper) {
         builder.create<func::CallOp>(loc, helper, helperArgs);
