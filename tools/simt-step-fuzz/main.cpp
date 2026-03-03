@@ -262,6 +262,10 @@ int main(int argc, char **argv) {
         "no-subgroup-in-switch",
         llvm::cl::desc("Do not emit subgroup ops (wave/lane_id/subgroup_id) inside switch cases"),
         llvm::cl::init(false));
+    llvm::cl::opt<bool> uniformSubgroupOnly(
+        "uniform-subgroup-only",
+        llvm::cl::desc("Emit subgroup collectives only at uniform merge points (post-if/post-loop/post-switch)"),
+        llvm::cl::init(false));
     llvm::cl::opt<double> postSwitchWaveOpRate(
         "post-switch-wave-op-rate",
         llvm::cl::desc("Probability in [0,1] to emit a wave op immediately after a switch"),
@@ -373,6 +377,7 @@ int main(int argc, char **argv) {
     cfg.complexHelper = complexHelper || helperSubgroupIds;
     cfg.helperUsesSubgroupIds = helperSubgroupIds;
     cfg.noSubgroupOpsInSwitch = noSubgroupOpsInSwitch;
+    cfg.uniformSubgroupOnly = uniformSubgroupOnly;
     cfg.postSwitchWaveOpRate = postSwitchWaveOpRate;
     cfg.nonUniformHelperCallRate = nonUniformHelperCallRate;
     cfg.helperCallPostSwitchRate = helperCallPostSwitchRate;

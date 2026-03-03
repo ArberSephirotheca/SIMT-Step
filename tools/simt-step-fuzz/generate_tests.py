@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 
-def run(cmd):
-    return subprocess.run(cmd, capture_output=True, text=True)
+def run(cmd, stdin_text=None):
+    return subprocess.run(cmd, input=stdin_text, capture_output=True, text=True)
 
 
 def main():
@@ -110,6 +110,11 @@ def main():
         type=float,
         default=None,
         help="Probability in [0,1] to nest helper call in a loop (vs if) when depth > 1",
+    )
+    parser.add_argument(
+        "--uniform-subgroup-only",
+        action="store_true",
+        help="Emit subgroup collectives only at uniform merge points and reject violating seeds",
     )
     parser.add_argument(
         "--predicate-buffer",
@@ -259,6 +264,10 @@ def main():
     if args.save_failure_limit < 0:
         parser.error("--save-failure-limit must be >= 0")
 
+    validator_script = Path(__file__).with_name("validate_uniform_subgroup.py")
+    if args.uniform_subgroup_only and not validator_script.exists():
+        parser.error(f"uniform subgroup validator not found: {validator_script}")
+
     def append_generation_options(cmd, predicate_yaml=None):
         if args.break_continue_rate is not None:
             cmd.append(f"--break-continue-rate={args.break_continue_rate}")
@@ -288,6 +297,8 @@ def main():
             cmd.append(
                 f"--helper-call-nest-loop-rate={args.helper_call_nest_loop_rate}"
             )
+        if args.uniform_subgroup_only:
+            cmd.append("--uniform-subgroup-only")
         if args.predicate_buffer:
             cmd.append("--predicate-buffer")
             if predicate_yaml:
@@ -381,6 +392,13 @@ def main():
                 seed += args.seed_step
                 continue
 
+            if args.uniform_subgroup_only:
+                validate_uniform_cmd = [sys.executable, str(validator_script), "--stdin"]
+                invariant = run(validate_uniform_cmd, stdin_text=generated.stdout)
+                if invariant.returncode != 0:
+                    seed += args.seed_step
+                    continue
+
             filename = f"test_{count:03d}_seed_{seed}.mlir"
             out_path = out_dir / filename
             out_path.write_text(generated.stdout, encoding="utf-8")
@@ -416,6 +434,8 @@ def main():
                 record["helper_call_max_depth"] = args.helper_call_max_depth
             if args.helper_call_nest_loop_rate is not None:
                 record["helper_call_nest_loop_rate"] = args.helper_call_nest_loop_rate
+            if args.uniform_subgroup_only:
+                record["uniform_subgroup_only"] = True
             if args.collective_cf:
                 record["collective_cf"] = True
             if args.sync_cf:

@@ -19,6 +19,7 @@ struct GeneratorConfig {
     bool complexHelper = false;
     bool helperUsesSubgroupIds = false;
     bool noSubgroupOpsInSwitch = false;
+    bool uniformSubgroupOnly = false; // emit subgroup collectives only at uniform merge points
     double postSwitchWaveOpRate = 0.0; // probability in [0,1] to emit wave op after switch
     double nonUniformHelperCallRate = 0.0; // probability in [0,1] to call helper under non-uniform control flow
     double helperCallPostSwitchRate = 0.0; // probability in [0,1] to emit a switch before helper call (call happens after switch)
