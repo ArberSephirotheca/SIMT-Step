@@ -1,0 +1,62 @@
+buffers:
+  - buffer: arg1
+    size: 140
+    fill: 0
+    entries:
+      - { index: 0, value: 1 }
+      - { index: 2, value: 1 }
+      - { index: 4, value: 3 }
+      - { index: 6, value: 1 }
+      - { index: 7, value: 2 }
+      - { index: 9, value: 1 }
+      - { index: 11, value: 1 }
+      - { index: 12, value: 1 }
+      - { index: 13, value: 1 }
+      - { index: 14, value: 1 }
+      - { index: 15, value: 1 }
+      - { index: 17, value: 1 }
+      - { index: 19, value: 1 }
+      - { index: 33, value: 1 }
+      - { index: 34, value: 2 }
+      - { index: 35, value: 3 }
+      - { index: 36, value: 1 }
+      - { index: 40, value: 1 }
+      - { index: 41, value: 1 }
+      - { index: 42, value: 1 }
+      - { index: 43, value: 1 }
+      - { index: 45, value: 1 }
+      - { index: 46, value: 1 }
+      - { index: 50, value: 1 }
+      - { index: 60, value: 1 }
+      - { index: 61, value: 1 }
+      - { index: 62, value: 1 }
+      - { index: 63, value: 1 }
+      - { index: 65, value: 1 }
+      - { index: 66, value: 1 }
+      - { index: 67, value: 1 }
+      - { index: 70, value: 1 }
+      - { index: 71, value: 1 }
+      - { index: 75, value: 1 }
+      - { index: 80, value: 1 }
+      - { index: 82, value: 1 }
+      - { index: 84, value: 1 }
+      - { index: 86, value: 1 }
+      - { index: 89, value: 1 }
+      - { index: 90, value: 2 }
+      - { index: 92, value: 1 }
+      - { index: 94, value: 1 }
+      - { index: 96, value: 1 }
+      - { index: 97, value: 1 }
+      - { index: 98, value: 1 }
+      - { index: 99, value: 1 }
+      - { index: 101, value: 1 }
+      - { index: 102, value: 1 }
+      - { index: 106, value: 1 }
+      - { index: 117, value: 1 }
+      - { index: 118, value: 2 }
+      - { index: 120, value: 1 }
+      - { index: 121, value: 1 }
+      - { index: 122, value: 1 }
+      - { index: 123, value: 1 }
+      - { index: 125, value: 1 }
+      - { index: 127, value: 1 }
