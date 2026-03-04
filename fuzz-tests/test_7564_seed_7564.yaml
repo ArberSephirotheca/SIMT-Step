@@ -1,0 +1,42 @@
+buffers:
+  - buffer: arg1
+    size: 84
+    fill: 0
+    entries:
+      - { index: 0, value: 1 }
+      - { index: 4, value: 3 }
+      - { index: 6, value: 1 }
+      - { index: 7, value: 2 }
+      - { index: 8, value: 1 }
+      - { index: 13, value: 1 }
+      - { index: 15, value: 1 }
+      - { index: 16, value: 1 }
+      - { index: 18, value: 1 }
+      - { index: 20, value: 1 }
+      - { index: 21, value: 1 }
+      - { index: 22, value: 1 }
+      - { index: 24, value: 1 }
+      - { index: 25, value: 1 }
+      - { index: 26, value: 1 }
+      - { index: 27, value: 1 }
+      - { index: 29, value: 1 }
+      - { index: 31, value: 1 }
+      - { index: 45, value: 1 }
+      - { index: 46, value: 2 }
+      - { index: 47, value: 3 }
+      - { index: 48, value: 1 }
+      - { index: 52, value: 1 }
+      - { index: 54, value: 1 }
+      - { index: 57, value: 1 }
+      - { index: 58, value: 2 }
+      - { index: 59, value: 3 }
+      - { index: 60, value: 1 }
+      - { index: 61, value: 1 }
+      - { index: 62, value: 1 }
+      - { index: 63, value: 1 }
+      - { index: 65, value: 1 }
+      - { index: 66, value: 1 }
+      - { index: 70, value: 1 }
+      - { index: 80, value: 1 }
+      - { index: 81, value: 1 }
+      - { index: 82, value: 1 }
