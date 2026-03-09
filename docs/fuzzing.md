@@ -226,9 +226,9 @@ To run MSL raise/compile/run across multiple fuzz suites and get combined pass/f
 
 ```sh
 tools/simt-step-test-raiser/run_msl_multi_suite.sh \
-  /Users/zheyuan/SIMT-Step/fuzz-tests_uniform \
-  /Users/zheyuan/SIMT-Step/fuzz-tests-switch-no-subgroup \
-  /Users/zheyuan/SIMT-Step/fuzz-tests-switch-subgroup
+  /fuzz-tests_uniform \
+  fuzz-tests-switch-no-subgroup \
+  /fuzz-tests-switch-subgroup
 ```
 
 Outputs:
