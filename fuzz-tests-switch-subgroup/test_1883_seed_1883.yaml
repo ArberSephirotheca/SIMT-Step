@@ -1,0 +1,17 @@
+buffers:
+  - buffer: arg1
+    size: 20
+    fill: 0
+    entries:
+      - { index: 0, value: 1 }
+      - { index: 2, value: 1 }
+      - { index: 4, value: 3 }
+      - { index: 6, value: 1 }
+      - { index: 7, value: 2 }
+      - { index: 9, value: 1 }
+      - { index: 11, value: 1 }
+      - { index: 13, value: 1 }
+      - { index: 14, value: 2 }
+      - { index: 15, value: 3 }
+      - { index: 16, value: 1 }
+      - { index: 18, value: 1 }
