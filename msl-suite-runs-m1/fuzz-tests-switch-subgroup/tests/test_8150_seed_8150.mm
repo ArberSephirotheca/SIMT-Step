@@ -1,0 +1,678 @@
+#import <Foundation/Foundation.h>
+#import <Metal/Metal.h>
+#include <cstdint>
+#include <cstdio>
+
+static const char *kShaderSource = R"MSL(
+#include <metal_stdlib>
+using namespace metal;
+#define SIMT_SUBGROUP_WIDTH 32
+static inline int simt_lane_id(int tid) {
+  return tid % SIMT_SUBGROUP_WIDTH;
+}
+static inline int simt_subgroup_id(int tid) {
+  return tid / SIMT_SUBGROUP_WIDTH;
+}
+static inline int simt_wave_count_bits(bool pred) {
+  return static_cast<int>(simd_sum(pred ? 1u : 0u));
+}
+
+inline void helper0(int v0, device int* v1, int v2, int v3, int __simt_tid){
+  int v4 = 2;
+  int v5 = v3 % v4;
+  int v6 = 0;
+  int v7;
+  v7 = v6;
+  switch (v5) {
+    case 0:
+      {
+      int v8 = 0;
+      bool v9 = v2 != v8;
+      int v10;
+      if (v9) {
+        int v11 = 0;
+        bool v12 = v2 != v11;
+        int v13;
+        if (v12) {
+          bool v14 = true;
+          int v15 = simt_wave_count_bits(v14);
+          int v16 = 0;
+          int v17 = v16 + v0;
+          v1[v17] = v15;
+          v13 = v15;
+        } else {
+          bool v18 = true;
+          int v19 = simt_wave_count_bits(v18);
+          int v20 = 16;
+          int v21 = v20 + v0;
+          v1[v21] = v19;
+          v13 = v19;
+        }
+        v10 = v13;
+      } else {
+        int v22 = 0;
+        bool v23 = v2 != v22;
+        int v24;
+        if (v23) {
+          bool v25 = true;
+          int v26 = simt_wave_count_bits(v25);
+          int v27 = 32;
+          int v28 = v27 + v0;
+          v1[v28] = v26;
+          v24 = v26;
+        } else {
+          bool v29 = true;
+          int v30 = simt_wave_count_bits(v29);
+          int v31 = 48;
+          int v32 = v31 + v0;
+          v1[v32] = v30;
+          v24 = v30;
+        }
+        v10 = v24;
+      }
+      v7 = v10;
+      break;
+    }
+    case 1:
+      {
+      bool v33 = true;
+      int v34 = simt_wave_count_bits(v33);
+      int v35 = 64;
+      int v36 = v35 + v0;
+      v1[v36] = v34;
+      v7 = v34;
+    }
+    default:
+      {
+      int v37 = 2;
+      int v38 = v3 % v37;
+      int v39 = 2;
+      int v40 = v0 + v39;
+      int v41;
+      v41 = v40;
+      switch (v38) {
+        case 0:
+          {
+          int v42 = 3;
+          int v43 = v3 % v42;
+          int v44;
+          v44 = v0;
+          switch (v43) {
+            case 0:
+              {
+              bool v45 = true;
+              int v46 = simt_wave_count_bits(v45);
+              int v47 = 80;
+              int v48 = v47 + v0;
+              v1[v48] = v46;
+              v44 = v46;
+            }
+            default:
+              {
+              bool v49 = true;
+              int v50 = simt_wave_count_bits(v49);
+              int v51 = 96;
+              int v52 = v51 + v0;
+              v1[v52] = v50;
+              v44 = v50;
+              break;
+            }
+            case 1:
+              {
+              bool v53 = true;
+              int v54 = simt_wave_count_bits(v53);
+              int v55 = 112;
+              int v56 = v55 + v0;
+              v1[v56] = v54;
+              v44 = v54;
+              break;
+            }
+            case 2:
+              {
+              bool v57 = true;
+              int v58 = simt_wave_count_bits(v57);
+              int v59 = 128;
+              int v60 = v59 + v0;
+              v1[v60] = v58;
+              v44 = v58;
+              break;
+            }
+          }
+          v41 = v44;
+        }
+        default:
+          {
+          int v61 = 0;
+          bool v62 = v2 != v61;
+          int v63;
+          if (v62) {
+            bool v64 = true;
+            int v65 = simt_wave_count_bits(v64);
+            int v66 = 144;
+            int v67 = v66 + v0;
+            v1[v67] = v65;
+            v63 = v65;
+          } else {
+            bool v68 = true;
+            int v69 = simt_wave_count_bits(v68);
+            int v70 = 160;
+            int v71 = v70 + v0;
+            v1[v71] = v69;
+            v63 = v69;
+          }
+          v41 = v63;
+          break;
+        }
+      }
+      v7 = v41;
+      break;
+    }
+  }
+  return;
+}
+
+kernel void kernel_main(device int* v72 [[buffer(0)]], device int* v73 [[buffer(1)]], uint3 __simt_tid3 [[thread_position_in_grid]], uint3 __simt_group_id [[threadgroup_position_in_grid]], uint3 __simt_local_tid [[thread_position_in_threadgroup]]){
+  int v74 = static_cast<int>(__simt_tid3.x);
+  int v75 = 0;
+  int v76 = v75 + v74;
+  int v77 = v73[v76];
+  int v78 = 4;
+  int v79 = v78 + v74;
+  int v80 = v73[v79];
+  helper0(v74, v72, v77, v80, static_cast<int>(__simt_tid3.x));
+  int v81 = 8;
+  int v82 = v81 + v74;
+  int v83 = v73[v82];
+  int v84;
+  v84 = v74;
+  switch (v83) {
+    case 0:
+      {
+      int v85 = 12;
+      int v86 = v85 + v74;
+      int v87 = v73[v86];
+      int v88 = 1;
+      int v89 = v74 + v88;
+      int v90;
+      v90 = v89;
+      switch (v87) {
+        case 0:
+          {
+          int v91 = 0;
+          int v92 = 0;
+          int v93;
+          int v94;
+          v93 = v91;
+          v94 = v92;
+          while (true) {
+            int v95 = 4;
+            int v96 = v94 * v95;
+            int v97 = v96 + v74;
+            int v98 = 16;
+            int v99 = v98 + v97;
+            int v100 = v73[v99];
+            int v101 = 0;
+            bool v102 = v100 != v101;
+            v93 = v93;
+            v94 = v94;
+            if (!v102) break;
+            int v103 = v93 + v94;
+            int v104 = 1;
+            int v105 = v94 + v104;
+            bool v106 = true;
+            int v107 = 176;
+            int v108 = 4;
+            int v109 = v94 * v108;
+            int v110 = v107 + v109;
+            int v111 = v110 + v74;
+            bool v112 = true;
+            int v113 = simt_wave_count_bits(v112);
+            v72[v111] = v113;
+            v93 = v103;
+            v94 = v105;
+          }
+          bool v114 = true;
+          int v115 = 192;
+          int v116 = v115 + v74;
+          bool v117 = true;
+          int v118 = simt_wave_count_bits(v117);
+          v72[v116] = v118;
+          v90 = v93;
+          break;
+        }
+        case 1:
+          {
+          int v119 = 36;
+          int v120 = v119 + v74;
+          int v121 = v73[v120];
+          int v122 = 0;
+          bool v123 = v121 != v122;
+          int v124;
+          if (v123) {
+            uint v125 = simt_lane_id(static_cast<int>(__simt_tid3.x));
+            int v126 = (int)(v125);
+            v124 = v126;
+          } else {
+            int v127 = 1;
+            v124 = v127;
+          }
+          int v128 = 208;
+          int v129 = v128 + v74;
+          bool v130 = true;
+          int v131 = simt_wave_count_bits(v130);
+          v72[v129] = v131;
+          bool v132 = true;
+          int v133 = 224;
+          int v134 = v133 + v74;
+          bool v135 = true;
+          int v136 = simt_wave_count_bits(v135);
+          v72[v134] = v136;
+          v90 = v124;
+          break;
+        }
+        default:
+          {
+          int v137 = 40;
+          int v138 = v137 + v74;
+          int v139 = v73[v138];
+          int v140 = 0;
+          bool v141 = v139 != v140;
+          int v142;
+          if (v141) {
+            uint v143 = simt_lane_id(static_cast<int>(__simt_tid3.x));
+            int v144 = (int)(v143);
+            v142 = v144;
+          } else {
+            uint v145 = simt_subgroup_id(static_cast<int>(__simt_tid3.x));
+            int v146 = (int)(v145);
+            v142 = v146;
+          }
+          int v147 = 240;
+          int v148 = v147 + v74;
+          bool v149 = true;
+          int v150 = simt_wave_count_bits(v149);
+          v72[v148] = v150;
+          v90 = v142;
+          break;
+        }
+      }
+      bool v151 = true;
+      int v152 = 256;
+      int v153 = v152 + v74;
+      bool v154 = true;
+      int v155 = simt_wave_count_bits(v154);
+      v72[v153] = v155;
+      bool v156 = true;
+      int v157 = 272;
+      int v158 = v157 + v74;
+      bool v159 = true;
+      int v160 = simt_wave_count_bits(v159);
+      v72[v158] = v160;
+      v84 = v90;
+      break;
+    }
+    default:
+      {
+      int v161 = 44;
+      int v162 = v161 + v74;
+      int v163 = v73[v162];
+      int v164 = 0;
+      bool v165 = v163 != v164;
+      int v166;
+      if (v165) {
+        int v167 = 0;
+        v166 = v167;
+      } else {
+        int v168 = 0;
+        int v169 = 0;
+        int v170;
+        int v171;
+        v170 = v168;
+        v171 = v169;
+        while (true) {
+          int v172 = 4;
+          int v173 = v171 * v172;
+          int v174 = v173 + v74;
+          int v175 = 48;
+          int v176 = v175 + v174;
+          int v177 = v73[v176];
+          int v178 = 0;
+          bool v179 = v177 != v178;
+          v170 = v170;
+          v171 = v171;
+          if (!v179) break;
+          int v180 = v170 + v171;
+          int v181 = 1;
+          int v182 = v171 + v181;
+          bool v183 = true;
+          int v184 = 288;
+          int v185 = 4;
+          int v186 = v171 * v185;
+          int v187 = v184 + v186;
+          int v188 = v187 + v74;
+          bool v189 = true;
+          int v190 = simt_wave_count_bits(v189);
+          v72[v188] = v190;
+          v170 = v180;
+          v171 = v182;
+        }
+        v166 = v170;
+      }
+      int v191 = 304;
+      int v192 = v191 + v74;
+      bool v193 = true;
+      int v194 = simt_wave_count_bits(v193);
+      v72[v192] = v194;
+      v84 = v166;
+      break;
+    }
+    case 1:
+      {
+      uint v195 = simt_subgroup_id(static_cast<int>(__simt_tid3.x));
+      int v196 = (int)(v195);
+      bool v197 = true;
+      int v198 = 320;
+      int v199 = v198 + v74;
+      bool v200 = true;
+      int v201 = simt_wave_count_bits(v200);
+      v72[v199] = v201;
+      v84 = v196;
+      break;
+    }
+  }
+  int v202 = 0;
+  int v203 = 0;
+  int v204;
+  int v205;
+  v204 = v202;
+  v205 = v203;
+  while (true) {
+    int v206 = 4;
+    int v207 = v205 * v206;
+    int v208 = v207 + v74;
+    int v209 = 68;
+    int v210 = v209 + v208;
+    int v211 = v73[v210];
+    int v212 = 0;
+    bool v213 = v211 != v212;
+    v204 = v204;
+    v205 = v205;
+    if (!v213) break;
+    int v214 = v204 + v205;
+    int v215 = 1;
+    int v216 = v205 + v215;
+    bool v217 = true;
+    int v218 = 336;
+    int v219 = 4;
+    int v220 = v205 * v219;
+    int v221 = v218 + v220;
+    int v222 = v221 + v74;
+    bool v223 = true;
+    int v224 = simt_wave_count_bits(v223);
+    v72[v222] = v224;
+    v204 = v214;
+    v205 = v216;
+  }
+  int v225 = 88;
+  int v226 = v225 + v74;
+  int v227 = v73[v226];
+  int v228;
+  v228 = v74;
+  switch (v227) {
+    case 0:
+      {
+      int v229 = 92;
+      int v230 = v229 + v74;
+      int v231 = v73[v230];
+      int v232 = 0;
+      bool v233 = v231 != v232;
+      int v234;
+      if (v233) {
+        int v235 = 96;
+        int v236 = v235 + v74;
+        int v237 = v73[v236];
+        int v238 = 0;
+        int v239 = v74 + v238;
+        int v240;
+        v240 = v239;
+        switch (v237) {
+          default:
+            {
+            int v241 = 2;
+            v240 = v241;
+            break;
+          }
+          case 0:
+            {
+            uint v242 = simt_lane_id(static_cast<int>(__simt_tid3.x));
+            int v243 = (int)(v242);
+            bool v244 = true;
+            int v245 = 352;
+            int v246 = v245 + v74;
+            bool v247 = true;
+            int v248 = simt_wave_count_bits(v247);
+            v72[v246] = v248;
+            v240 = v243;
+            break;
+          }
+        }
+        v234 = v240;
+      } else {
+        int v249 = 0;
+        int v250 = 0;
+        int v251;
+        int v252;
+        v251 = v249;
+        v252 = v250;
+        while (true) {
+          int v253 = 4;
+          int v254 = v252 * v253;
+          int v255 = v254 + v74;
+          int v256 = 100;
+          int v257 = v256 + v255;
+          int v258 = v73[v257];
+          int v259 = 0;
+          bool v260 = v258 != v259;
+          v251 = v251;
+          v252 = v252;
+          if (!v260) break;
+          int v261 = v251 + v252;
+          int v262 = 1;
+          int v263 = v252 + v262;
+          bool v264 = true;
+          int v265 = 368;
+          int v266 = 4;
+          int v267 = v252 * v266;
+          int v268 = v265 + v267;
+          int v269 = v268 + v74;
+          bool v270 = true;
+          int v271 = simt_wave_count_bits(v270);
+          v72[v269] = v271;
+          v251 = v261;
+          v252 = v263;
+        }
+        v234 = v251;
+      }
+      int v272 = 384;
+      int v273 = v272 + v74;
+      bool v274 = true;
+      int v275 = simt_wave_count_bits(v274);
+      v72[v273] = v275;
+      v228 = v234;
+      break;
+    }
+    case 1:
+      {
+      v228 = v74;
+      break;
+    }
+    default:
+      {
+      int v276 = 0;
+      int v277 = 0;
+      int v278;
+      int v279;
+      v278 = v276;
+      v279 = v277;
+      while (true) {
+        int v280 = 4;
+        int v281 = v279 * v280;
+        int v282 = v281 + v74;
+        int v283 = 120;
+        int v284 = v283 + v282;
+        int v285 = v73[v284];
+        int v286 = 0;
+        bool v287 = v285 != v286;
+        v278 = v278;
+        v279 = v279;
+        if (!v287) break;
+        int v288 = v278 + v279;
+        int v289 = 1;
+        int v290 = v279 + v289;
+        bool v291 = true;
+        int v292 = 400;
+        int v293 = 4;
+        int v294 = v279 * v293;
+        int v295 = v292 + v294;
+        int v296 = v295 + v74;
+        bool v297 = true;
+        int v298 = simt_wave_count_bits(v297);
+        v72[v296] = v298;
+        v278 = v288;
+        v279 = v290;
+      }
+      bool v299 = true;
+      int v300 = 416;
+      int v301 = v300 + v74;
+      bool v302 = true;
+      int v303 = simt_wave_count_bits(v302);
+      v72[v301] = v303;
+      v228 = v278;
+    }
+    case 2:
+      {
+      int v304 = 0;
+      int v305 = 0;
+      int v306;
+      int v307;
+      v306 = v304;
+      v307 = v305;
+      while (true) {
+        int v308 = 4;
+        int v309 = v307 * v308;
+        int v310 = v309 + v74;
+        int v311 = 140;
+        int v312 = v311 + v310;
+        int v313 = v73[v312];
+        int v314 = 0;
+        bool v315 = v313 != v314;
+        v306 = v306;
+        v307 = v307;
+        if (!v315) break;
+        int v316 = v306 + v307;
+        int v317 = 1;
+        int v318 = v307 + v317;
+        bool v319 = true;
+        int v320 = 432;
+        int v321 = 4;
+        int v322 = v307 * v321;
+        int v323 = v320 + v322;
+        int v324 = v323 + v74;
+        bool v325 = true;
+        int v326 = simt_wave_count_bits(v325);
+        v72[v324] = v326;
+        v306 = v316;
+        v307 = v318;
+      }
+      bool v327 = true;
+      int v328 = 448;
+      int v329 = v328 + v74;
+      bool v330 = true;
+      int v331 = simt_wave_count_bits(v330);
+      v72[v329] = v331;
+      v228 = v306;
+      break;
+    }
+  }
+  return;
+}
+
+)MSL";
+
+int main() {
+  @autoreleasepool {
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    if (!device) {
+      fprintf(stderr, "No Metal device available\n");
+      return 1;
+    }
+    NSError *error = nil;
+    NSString *source = [NSString stringWithUTF8String:kShaderSource];
+    id<MTLLibrary> library = [device newLibraryWithSource:source options:nil error:&error];
+    if (!library) {
+      const char *msg = error ? [[error localizedDescription] UTF8String] : "unknown";
+      fprintf(stderr, "newLibraryWithSource failed: %s\n", msg);
+      return 1;
+    }
+    id<MTLFunction> kernel = [library newFunctionWithName:@"kernel_main"];
+    if (!kernel) {
+      fprintf(stderr, "Unable to find kernel_main in generated MSL\n");
+      return 1;
+    }
+    id<MTLComputePipelineState> pipeline = [device newComputePipelineStateWithFunction:kernel error:&error];
+    if (!pipeline) {
+      const char *msg = error ? [[error localizedDescription] UTF8String] : "unknown";
+      fprintf(stderr, "newComputePipelineStateWithFunction failed: %s\n", msg);
+      return 1;
+    }
+    id<MTLCommandQueue> queue = [device newCommandQueue];
+    if (!queue) {
+      fprintf(stderr, "Unable to create command queue\n");
+      return 1;
+    }
+    static int32_t expected0[] = {static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(4), static_cast<int32_t>(4), static_cast<int32_t>(4), static_cast<int32_t>(4), static_cast<int32_t>(0), static_cast<int32_t>(3), static_cast<int32_t>(3), static_cast<int32_t>(3), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1)};
+    static int32_t expected1[] = {static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(3), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0)};
+    static int32_t host_actual0[] = {static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0)};
+    id<MTLBuffer> actual_buf0 = [device newBufferWithBytes:host_actual0 length:sizeof(host_actual0) options:MTLResourceStorageModeShared];
+    if (!actual_buf0) {
+      fprintf(stderr, "Unable to create input buffer 0\n");
+      return 1;
+    }
+    static int32_t host_actual1[] = {static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(3), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(2), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(1), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0), static_cast<int32_t>(0)};
+    id<MTLBuffer> actual_buf1 = [device newBufferWithBytes:host_actual1 length:sizeof(host_actual1) options:MTLResourceStorageModeShared];
+    if (!actual_buf1) {
+      fprintf(stderr, "Unable to create input buffer 1\n");
+      return 1;
+    }
+    id<MTLCommandBuffer> commandBuffer = [queue commandBuffer];
+    id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
+    [encoder setComputePipelineState:pipeline];
+    [encoder setBuffer:actual_buf0 offset:0 atIndex:0];
+    [encoder setBuffer:actual_buf1 offset:0 atIndex:1];
+    MTLSize threadgroups = MTLSizeMake(1, 1, 1);
+    MTLSize threadsPerThreadgroup = MTLSizeMake(4, 1, 1);
+    [encoder dispatchThreadgroups:threadgroups threadsPerThreadgroup:threadsPerThreadgroup];
+    [encoder endEncoding];
+    [commandBuffer commit];
+    [commandBuffer waitUntilCompleted];
+    if ([commandBuffer status] != MTLCommandBufferStatusCompleted) {
+      fprintf(stderr, "Metal command buffer did not complete\n");
+      return 1;
+    }
+    int32_t *actual0 = static_cast<int32_t *>([actual_buf0 contents]);
+    for (size_t idx = 0; idx < 451; ++idx) {
+      if (actual0[idx] != expected0[idx]) {
+        fprintf(stderr, "buffer 0 [%zu]: expected=%d actual=%d\n", idx, expected0[idx], actual0[idx]);
+        return 1;
+      }
+    }
+    int32_t *actual1 = static_cast<int32_t *>([actual_buf1 contents]);
+    for (size_t idx = 0; idx < 160; ++idx) {
+      if (actual1[idx] != expected1[idx]) {
+        fprintf(stderr, "buffer 1 [%zu]: expected=%d actual=%d\n", idx, expected1[idx], actual1[idx]);
+        return 1;
+      }
+    }
+    return 0;
+  }
+}

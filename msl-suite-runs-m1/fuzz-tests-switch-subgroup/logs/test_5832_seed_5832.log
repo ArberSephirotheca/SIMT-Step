@@ -1,0 +1,3 @@
+$ /Users/czy/SIMT-Step/build/tools/simt-step-test-raiser/simt-step-test-raiser ./fuzz-tests-switch-subgroup/test_5832_seed_5832.mlir --mlir-to-msl --no-f64 --subgroup-width=32 -o /Users/czy/SIMT-Step/msl-suite-runs/fuzz-tests-switch-subgroup/tests/test_5832_seed_5832.mm --buffer-init-yaml ./fuzz-tests-switch-subgroup/test_5832_seed_5832.yaml
+$ xcrun clang++ -std=c++17 -x objective-c++ /Users/czy/SIMT-Step/msl-suite-runs/fuzz-tests-switch-subgroup/tests/test_5832_seed_5832.mm -framework Metal -framework Foundation -o /Users/czy/SIMT-Step/msl-suite-runs/fuzz-tests-switch-subgroup/bin/test_5832_seed_5832.out
+$ /Users/czy/SIMT-Step/msl-suite-runs/fuzz-tests-switch-subgroup/bin/test_5832_seed_5832.out
