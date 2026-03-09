@@ -44,7 +44,7 @@ def main():
     )
     parser.add_argument(
         "--profile",
-        choices=["safe", "aggressive"],
+        choices=["safe", "aggressive", "aggressive-switch"],
         default=None,
         help="Apply a preset profile of generation options",
     )
@@ -190,7 +190,7 @@ def main():
                 "predicate_buffer": True,
                 "no_subgroup_in_switch": True,
             }
-        else:
+        elif args.profile == "aggressive":
             rate_defaults = {
                 "break_continue_rate": 0.3,
                 "post_switch_wave_op_rate": 0.3,
@@ -207,6 +207,25 @@ def main():
                 "collective_cf": True,
                 "predicate_buffer": True,
                 "no_subgroup_in_switch": True,
+                "complex_helper": True,
+                "helper_subgroup_ids": True,
+            }
+        else:  # aggressive-switch
+            rate_defaults = {
+                "break_continue_rate": 0.3,
+                "post_switch_wave_op_rate": 0.3,
+                "non_uniform_helper_call_rate": 0.3,
+                "helper_call_post_switch_rate": 0.3,
+                "helper_call_nest_loop_rate": 0.3,
+            }
+            int_defaults = {
+                "helper_max_depth": 3,
+                "helper_min_control_ops": 3,
+                "helper_call_max_depth": 2,
+            }
+            bool_defaults = {
+                "collective_cf": True,
+                "predicate_buffer": True,
                 "complex_helper": True,
                 "helper_subgroup_ids": True,
             }

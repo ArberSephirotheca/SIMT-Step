@@ -222,6 +222,20 @@ To emit Metal Shading Language for a module:
 build/tools/simt-step-raise/simt-step-raise --target=msl input.mlir > out.metal
 ```
 
+To run MSL raise/compile/run across multiple fuzz suites and get combined pass/fail reports:
+
+```sh
+tools/simt-step-test-raiser/run_msl_multi_suite.sh \
+  /Users/zheyuan/SIMT-Step/fuzz-tests_uniform \
+  /Users/zheyuan/SIMT-Step/fuzz-tests-switch-no-subgroup \
+  /Users/zheyuan/SIMT-Step/fuzz-tests-switch-subgroup
+```
+
+Outputs:
+- `msl-suite-runs/report.csv` with one row per test (`suite,test,status,stage,...`).
+- `msl-suite-runs/summary.csv` with per-suite totals and an `ALL` row.
+- Exit code is non-zero if any test fails.
+
 ## Fuzz generator presets
 
 `generate_tests.py` supports preset profiles:
@@ -229,4 +243,8 @@ build/tools/simt-step-raise/simt-step-raise --target=msl input.mlir > out.metal
 ```sh
 python3 tools/simt-step-fuzz/generate_tests.py --profile=safe
 python3 tools/simt-step-fuzz/generate_tests.py --profile=aggressive
+python3 tools/simt-step-fuzz/generate_tests.py --profile=aggressive-switch
 ```
+
+`aggressive-switch` keeps aggressive control-flow pressure but allows subgroup ops
+inside switch cases (it does not auto-enable `--no-subgroup-in-switch`).
