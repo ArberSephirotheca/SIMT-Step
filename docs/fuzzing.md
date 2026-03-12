@@ -236,6 +236,23 @@ Outputs:
 - `msl-suite-runs/summary.csv` with per-suite totals and an `ALL` row.
 - Exit code is non-zero if any test fails.
 
+## GLSL Amber Generation
+
+To batch-generate `.amber` files (and pass/fail reports) across multiple suites:
+
+```sh
+tools/simt-step-test-raiser/run_glsl_amber_multi_suite.sh \
+  /Users/zheyuan/SIMT-Step/fuzz-tests_uniform \
+  /Users/zheyuan/SIMT-Step/fuzz-tests-switch-no-subgroup \
+  /Users/zheyuan/SIMT-Step/fuzz-tests-switch-subgroup
+```
+
+Outputs:
+- `amber-suite-runs/report.csv` with one row per test (`suite,test,status,stage,...`).
+- `amber-suite-runs/summary.csv` with per-suite totals and an `ALL` row.
+- Generated Amber files under `amber-suite-runs/<suite>/amber/*.amber`.
+- Exit code is non-zero if any generation fails.
+
 ## Fuzz generator presets
 
 `generate_tests.py` supports preset profiles:
