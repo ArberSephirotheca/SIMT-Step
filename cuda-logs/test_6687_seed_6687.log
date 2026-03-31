@@ -1,0 +1,4 @@
+$ build/tools/simt-step-test-raiser/simt-step-test-raiser fuzz-tests/test_6687_seed_6687.mlir --mlir-to-cuda --no-wrapper --no-f64 --subgroup-width=32 -o /home/zheyuanchen/SIMT-Step/cuda-tests/test_6687_seed_6687.cu --buffer-init-yaml fuzz-tests/test_6687_seed_6687.yaml
+$ nvcc -w /home/zheyuanchen/SIMT-Step/cuda-tests/test_6687_seed_6687.cu -o /home/zheyuanchen/SIMT-Step/cuda-bin/test_6687_seed_6687.out
+$ /home/zheyuanchen/SIMT-Step/cuda-bin/test_6687_seed_6687.out
+test_6687_seed_6687.out: /home/zheyuanchen/SIMT-Step/cuda-tests/test_6687_seed_6687.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.

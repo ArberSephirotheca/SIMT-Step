@@ -1,0 +1,3 @@
+$ build/tools/simt-step-test-raiser/simt-step-test-raiser fuzz-tests/test_2444_seed_2444.mlir --mlir-to-cuda --no-wrapper --no-f64 --subgroup-width=32 -o /home/zheyuanchen/SIMT-Step/cuda-tests/test_2444_seed_2444.cu --buffer-init-yaml fuzz-tests/test_2444_seed_2444.yaml
+$ nvcc -w /home/zheyuanchen/SIMT-Step/cuda-tests/test_2444_seed_2444.cu -o /home/zheyuanchen/SIMT-Step/cuda-bin/test_2444_seed_2444.out
+$ /home/zheyuanchen/SIMT-Step/cuda-bin/test_2444_seed_2444.out
