@@ -1,5 +1,0 @@
-suite,total,pass,fail
-fuzz-tests_uniform,10000,10000,0
-fuzz-tests-switch-no-subgroup,10000,9881,119
-fuzz-tests-switch-subgroup,10000,10000,0
-ALL,30000,29881,119

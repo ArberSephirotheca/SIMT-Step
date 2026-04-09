@@ -1,3 +1,0 @@
-$ /Users/zheyuan/SIMT-Step/build/tools/simt-step-test-raiser/simt-step-test-raiser /Users/zheyuan/SIMT-Step/fuzz-tests_uniform/test_9530_seed_9530.mlir --mlir-to-msl --no-f64 --subgroup-width=32 -o /Users/zheyuan/SIMT-Step/msl-suite-runs/fuzz-tests_uniform/tests/test_9530_seed_9530.mm --buffer-init-yaml /Users/zheyuan/SIMT-Step/fuzz-tests_uniform/test_9530_seed_9530.yaml
-$ xcrun clang++ -std=c++17 -x objective-c++ /Users/zheyuan/SIMT-Step/msl-suite-runs/fuzz-tests_uniform/tests/test_9530_seed_9530.mm -framework Metal -framework Foundation -o /Users/zheyuan/SIMT-Step/msl-suite-runs/fuzz-tests_uniform/bin/test_9530_seed_9530.out
-$ /Users/zheyuan/SIMT-Step/msl-suite-runs/fuzz-tests_uniform/bin/test_9530_seed_9530.out
