@@ -29,6 +29,17 @@ Options:
 - `--collective-cf` / `--sync-cf`: control-flow execution mode
 - `--collective-mem` / `--sync-mem`: memory execution mode
 
+## Current WMMA support
+
+The interpreter currently supports one explicit WMMA slice:
+
+- subgroup width `32`
+- `!simt_step.wmma_fragment<MatrixA, 16 x 16 x 16, f16, ColMajor>`
+- `!simt_step.wmma_fragment<MatrixB, 16 x 16 x 16, f16, RowMajor>`
+- `!simt_step.wmma_fragment<Accumulator, 16 x 16 x 16, f32, None>`
+- ops: `simt_step.wmma_fill`, `simt_step.wmma_load_matrix`,
+  `simt_step.wmma_mma`, `simt_step.wmma_store_matrix`
+
 ## Example
 
 ```
@@ -38,6 +49,15 @@ build/tools/simt-step-runner/simt-step-runner my_module.mlir \
   --init-file=tools/simt-step-runner/init.yaml \
   --collective-cf --collective-mem \
   --trace-file=tools/simt-step-viz/trace.jsonl
+```
+
+Identity-matrix WMMA smoke test:
+
+```sh
+build/tools/simt-step-runner/simt-step-runner \
+  tools/simt-step-runner/testdata/wmma_identity.mlir \
+  --lanes=32 --subgroup-width=32 \
+  --init-file=tools/simt-step-runner/testdata/wmma_identity.init.yaml
 ```
 
 ## init.yaml format

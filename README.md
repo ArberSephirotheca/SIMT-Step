@@ -6,6 +6,13 @@ SIMT-Step is a semantics framework + MLIR dialect for exploring SIMT control-flo
 
 See `docs/BUILD.md` for the full instructions.
 
+## Design Notes
+
+- `docs/LEAN_DRF_FORMALIZATION.md` describes the planned DRF-style formalization
+  for subgroup control-flow semantics.
+- `docs/MMA_IMPLEMENTATION_CHECKLIST.md` is the ordered handoff checklist for
+  adding subgroup MMA support to the SIMT-Step dialect and interpreter.
+
 ## Fuzzing + CUDA regression workflow
 
 See `docs/fuzzing.md` for the full option guide. Typical loop:

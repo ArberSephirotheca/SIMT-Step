@@ -621,46 +621,58 @@ public:
                             if (!collective)
                                 llvm::report_fatal_error(
                                     "collective wave op: missing collective effect");
-                            if (it->getNumOperands() != 1)
-                                llvm::report_fatal_error(
-                                    "collective wave op: expected one operand");
-                            auto predOrErr =
-                                evaluateValue(*waveCtx, key, it->getOperand(0),
-                                              lane, ctx.activeMask,
-                                              ctx.expectedMask);
-                            if (!predOrErr) {
-                                llvm::consumeError(predOrErr.takeError());
-                                llvm::report_fatal_error(
-                                    "collective wave op: failed to evaluate operand");
-                            }
                             CollectiveKey collectKey =
                                 ensureCollectiveEpochForLane(
                                     *waveCtx, key, *collective, lane);
                             waveCtx->collectiveTokenToOp[collectKey] = &*it;
                             auto &syncPoint = waveCtx->collectives[collectKey];
-                            syncPoint.operands[lane] = std::move(*predOrErr);
-                            resume = [this, wave, collectKey, lane]() mutable -> StepType {
-                                auto waveIt = state_.waves.find(wave);
-                                if (waveIt == state_.waves.end())
+                            llvm::SmallVector<ValueType, 4> operands;
+                            operands.reserve(it->getNumOperands());
+                            for (mlir::Value operand : it->getOperands()) {
+                                auto valueOrErr =
+                                    evaluateValue(*waveCtx, key, operand, lane,
+                                                  ctx.activeMask,
+                                                  ctx.expectedMask);
+                                if (!valueOrErr) {
+                                    llvm::consumeError(valueOrErr.takeError());
                                     llvm::report_fatal_error(
-                                        "collective wave resume: missing wave context");
-                                auto &waveCtx = waveIt->second;
-                                auto syncIt = waveCtx.collectives.find(collectKey);
-                                if (syncIt == waveCtx.collectives.end())
-                                    return StepType::halt();
-                                auto &syncPoint = syncIt->second;
-                                auto resultIt = syncPoint.results.find(lane);
-                                if (resultIt == syncPoint.results.end())
-                                    return StepType::halt();
-                                ValueType result = resultIt->second;
-                                syncPoint.results.erase(resultIt);
-                                syncPoint.continuations.erase(lane);
-                                if (syncPoint.results.empty()) {
-                                    waveCtx.collectives.erase(syncIt);
-                                    waveCtx.collectiveTokenToOp.erase(collectKey);
+                                        "collective wave op: failed to evaluate operand");
                                 }
-                                return StepType::produce(std::move(result));
-                            };
+                                operands.push_back(std::move(*valueOrErr));
+                            }
+                            syncPoint.operandPacks[lane] = std::move(operands);
+                            if (it->getNumResults() == 0) {
+                                resume = []() mutable -> StepType {
+                                    return StepType::halt();
+                                };
+                            } else if (it->getNumResults() == 1) {
+                                resume = [this, wave, collectKey,
+                                          lane]() mutable -> StepType {
+                                    auto waveIt = state_.waves.find(wave);
+                                    if (waveIt == state_.waves.end())
+                                        llvm::report_fatal_error(
+                                            "collective wave resume: missing wave context");
+                                    auto &waveCtx = waveIt->second;
+                                    auto syncIt = waveCtx.collectives.find(collectKey);
+                                    if (syncIt == waveCtx.collectives.end())
+                                        return StepType::halt();
+                                    auto &syncPoint = syncIt->second;
+                                    auto resultIt = syncPoint.results.find(lane);
+                                    if (resultIt == syncPoint.results.end())
+                                        return StepType::halt();
+                                    ValueType result = resultIt->second;
+                                    syncPoint.results.erase(resultIt);
+                                    syncPoint.continuations.erase(lane);
+                                    if (syncPoint.results.empty()) {
+                                        waveCtx.collectives.erase(syncIt);
+                                        waveCtx.collectiveTokenToOp.erase(collectKey);
+                                    }
+                                    return StepType::produce(std::move(result));
+                                };
+                            } else {
+                                llvm::report_fatal_error(
+                                    "collective wave op: multi-result ops are unsupported");
+                            }
                         }
                         if (traceSink_) {
                             std::uint64_t expectedMask =
@@ -993,11 +1005,111 @@ private:
         return false;
     }
 
+    static float valueToFloat32(const ValueType &value) {
+        if constexpr (std::is_same_v<ValueType, SemValue>)
+            return value.asFloat32();
+        llvm::report_fatal_error("collective wave op: unsupported value type");
+        return 0.0f;
+    }
+
+    static const WmmaFragmentValue &valueToWmmaFragment(const ValueType &value) {
+        if constexpr (std::is_same_v<ValueType, SemValue>)
+            return value.asWmmaFragment();
+        llvm::report_fatal_error("collective wave op: unsupported fragment value type");
+        return *static_cast<const WmmaFragmentValue *>(nullptr);
+    }
+
     static ValueType makeInt32Value(std::int32_t value) {
         if constexpr (std::is_same_v<ValueType, SemValue>)
             return SemValue::fromInt32(value);
         llvm::report_fatal_error("collective wave op: unsupported value type");
         return ValueType();
+    }
+
+    static ValueType makeFloat32Value(float value) {
+        if constexpr (std::is_same_v<ValueType, SemValue>)
+            return SemValue::fromFloat(value);
+        llvm::report_fatal_error("collective wave op: unsupported value type");
+        return ValueType();
+    }
+
+    static ValueType makeWmmaFragmentValue(WmmaFragmentValue fragment) {
+        if constexpr (std::is_same_v<ValueType, SemValue>)
+            return SemValue::fromWmmaFragment(std::move(fragment));
+        llvm::report_fatal_error("collective wave op: unsupported fragment value type");
+        return ValueType();
+    }
+
+    static WmmaFragmentValue::Role convertWmmaRole(simt::dialect::WmmaRole role) {
+        switch (role) {
+        case simt::dialect::WmmaRole::MatrixA:
+            return WmmaFragmentValue::Role::MatrixA;
+        case simt::dialect::WmmaRole::MatrixB:
+            return WmmaFragmentValue::Role::MatrixB;
+        case simt::dialect::WmmaRole::Accumulator:
+            return WmmaFragmentValue::Role::Accumulator;
+        }
+        llvm::report_fatal_error("collective wave op: unsupported WMMA role");
+    }
+
+    static WmmaFragmentValue::Layout
+    convertWmmaLayout(simt::dialect::WmmaLayout layout) {
+        switch (layout) {
+        case simt::dialect::WmmaLayout::None:
+            return WmmaFragmentValue::Layout::None;
+        case simt::dialect::WmmaLayout::RowMajor:
+            return WmmaFragmentValue::Layout::RowMajor;
+        case simt::dialect::WmmaLayout::ColMajor:
+            return WmmaFragmentValue::Layout::ColMajor;
+        }
+        llvm::report_fatal_error("collective wave op: unsupported WMMA layout");
+    }
+
+    static int64_t linearizeWmmaIndex(WmmaFragmentValue::Layout layout,
+                                      int64_t base, int64_t stride, int row,
+                                      int col) {
+        switch (layout) {
+        case WmmaFragmentValue::Layout::RowMajor:
+            return base + static_cast<int64_t>(row) * stride + col;
+        case WmmaFragmentValue::Layout::ColMajor:
+            return base + static_cast<int64_t>(col) * stride + row;
+        case WmmaFragmentValue::Layout::None:
+            break;
+        }
+        llvm::report_fatal_error("collective wave op: layout none is invalid for matrix memory");
+    }
+
+    static const simt::dialect::WmmaFragmentType
+    requireWmmaFragmentType(mlir::Type type, llvm::StringRef context) {
+        auto fragmentType = mlir::dyn_cast<simt::dialect::WmmaFragmentType>(type);
+        if (!fragmentType)
+            llvm::report_fatal_error(llvm::Twine(context) +
+                                     ": expected WMMA fragment type");
+        return fragmentType;
+    }
+
+    static void requireExactWmmaWarpMask(std::uint64_t mask,
+                                         llvm::StringRef opName) {
+        if (std::popcount(mask) != 32) {
+            llvm::report_fatal_error(llvm::Twine(opName) +
+                                     ": expected exactly 32 participating lanes, got popcount=" +
+                                     llvm::Twine(std::popcount(mask)) + " mask=0x" +
+                                     llvm::Twine::utohexstr(mask));
+        }
+    }
+
+    static bool sameWmmaFragment(const WmmaFragmentValue &lhs,
+                                 const WmmaFragmentValue &rhs) {
+        return lhs.role == rhs.role && lhs.layout == rhs.layout &&
+               lhs.m == rhs.m && lhs.n == rhs.n && lhs.k == rhs.k &&
+               lhs.elements == rhs.elements;
+    }
+
+    static bool waveCollectiveKeepsResults(
+        const mlir::Operation *op,
+        const CollectiveSyncPoint<ValueType, StepType> &syncPoint) {
+        return const_cast<mlir::Operation *>(op)->getNumResults() != 0 &&
+               !syncPoint.results.empty();
     }
 
     static auto &memoryMutable() {
@@ -1015,30 +1127,324 @@ private:
         if (syncPoint.expectedMask == 0)
             llvm::report_fatal_error(
                 "collective wave op: missing expected mask");
-        if (!llvm::isa<simt::dialect::WaveCountBitsOp>(op))
-            llvm::report_fatal_error(
-                "collective wave op: unsupported operation");
-        std::uint64_t predMask = 0;
-        std::uint64_t mask = syncPoint.expectedMask;
-        while (mask) {
-            unsigned lane = std::countr_zero(mask);
-            mask &= mask - 1;
-            auto operandIt = syncPoint.operands.find(lane);
-            if (operandIt == syncPoint.operands.end())
+        if (llvm::isa<simt::dialect::WaveCountBitsOp>(op)) {
+            std::uint64_t predMask = 0;
+            std::uint64_t mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                auto operandIt = syncPoint.operandPacks.find(lane);
+                if (operandIt == syncPoint.operandPacks.end() ||
+                    operandIt->second.size() != 1)
+                    llvm::report_fatal_error(
+                        "collective wave op: missing predicate operand");
+                if (valueToBool(operandIt->second.front()))
+                    predMask |= (1ull << lane);
+            }
+            std::int32_t count =
+                static_cast<std::int32_t>(std::popcount(predMask));
+            mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                syncPoint.results[lane] = makeInt32Value(count);
+            }
+            syncPoint.operandPacks.clear();
+            return;
+        }
+
+        if (llvm::isa<simt::dialect::WaveMmaOp>(op)) {
+            if (std::popcount(syncPoint.expectedMask) != 4)
                 llvm::report_fatal_error(
-                    "collective wave op: missing operand value");
-            if (valueToBool(operandIt->second))
-                predMask |= (1ull << lane);
+                    "collective wave_mma: expected exactly four participating lanes");
+
+            llvm::SmallVector<LaneId, 4> lanes;
+            std::uint64_t mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                lanes.push_back(static_cast<LaneId>(lane));
+            }
+
+            float a[4] = {};
+            float b[4] = {};
+            float c[4] = {};
+            for (std::size_t i = 0; i < lanes.size(); ++i) {
+                auto operandIt = syncPoint.operandPacks.find(lanes[i]);
+                if (operandIt == syncPoint.operandPacks.end() ||
+                    operandIt->second.size() != 3)
+                    llvm::report_fatal_error(
+                        "collective wave_mma: expected three operands per lane");
+                a[i] = valueToFloat32(operandIt->second[0]);
+                b[i] = valueToFloat32(operandIt->second[1]);
+                c[i] = valueToFloat32(operandIt->second[2]);
+            }
+
+            // Ascending lane order maps to a 2x2 tile:
+            // lane0=(0,0), lane1=(0,1), lane2=(1,0), lane3=(1,1).
+            const float d0 = a[0] * b[0] + a[1] * b[2] + c[0];
+            const float d1 = a[0] * b[1] + a[1] * b[3] + c[1];
+            const float d2 = a[2] * b[0] + a[3] * b[2] + c[2];
+            const float d3 = a[2] * b[1] + a[3] * b[3] + c[3];
+            const float results[4] = {d0, d1, d2, d3};
+
+            for (std::size_t i = 0; i < lanes.size(); ++i)
+                syncPoint.results[lanes[i]] = makeFloat32Value(results[i]);
+
+            syncPoint.operandPacks.clear();
+            return;
         }
-        std::int32_t count =
-            static_cast<std::int32_t>(std::popcount(predMask));
-        mask = syncPoint.expectedMask;
-        while (mask) {
-            unsigned lane = std::countr_zero(mask);
-            mask &= mask - 1;
-            syncPoint.results[lane] = makeInt32Value(count);
+
+        if (llvm::isa<simt::dialect::WmmaFillOp>(op)) {
+            requireExactWmmaWarpMask(syncPoint.expectedMask, "wmma_fill");
+            auto fillOp = llvm::cast<simt::dialect::WmmaFillOp>(
+                const_cast<mlir::Operation *>(op));
+            auto fragmentType =
+                requireWmmaFragmentType(fillOp.getFragment().getType(),
+                                        "collective wmma_fill");
+
+            std::optional<float> fillValue;
+            std::uint64_t mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                auto operandIt = syncPoint.operandPacks.find(lane);
+                if (operandIt == syncPoint.operandPacks.end() ||
+                    operandIt->second.size() != 1)
+                    llvm::report_fatal_error(
+                        "collective wmma_fill: expected one operand per lane");
+                float laneValue = valueToFloat32(operandIt->second.front());
+                if (!fillValue)
+                    fillValue = laneValue;
+                else if (*fillValue != laneValue)
+                    llvm::report_fatal_error(
+                        "collective wmma_fill: fill value must be uniform across the warp");
+            }
+
+            WmmaFragmentValue fragment;
+            fragment.role = convertWmmaRole(fragmentType.getRole());
+            fragment.layout = convertWmmaLayout(fragmentType.getLayout());
+            fragment.m = static_cast<std::uint32_t>(fragmentType.getM());
+            fragment.n = static_cast<std::uint32_t>(fragmentType.getN());
+            fragment.k = static_cast<std::uint32_t>(fragmentType.getK());
+            fragment.elements.assign(
+                static_cast<std::size_t>(fragment.m * fragment.n), *fillValue);
+            ValueType fragmentValue = makeWmmaFragmentValue(std::move(fragment));
+
+            mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                syncPoint.results[lane] = fragmentValue;
+            }
+            syncPoint.operandPacks.clear();
+            return;
         }
-        syncPoint.operands.clear();
+
+        if (llvm::isa<simt::dialect::WmmaLoadMatrixOp>(op)) {
+            requireExactWmmaWarpMask(syncPoint.expectedMask, "wmma_load_matrix");
+            auto loadOp = llvm::cast<simt::dialect::WmmaLoadMatrixOp>(
+                const_cast<mlir::Operation *>(op));
+            auto fragmentType =
+                requireWmmaFragmentType(loadOp.getFragment().getType(),
+                                        "collective wmma_load_matrix");
+
+            mlir::Value resource;
+            int64_t baseIndex = 0;
+            int64_t stride = 0;
+            bool haveRepresentative = false;
+            std::uint64_t mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                auto operandIt = syncPoint.operandPacks.find(lane);
+                if (operandIt == syncPoint.operandPacks.end() ||
+                    operandIt->second.size() != 3)
+                    llvm::report_fatal_error(
+                        "collective wmma_load_matrix: expected three operands per lane");
+                mlir::Value laneResource = operandIt->second[0].asResource();
+                int64_t laneBase = operandIt->second[1].asInt64();
+                int64_t laneStride = operandIt->second[2].asInt64();
+                if (!haveRepresentative) {
+                    resource = laneResource;
+                    baseIndex = laneBase;
+                    stride = laneStride;
+                    haveRepresentative = true;
+                } else if (resource != laneResource || baseIndex != laneBase ||
+                           stride != laneStride) {
+                    llvm::report_fatal_error(
+                        "collective wmma_load_matrix: resource, baseIndex, and stride must be uniform across the warp");
+                }
+            }
+
+            auto &mem = memoryMutable();
+            auto resIt = mem.find(resource);
+            if (resIt == mem.end())
+                llvm::report_fatal_error(
+                    "collective wmma_load_matrix: missing resource contents");
+
+            WmmaFragmentValue fragment;
+            fragment.role = convertWmmaRole(fragmentType.getRole());
+            fragment.layout = convertWmmaLayout(fragmentType.getLayout());
+            fragment.m = static_cast<std::uint32_t>(fragmentType.getM());
+            fragment.n = static_cast<std::uint32_t>(fragmentType.getN());
+            fragment.k = static_cast<std::uint32_t>(fragmentType.getK());
+            fragment.elements.resize(
+                static_cast<std::size_t>(fragment.m * fragment.n));
+            for (std::uint32_t row = 0; row < fragment.m; ++row) {
+                for (std::uint32_t col = 0; col < fragment.n; ++col) {
+                    int64_t idx = linearizeWmmaIndex(
+                        fragment.layout, baseIndex, stride, static_cast<int>(row),
+                        static_cast<int>(col));
+                    auto valIt = resIt->second.find(idx);
+                    if (valIt == resIt->second.end())
+                        llvm::report_fatal_error(
+                            "collective wmma_load_matrix: missing matrix element");
+                    fragment.elements[static_cast<std::size_t>(row) * fragment.n +
+                                      col] = valueToFloat32(valIt->second);
+                }
+            }
+
+            ValueType fragmentValue = makeWmmaFragmentValue(std::move(fragment));
+            mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                syncPoint.results[lane] = fragmentValue;
+            }
+            syncPoint.operandPacks.clear();
+            return;
+        }
+
+        if (llvm::isa<simt::dialect::WmmaMmaOp>(op)) {
+            requireExactWmmaWarpMask(syncPoint.expectedMask, "wmma_mma");
+
+            std::optional<WmmaFragmentValue> aFragment;
+            std::optional<WmmaFragmentValue> bFragment;
+            std::optional<WmmaFragmentValue> cFragment;
+            std::uint64_t mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                auto operandIt = syncPoint.operandPacks.find(lane);
+                if (operandIt == syncPoint.operandPacks.end() ||
+                    operandIt->second.size() != 3)
+                    llvm::report_fatal_error(
+                        "collective wmma_mma: expected three fragment operands per lane");
+
+                const auto &laneA = valueToWmmaFragment(operandIt->second[0]);
+                const auto &laneB = valueToWmmaFragment(operandIt->second[1]);
+                const auto &laneC = valueToWmmaFragment(operandIt->second[2]);
+                if (!aFragment) {
+                    aFragment = laneA;
+                    bFragment = laneB;
+                    cFragment = laneC;
+                } else if (!sameWmmaFragment(*aFragment, laneA) ||
+                           !sameWmmaFragment(*bFragment, laneB) ||
+                           !sameWmmaFragment(*cFragment, laneC)) {
+                    llvm::report_fatal_error(
+                        "collective wmma_mma: fragment operands must be identical across the warp in the current semantics");
+                }
+            }
+
+            WmmaFragmentValue result;
+            result.role = WmmaFragmentValue::Role::Accumulator;
+            result.layout = WmmaFragmentValue::Layout::None;
+            result.m = cFragment->m;
+            result.n = cFragment->n;
+            result.k = cFragment->k;
+            result.elements.assign(
+                static_cast<std::size_t>(result.m * result.n), 0.0f);
+
+            for (std::uint32_t row = 0; row < result.m; ++row) {
+                for (std::uint32_t col = 0; col < result.n; ++col) {
+                    float accum =
+                        cFragment->elements[static_cast<std::size_t>(row) * result.n +
+                                            col];
+                    for (std::uint32_t kk = 0; kk < result.k; ++kk) {
+                        float lhs =
+                            aFragment->elements[static_cast<std::size_t>(row) *
+                                                    aFragment->k +
+                                                kk];
+                        float rhs =
+                            bFragment->elements[static_cast<std::size_t>(kk) *
+                                                    bFragment->n +
+                                                col];
+                        accum += lhs * rhs;
+                    }
+                    result.elements[static_cast<std::size_t>(row) * result.n +
+                                    col] = accum;
+                }
+            }
+
+            ValueType fragmentValue = makeWmmaFragmentValue(std::move(result));
+            mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                syncPoint.results[lane] = fragmentValue;
+            }
+            syncPoint.operandPacks.clear();
+            return;
+        }
+
+        if (llvm::isa<simt::dialect::WmmaStoreMatrixOp>(op)) {
+            requireExactWmmaWarpMask(syncPoint.expectedMask, "wmma_store_matrix");
+            auto storeOp = llvm::cast<simt::dialect::WmmaStoreMatrixOp>(
+                const_cast<mlir::Operation *>(op));
+            auto layout = convertWmmaLayout(storeOp.getLayout());
+
+            mlir::Value resource;
+            int64_t baseIndex = 0;
+            int64_t stride = 0;
+            std::optional<WmmaFragmentValue> fragment;
+            bool haveRepresentative = false;
+            std::uint64_t mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                auto operandIt = syncPoint.operandPacks.find(lane);
+                if (operandIt == syncPoint.operandPacks.end() ||
+                    operandIt->second.size() != 4)
+                    llvm::report_fatal_error(
+                        "collective wmma_store_matrix: expected four operands per lane");
+
+                mlir::Value laneResource = operandIt->second[0].asResource();
+                int64_t laneBase = operandIt->second[1].asInt64();
+                int64_t laneStride = operandIt->second[2].asInt64();
+                const auto &laneFragment = valueToWmmaFragment(operandIt->second[3]);
+                if (!haveRepresentative) {
+                    resource = laneResource;
+                    baseIndex = laneBase;
+                    stride = laneStride;
+                    fragment = laneFragment;
+                    haveRepresentative = true;
+                } else if (resource != laneResource || baseIndex != laneBase ||
+                           stride != laneStride ||
+                           !sameWmmaFragment(*fragment, laneFragment)) {
+                    llvm::report_fatal_error(
+                        "collective wmma_store_matrix: resource, indices, and fragment must be uniform across the warp");
+                }
+            }
+
+            auto &mem = memoryMutable();
+            for (std::uint32_t row = 0; row < fragment->m; ++row) {
+                for (std::uint32_t col = 0; col < fragment->n; ++col) {
+                    int64_t idx = linearizeWmmaIndex(
+                        layout, baseIndex, stride, static_cast<int>(row),
+                        static_cast<int>(col));
+                    mem[resource][idx] = makeFloat32Value(
+                        fragment->elements[static_cast<std::size_t>(row) *
+                                               fragment->n +
+                                           col]);
+                }
+            }
+
+            syncPoint.operandPacks.clear();
+            return;
+        }
+
+        llvm::report_fatal_error("collective wave op: unsupported operation");
     }
 
     bool computeMemoryCollectiveResults(
@@ -4145,10 +4551,15 @@ private:
                         pushReady(wave, block, l, contIt->second);
                     }
                 }
-                if (!isWaveCollective && !memoryProducesResults)
+                bool keepCollective =
+                    (isWaveCollective &&
+                     waveCollectiveKeepsResults(waveOp, syncPoint)) ||
+                    (isMemoryCollective && memoryProducesResults);
+                if (!keepCollective) {
+                    if (waveOp)
+                        waveCtx.collectiveTokenToOp.erase(collectKey);
                     waveCtx.collectives.erase(collectKey);
-                if (isMemoryCollective && !memoryProducesResults)
-                    waveCtx.collectiveTokenToOp.erase(collectKey);
+                }
             }
             return llvm::Error::success();
         }
@@ -4328,7 +4739,7 @@ private:
             it->second.expectedMask &= ~laneBit;
             it->second.arrivals.erase(lane);
             it->second.continuations.erase(lane);
-            it->second.operands.erase(lane);
+            it->second.operandPacks.erase(lane);
             it->second.results.erase(lane);
             it->second.memoryIndices.erase(lane);
             it->second.memoryValues.erase(lane);
@@ -4431,9 +4842,11 @@ private:
                     }
                 }
                 bool keepCollective =
-                    isWaveCollective || (isMemoryCollective && memoryHasResults);
+                    (isWaveCollective &&
+                     waveCollectiveKeepsResults(waveOp, it->second)) ||
+                    (isMemoryCollective && memoryHasResults);
                 if (!keepCollective) {
-                    if (isMemoryCollective)
+                    if (waveOp)
                         waveCtx.collectiveTokenToOp.erase(it->first);
                     auto cur = it;
                     ++it;
@@ -4563,7 +4976,7 @@ private:
             it->second.expectedMask &= ~laneBit;
             it->second.arrivals.erase(lane);
             it->second.continuations.erase(lane);
-            it->second.operands.erase(lane);
+            it->second.operandPacks.erase(lane);
             it->second.results.erase(lane);
             it->second.memoryIndices.erase(lane);
             it->second.memoryValues.erase(lane);
@@ -4668,9 +5081,11 @@ private:
                     }
                 }
                 bool keepCollective =
-                    isWaveCollective || (isMemoryCollective && memoryHasResults);
+                    (isWaveCollective &&
+                     waveCollectiveKeepsResults(waveOp, it->second)) ||
+                    (isMemoryCollective && memoryHasResults);
                 if (!keepCollective) {
-                    if (isMemoryCollective)
+                    if (waveOp)
                         waveCtx.collectiveTokenToOp.erase(key);
                     auto cur = it;
                     ++it;
@@ -4820,7 +5235,7 @@ private:
             it->second.expectedMask &= ~laneBit;
             it->second.arrivals.erase(lane);
             it->second.continuations.erase(lane);
-            it->second.operands.erase(lane);
+            it->second.operandPacks.erase(lane);
             it->second.results.erase(lane);
             it->second.memoryIndices.erase(lane);
             it->second.memoryValues.erase(lane);
@@ -4925,9 +5340,11 @@ private:
                     }
                 }
                 bool keepCollective =
-                    isWaveCollective || (isMemoryCollective && memoryHasResults);
+                    (isWaveCollective &&
+                     waveCollectiveKeepsResults(waveOp, it->second)) ||
+                    (isMemoryCollective && memoryHasResults);
                 if (!keepCollective) {
-                    if (isMemoryCollective)
+                    if (waveOp)
                         waveCtx.collectiveTokenToOp.erase(key);
                     auto cur = it;
                     ++it;

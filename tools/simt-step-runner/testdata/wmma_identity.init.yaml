@@ -1,0 +1,21 @@
+buffers:
+  - buffer: buf0
+    size: 256
+    fill: 0
+    entries:
+      - { index: 0, value: 1 }
+      - { index: 17, value: 1 }
+      - { index: 34, value: 1 }
+      - { index: 51, value: 1 }
+      - { index: 68, value: 1 }
+      - { index: 85, value: 1 }
+      - { index: 102, value: 1 }
+      - { index: 119, value: 1 }
+      - { index: 136, value: 1 }
+      - { index: 153, value: 1 }
+      - { index: 170, value: 1 }
+      - { index: 187, value: 1 }
+      - { index: 204, value: 1 }
+      - { index: 221, value: 1 }
+      - { index: 238, value: 1 }
+      - { index: 255, value: 1 }

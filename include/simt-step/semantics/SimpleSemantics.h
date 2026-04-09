@@ -49,6 +49,11 @@ private:
     StepType handleSelectOp(mlir::arith::SelectOp op, SemanticsContext &context);
     StepType handleDispatchThreadId(SemanticsContext &context);
     StepType handleWaveCountBits(mlir::Operation *op, SemanticsContext &context);
+    StepType handleWaveMma(mlir::Operation *op, SemanticsContext &context);
+    StepType handleWmmaFill(mlir::Operation *op, SemanticsContext &context);
+    StepType handleWmmaLoadMatrix(mlir::Operation *op, SemanticsContext &context);
+    StepType handleWmmaMma(mlir::Operation *op, SemanticsContext &context);
+    StepType handleWmmaStoreMatrix(mlir::Operation *op, SemanticsContext &context);
     StepType handleBufferStore(mlir::Operation *op, SemanticsContext &context);
     StepType handleBufferLoad(mlir::Operation *op, SemanticsContext &context);
     StepType handleYieldOp(simt::dialect::YieldOp op,

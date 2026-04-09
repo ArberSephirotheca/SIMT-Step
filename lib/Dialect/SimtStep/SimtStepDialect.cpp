@@ -65,4 +65,37 @@ mlir::LogicalResult ResourceType::verify(
   return emitError() << "invalid memory space for resource";
 }
 
+mlir::LogicalResult WmmaFragmentType::verify(
+    ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+    simt::dialect::WmmaRole role, uint64_t m, uint64_t n, uint64_t k,
+    mlir::Type elementType, simt::dialect::WmmaLayout layout) {
+  if (!elementType)
+    return emitError() << "wmma fragment element type must be non-null";
+  if (m != 16 || n != 16 || k != 16)
+    return emitError() << "only m16n16k16 fragments are currently supported";
+
+  switch (role) {
+  case simt::dialect::WmmaRole::MatrixA:
+    if (!mlir::isa<mlir::Float16Type>(elementType))
+      return emitError() << "matrix_a fragments must use f16 elements";
+    if (layout != simt::dialect::WmmaLayout::ColMajor)
+      return emitError() << "matrix_a fragments must use col_major layout";
+    return mlir::success();
+  case simt::dialect::WmmaRole::MatrixB:
+    if (!mlir::isa<mlir::Float16Type>(elementType))
+      return emitError() << "matrix_b fragments must use f16 elements";
+    if (layout != simt::dialect::WmmaLayout::RowMajor)
+      return emitError() << "matrix_b fragments must use row_major layout";
+    return mlir::success();
+  case simt::dialect::WmmaRole::Accumulator:
+    if (!mlir::isa<mlir::Float32Type>(elementType))
+      return emitError() << "accumulator fragments must use f32 elements";
+    if (layout != simt::dialect::WmmaLayout::None)
+      return emitError() << "accumulator fragments must use none layout";
+    return mlir::success();
+  }
+
+  return emitError() << "invalid WMMA fragment role";
+}
+
 } // namespace simt::dialect

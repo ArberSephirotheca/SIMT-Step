@@ -68,6 +68,24 @@ def SimtStep_MemorySpace : I32EnumAttr<"MemorySpace",
 def SimtStep_MemorySpaceEnumAttr
     : EnumAttr<SimtStep_Dialect, SimtStep_MemorySpace, "memspace">;
 
+def SimtStep_WmmaRole : I32EnumAttr<"WmmaRole", "WMMA fragment role",
+    [I32EnumAttrCase<"MatrixA", 0>,
+     I32EnumAttrCase<"MatrixB", 1>,
+     I32EnumAttrCase<"Accumulator", 2>]> {
+  let cppNamespace = "::simt::dialect";
+}
+def SimtStep_WmmaRoleEnumAttr
+    : EnumAttr<SimtStep_Dialect, SimtStep_WmmaRole, "wmma_role">;
+
+def SimtStep_WmmaLayout : I32EnumAttr<"WmmaLayout", "WMMA matrix layout",
+    [I32EnumAttrCase<"None", 0>,
+     I32EnumAttrCase<"RowMajor", 1>,
+     I32EnumAttrCase<"ColMajor", 2>]> {
+  let cppNamespace = "::simt::dialect";
+}
+def SimtStep_WmmaLayoutEnumAttr
+    : EnumAttr<SimtStep_Dialect, SimtStep_WmmaLayout, "wmma_layout">;
+
 // Types --------------------------------------------------------------------
 
 def SimtStep_MaskType : TypeDef<SimtStep_Dialect, "Mask"> {
@@ -97,6 +115,31 @@ def SimtStep_ResourceType : TypeDef<SimtStep_Dialect, "Resource"> {
 
   let assemblyFormat = [{
         `<` $memorySpace `,` $elementType `>`
+  }];
+  let genVerifyDecl = 1;
+}
+
+def SimtStep_WmmaFragmentType : TypeDef<SimtStep_Dialect, "WmmaFragment"> {
+  let mnemonic = "wmma_fragment";
+  let summary = "Warp-level matrix fragment";
+  let description = [{
+    Represents a WMMA fragment in the exact pedagogical CUDA slice currently
+    supported by SIMT-Step:
+    - shape `m16n16k16`
+    - `matrix_a` fragments with `f16` elements and `col_major` layout
+    - `matrix_b` fragments with `f16` elements and `row_major` layout
+    - `accumulator` fragments with `f32` elements and `none` layout
+  }];
+
+  let parameters = (ins EnumParameter<SimtStep_WmmaRole>:$role,
+                        "uint64_t":$m,
+                        "uint64_t":$n,
+                        "uint64_t":$k,
+                        TypeParameter<"mlir::Type", "element type">:$elementType,
+                        EnumParameter<SimtStep_WmmaLayout>:$layout);
+
+  let assemblyFormat = [{
+        `<` $role `,` $m `x` $n `x` $k `,` $elementType `,` $layout `>`
   }];
   let genVerifyDecl = 1;
 }
@@ -157,6 +200,93 @@ def SimtStep_WaveCountBitsOp : Op<SimtStep_Dialect, "wave_count_bits"> {
   let arguments = (ins I1:$predicate);
   let results = (outs I32:$count);
   // let assemblyFormat = "$predicate attr-dict";
+}
+
+def SimtStep_WaveMmaOp : Op<SimtStep_Dialect, "wave_mma"> {
+  let traits = [SimtStep_WaveTrait];
+  let summary = "Pedagogical wave-level 2x2 matrix multiply-accumulate";
+  let description = [{
+    Fixed-shape subgroup matrix multiply-accumulate used to bootstrap
+    first-class MMA support in the dialect and interpreter.
+
+    The current semantics are intentionally narrow:
+    - exactly four participating lanes,
+    - each lane contributes three `f32` scalars `(a, b, acc)`,
+    - the four lanes are interpreted as a 2x2 tile in ascending lane order,
+    - the op returns one `f32` result per participating lane.
+
+    This is a temporary pedagogical form for validating collective MMA
+    semantics before introducing fragment types or backend-specific lowering.
+  }];
+
+  let arguments = (ins F32:$lhs, F32:$rhs, F32:$acc);
+  let results = (outs F32:$result);
+
+  let assemblyFormat = "`(` $lhs `,` $rhs `,` $acc `)` attr-dict";
+}
+
+def SimtStep_WmmaFillOp : Op<SimtStep_Dialect, "wmma_fill"> {
+  let traits = [SimtStep_WaveTrait];
+  let summary = "Collectively fill an accumulator fragment";
+  let description = [{
+    Collectively initializes every element of an accumulator fragment with the
+    supplied scalar value.
+  }];
+
+  let arguments = (ins F32:$value);
+  let results = (outs SimtStep_WmmaFragmentType:$fragment);
+
+  let hasVerifier = 1;
+}
+
+def SimtStep_WmmaLoadMatrixOp : Op<SimtStep_Dialect, "wmma_load_matrix",
+    [SimtStep_WaveTrait, MemoryEffects<[MemRead]>]> {
+  let summary = "Collectively load a matrix fragment from memory";
+  let description = [{
+    Collectively loads a matrix fragment from a SIMT-Step resource. The current
+    implementation supports only the exact `m16n16k16` CUDA WMMA slice used by
+    the reference example.
+  }];
+
+  let arguments = (ins SimtStep_ResourceType:$resource,
+                       AnyInteger:$baseIndex,
+                       AnyInteger:$stride);
+  let results = (outs SimtStep_WmmaFragmentType:$fragment);
+
+  let hasVerifier = 1;
+}
+
+def SimtStep_WmmaMmaOp : Op<SimtStep_Dialect, "wmma_mma"> {
+  let traits = [SimtStep_WaveTrait];
+  let summary = "Collectively perform matrix multiply-accumulate";
+  let description = [{
+    Collectively computes `D = A * B + C` on WMMA fragments and returns an
+    accumulator fragment.
+  }];
+
+  let arguments = (ins SimtStep_WmmaFragmentType:$a,
+                       SimtStep_WmmaFragmentType:$b,
+                       SimtStep_WmmaFragmentType:$acc);
+  let results = (outs SimtStep_WmmaFragmentType:$result);
+
+  let hasVerifier = 1;
+}
+
+def SimtStep_WmmaStoreMatrixOp : Op<SimtStep_Dialect, "wmma_store_matrix",
+    [SimtStep_WaveTrait, MemoryEffects<[MemWrite]>]> {
+  let summary = "Collectively store an accumulator fragment to memory";
+  let description = [{
+    Collectively stores an accumulator fragment to a SIMT-Step resource using
+    the supplied output layout and stride.
+  }];
+
+  let arguments = (ins SimtStep_ResourceType:$resource,
+                       AnyInteger:$baseIndex,
+                       AnyInteger:$stride,
+                       SimtStep_WmmaFragmentType:$fragment,
+                       SimtStep_WmmaLayoutEnumAttr:$layout);
+
+  let hasVerifier = 1;
 }
 
 def SimtStep_MaskPushOp : Op<SimtStep_Dialect, "mask_push"> {

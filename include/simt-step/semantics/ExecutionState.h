@@ -118,7 +118,7 @@ struct CollectiveSyncPoint {
     DynamicBlockKey block;
     std::uint64_t expectedMask = 0;
     llvm::DenseSet<LaneId> arrivals;
-    llvm::DenseMap<LaneId, ValueT> operands;
+    llvm::DenseMap<LaneId, llvm::SmallVector<ValueT, 4>> operandPacks;
     llvm::DenseMap<LaneId, ValueT> results;
     llvm::DenseMap<LaneId, ValueT> memoryIndices;
     llvm::DenseMap<LaneId, ValueT> memoryValues;

@@ -98,6 +98,31 @@ static simt::semantics::SemValue castInitValue(mlir::Type elementType,
         return simt::semantics::SemValue::fromFloat(static_cast<float>(value));
     llvm::report_fatal_error("unsupported buffer element type for --init");
 }
+
+static void printSemValue(llvm::raw_ostream &os,
+                          const simt::semantics::SemValue &value) {
+    if (value.isBool()) {
+        os << (value.asBool() ? "true" : "false");
+        return;
+    }
+    if (value.isInt32() || value.isInt64()) {
+        os << value.asInt64();
+        return;
+    }
+    if (value.isFloat32()) {
+        os << value.asFloat32();
+        return;
+    }
+    if (value.isResource()) {
+        os << "<resource>";
+        return;
+    }
+    if (value.isWmmaFragment()) {
+        os << "<wmma_fragment>";
+        return;
+    }
+    os << "<none>";
+}
 } // namespace
 
 int main(int argc, char **argv) {
@@ -293,8 +318,10 @@ int main(int argc, char **argv) {
             const auto &laneCtx = laneIt.second;
             llvm::outs() << "  Lane " << laneIt.first
                          << " returned=" << laneCtx.hasReturned;
-            if (laneCtx.returnValue)
-                llvm::outs() << " value=" << laneCtx.returnValue->asInt64();
+            if (laneCtx.returnValue) {
+                llvm::outs() << " value=";
+                printSemValue(llvm::outs(), *laneCtx.returnValue);
+            }
             if (laneCtx.currentBlock)
                 llvm::outs() << " block=" << laneCtx.currentBlock->block
                              << " seq=" << laneCtx.currentBlock->sequenceId;
@@ -316,8 +343,12 @@ int main(int argc, char **argv) {
             std::sort(entries.begin(), entries.end(),
                       [](const auto &a, const auto &b) { return a.first < b.first; });
             for (const auto &kv : entries)
-                llvm::outs() << "  " << bufName << "[" << kv.first
-                             << "] = " << kv.second.asInt64() << "\n";
+                {
+                    llvm::outs() << "  " << bufName << "[" << kv.first
+                                 << "] = ";
+                    printSemValue(llvm::outs(), kv.second);
+                    llvm::outs() << "\n";
+                }
         }
     }
 

@@ -188,6 +188,49 @@ static mlir::LogicalResult verifyAtomicOpCommon(
   return mlir::success();
 }
 
+static mlir::LogicalResult verifySupportedWmmaFragment(
+    mlir::Operation *op, mlir::Type type, llvm::StringRef label) {
+  auto fragmentType = mlir::dyn_cast<WmmaFragmentType>(type);
+  if (!fragmentType)
+    return op->emitOpError() << label
+                             << " must have simt_step.wmma_fragment type";
+
+  if (fragmentType.getM() != 16 || fragmentType.getN() != 16 ||
+      fragmentType.getK() != 16) {
+    return op->emitOpError()
+           << label << " must use the currently supported m16n16k16 shape";
+  }
+
+  switch (fragmentType.getRole()) {
+  case WmmaRole::MatrixA:
+    if (!mlir::isa<mlir::Float16Type>(fragmentType.getElementType()))
+      return op->emitOpError()
+             << label << " matrix_a fragments must use f16 elements";
+    if (fragmentType.getLayout() != WmmaLayout::ColMajor)
+      return op->emitOpError()
+             << label << " matrix_a fragments must use col_major layout";
+    return mlir::success();
+  case WmmaRole::MatrixB:
+    if (!mlir::isa<mlir::Float16Type>(fragmentType.getElementType()))
+      return op->emitOpError()
+             << label << " matrix_b fragments must use f16 elements";
+    if (fragmentType.getLayout() != WmmaLayout::RowMajor)
+      return op->emitOpError()
+             << label << " matrix_b fragments must use row_major layout";
+    return mlir::success();
+  case WmmaRole::Accumulator:
+    if (!mlir::isa<mlir::Float32Type>(fragmentType.getElementType()))
+      return op->emitOpError()
+             << label << " accumulator fragments must use f32 elements";
+    if (fragmentType.getLayout() != WmmaLayout::None)
+      return op->emitOpError()
+             << label << " accumulator fragments must use none layout";
+    return mlir::success();
+  }
+
+  return op->emitOpError() << label << " has invalid WMMA fragment role";
+}
+
 mlir::LogicalResult CustomOp::verify() {
   auto *op = getOperation();
   auto instr = op->getAttrOfType<mlir::StringAttr>("instr");
@@ -565,6 +608,109 @@ mlir::LogicalResult BufferAtomicXorOp::verify() {
   return verifyAtomicOpCommon(getOperation(), getResource(), getIndex(),
                               values, getOldValue().getType(),
                               /*requireIntegerElement=*/true);
+}
+
+mlir::LogicalResult WmmaFillOp::verify() {
+  if (failed(verifySupportedWmmaFragment(getOperation(), getFragment().getType(),
+                                         "result")))
+    return mlir::failure();
+
+  auto fragmentType = llvm::cast<WmmaFragmentType>(getFragment().getType());
+  if (fragmentType.getRole() != WmmaRole::Accumulator)
+    return emitOpError("wmma_fill currently only produces accumulator fragments");
+  if (getValue().getType() != fragmentType.getElementType())
+    return emitOpError("fill value type must match fragment element type");
+  return mlir::success();
+}
+
+mlir::LogicalResult WmmaLoadMatrixOp::verify() {
+  if (failed(verifySupportedWmmaFragment(getOperation(), getFragment().getType(),
+                                         "result")))
+    return mlir::failure();
+  if (!mlir::isa<mlir::IntegerType, mlir::IndexType>(getBaseIndex().getType()))
+    return emitOpError("baseIndex must have integer or index type");
+  if (!mlir::isa<mlir::IntegerType, mlir::IndexType>(getStride().getType()))
+    return emitOpError("stride must have integer or index type");
+
+  auto resourceType = mlir::dyn_cast<ResourceType>(getResource().getType());
+  if (!resourceType)
+    return emitOpError("resource must have simt_step.resource type");
+
+  auto fragmentType = llvm::cast<WmmaFragmentType>(getFragment().getType());
+  if (fragmentType.getRole() == WmmaRole::Accumulator)
+    return emitOpError("wmma_load_matrix cannot produce accumulator fragments");
+  if (resourceType.getElementType() != fragmentType.getElementType())
+    return emitOpError("resource element type must match fragment element type");
+
+  switch (resourceType.getMemorySpace()) {
+  case MemorySpace::Global:
+  case MemorySpace::Shared:
+    return mlir::success();
+  case MemorySpace::Generic:
+  case MemorySpace::Private:
+    return emitOpError("wmma_load_matrix currently requires global or shared memory");
+  }
+
+  return emitOpError("wmma_load_matrix has invalid resource memory space");
+}
+
+mlir::LogicalResult WmmaMmaOp::verify() {
+  if (failed(verifySupportedWmmaFragment(getOperation(), getA().getType(), "a")) ||
+      failed(verifySupportedWmmaFragment(getOperation(), getB().getType(), "b")) ||
+      failed(verifySupportedWmmaFragment(getOperation(), getAcc().getType(), "acc")) ||
+      failed(verifySupportedWmmaFragment(getOperation(), getResult().getType(), "result")))
+    return mlir::failure();
+
+  auto aType = llvm::cast<WmmaFragmentType>(getA().getType());
+  auto bType = llvm::cast<WmmaFragmentType>(getB().getType());
+  auto accType = llvm::cast<WmmaFragmentType>(getAcc().getType());
+  auto resultType = llvm::cast<WmmaFragmentType>(getResult().getType());
+
+  if (aType.getRole() != WmmaRole::MatrixA)
+    return emitOpError("operand a must be a matrix_a fragment");
+  if (bType.getRole() != WmmaRole::MatrixB)
+    return emitOpError("operand b must be a matrix_b fragment");
+  if (accType.getRole() != WmmaRole::Accumulator)
+    return emitOpError("operand acc must be an accumulator fragment");
+  if (resultType.getRole() != WmmaRole::Accumulator)
+    return emitOpError("result must be an accumulator fragment");
+  if (accType != resultType)
+    return emitOpError("result type must match accumulator type exactly");
+
+  return mlir::success();
+}
+
+mlir::LogicalResult WmmaStoreMatrixOp::verify() {
+  if (failed(verifySupportedWmmaFragment(getOperation(), getFragment().getType(),
+                                         "fragment")))
+    return mlir::failure();
+  if (!mlir::isa<mlir::IntegerType, mlir::IndexType>(getBaseIndex().getType()))
+    return emitOpError("baseIndex must have integer or index type");
+  if (!mlir::isa<mlir::IntegerType, mlir::IndexType>(getStride().getType()))
+    return emitOpError("stride must have integer or index type");
+
+  auto resourceType = mlir::dyn_cast<ResourceType>(getResource().getType());
+  if (!resourceType)
+    return emitOpError("resource must have simt_step.resource type");
+
+  auto fragmentType = llvm::cast<WmmaFragmentType>(getFragment().getType());
+  if (fragmentType.getRole() != WmmaRole::Accumulator)
+    return emitOpError("wmma_store_matrix currently only stores accumulator fragments");
+  if (getLayout() == WmmaLayout::None)
+    return emitOpError("wmma_store_matrix requires row_major or col_major layout");
+  if (resourceType.getElementType() != fragmentType.getElementType())
+    return emitOpError("resource element type must match fragment element type");
+
+  switch (resourceType.getMemorySpace()) {
+  case MemorySpace::Global:
+  case MemorySpace::Shared:
+    return mlir::success();
+  case MemorySpace::Generic:
+  case MemorySpace::Private:
+    return emitOpError("wmma_store_matrix currently requires global or shared memory");
+  }
+
+  return emitOpError("wmma_store_matrix has invalid resource memory space");
 }
 
 } // namespace simt::dialect

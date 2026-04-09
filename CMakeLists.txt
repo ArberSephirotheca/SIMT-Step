@@ -105,4 +105,6 @@ endif()
 
 add_subdirectory(lib)
 add_subdirectory(tools)
-add_subdirectory(examples)
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
+    add_subdirectory(examples)
+endif()
