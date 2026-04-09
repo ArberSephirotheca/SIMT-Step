@@ -1,0 +1,537 @@
+
+
+Failures: 41/100
+---------------------------------------
+
+fuzz-tests_with_switch/test_035_seed_48.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_035_seed_48.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_035_seed_48.amber: Buffers have different values. 54 values differed, first difference at byte 3080 values 30 != 1
+
+
+fuzz-tests_with_switch/test_017_seed_21.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_017_seed_21.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_017_seed_21.amber: Buffers have different values. 117 values differed, first difference at byte 1028 values 8 != 3
+
+
+fuzz-tests_with_switch/test_086_seed_118.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_086_seed_118.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_086_seed_118.amber: Buffers have different values. 222 values differed, first difference at byte 4100 values 31 != 1
+
+
+fuzz-tests_with_switch/test_049_seed_66.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_049_seed_66.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_049_seed_66.amber: Buffers have different values. 127 values differed, first difference at byte 2056 values 15 != 1
+
+
+fuzz-tests_with_switch/test_043_seed_59.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_043_seed_59.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_043_seed_59.amber: Buffers have different values. 4 values differed, first difference at byte 8 values 4 != 1
+
+
+fuzz-tests_with_switch/test_055_seed_74.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_055_seed_74.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_055_seed_74.amber: Buffers have different values. 421 values differed, first difference at byte 8 values 5 != 3
+
+
+fuzz-tests_with_switch/test_030_seed_37.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_030_seed_37.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_030_seed_37.amber: Buffers have different values. 86 values differed, first difference at byte 7168 values 22 != 11
+
+
+fuzz-tests_with_switch/test_042_seed_58.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_042_seed_58.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_042_seed_58.amber: Buffers have different values. 21 values differed, first difference at byte 5128 values 10 != 5
+
+
+fuzz-tests_with_switch/test_079_seed_107.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_079_seed_107.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_079_seed_107.amber: Buffers have different values. 12 values differed, first difference at byte 10424 values 12 != 6
+
+
+fuzz-tests_with_switch/test_033_seed_45.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_033_seed_45.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_033_seed_45.amber: Buffers have different values. 14 values differed, first difference at byte 5320 values 5 != 1
+
+
+fuzz-tests_with_switch/test_089_seed_121.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_089_seed_121.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_089_seed_121.amber: Buffers have different values. 94 values differed, first difference at byte 16 values 7 != 1
+
+
+fuzz-tests_with_switch/test_047_seed_63.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_047_seed_63.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_047_seed_63.amber: Buffers have different values. 153 values differed, first difference at byte 1024 values 13 != 7
+
+
+fuzz-tests_with_switch/test_064_seed_88.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_064_seed_88.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_064_seed_88.amber: Buffers have different values. 42 values differed, first difference at byte 8196 values 21 != 11
+
+
+fuzz-tests_with_switch/test_088_seed_120.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_088_seed_120.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_088_seed_120.amber: Buffers have different values. 53 values differed, first difference at byte 5120 values 22 != 11
+
+
+fuzz-tests_with_switch/test_067_seed_93.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_067_seed_93.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_067_seed_93.amber: Buffers have different values. 253 values differed, first difference at byte 3076 values 31 != 1
+
+
+fuzz-tests_with_switch/test_005_seed_5.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_005_seed_5.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_005_seed_5.amber: Buffers have different values. 154 values differed, first difference at byte 3156 values 6 != 1
+
+
+fuzz-tests_with_switch/test_093_seed_125.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_093_seed_125.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_093_seed_125.amber: Buffers have different values. 116 values differed, first difference at byte 4 values 31 != 1
+
+
+fuzz-tests_with_switch/test_020_seed_24.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_020_seed_24.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_020_seed_24.amber: Buffers have different values. 191 values differed, first difference at byte 4100 values 16 != 8
+
+
+fuzz-tests_with_switch/test_094_seed_127.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_094_seed_127.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_094_seed_127.amber: Buffers have different values. 191 values differed, first difference at byte 3072 values 32 != 16
+
+
+fuzz-tests_with_switch/test_082_seed_113.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_082_seed_113.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_082_seed_113.amber: Buffers have different values. 159 values differed, first difference at byte 5124 values 31 != 1
+
+
+fuzz-tests_with_switch/test_003_seed_3.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_003_seed_3.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_003_seed_3.amber: Buffers have different values. 126 values differed, first difference at byte 3084 values 10 != 1
+
+
+fuzz-tests_with_switch/test_025_seed_30.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_025_seed_30.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_025_seed_30.amber: Buffers have different values. 21 values differed, first difference at byte 4096 values 11 != 6
+
+
+fuzz-tests_with_switch/test_077_seed_105.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_077_seed_105.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_077_seed_105.amber: Buffers have different values. 21 values differed, first difference at byte 3080 values 10 != 5
+
+
+fuzz-tests_with_switch/test_076_seed_103.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_076_seed_103.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_076_seed_103.amber: Buffers have different values. 32 values differed, first difference at byte 2176 values 32 != 1
+
+
+fuzz-tests_with_switch/test_007_seed_9.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_007_seed_9.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_007_seed_9.amber: Buffers have different values. 11 values differed, first difference at byte 3072 values 11 != 1
+
+
+fuzz-tests_with_switch/test_034_seed_46.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_034_seed_46.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_034_seed_46.amber: Buffers have different values. 138 values differed, first difference at byte 1048 values 5 != 1
+
+
+fuzz-tests_with_switch/test_052_seed_69.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_052_seed_69.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_052_seed_69.amber: Buffers have different values. 21 values differed, first difference at byte 5124 values 11 != 6
+
+
+fuzz-tests_with_switch/test_032_seed_44.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_032_seed_44.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_032_seed_44.amber: Buffers have different values. 21 values differed, first difference at byte 1024 values 11 != 6
+
+
+fuzz-tests_with_switch/test_059_seed_82.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_059_seed_82.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_059_seed_82.amber: Buffers have different values. 64 values differed, first difference at byte 8192 values 32 != 16
+
+
+fuzz-tests_with_switch/test_071_seed_98.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_071_seed_98.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_071_seed_98.amber: Buffers have different values. 21 values differed, first difference at byte 7180 values 10 != 5
+
+
+fuzz-tests_with_switch/test_004_seed_4.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_004_seed_4.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_004_seed_4.amber: Buffers have different values. 2 values differed, first difference at byte 5124 values 2 != 1
+
+
+fuzz-tests_with_switch/test_073_seed_100.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_073_seed_100.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_073_seed_100.amber: Buffers have different values. 86 values differed, first difference at byte 1024 values 11 != 6
+
+
+fuzz-tests_with_switch/test_057_seed_76.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_057_seed_76.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_057_seed_76.amber: Buffers have different values. 128 values differed, first difference at byte 4100 values 16 != 8
+
+
+fuzz-tests_with_switch/test_044_seed_60.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_044_seed_60.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_044_seed_60.amber: Buffers have different values. 207 values differed, first difference at byte 6148 values 24 != 1
+
+
+fuzz-tests_with_switch/test_080_seed_108.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_080_seed_108.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_080_seed_108.amber: Buffers have different values. 63 values differed, first difference at byte 9232 values 7 != 1
+
+
+fuzz-tests_with_switch/test_015_seed_19.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_015_seed_19.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_015_seed_19.amber: Buffers have different values. 85 values differed, first difference at byte 2048 values 11 != 6
+
+
+fuzz-tests_with_switch/test_099_seed_134.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_099_seed_134.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_099_seed_134.amber: Buffers have different values. 72 values differed, first difference at byte 1064 values 15 != 8
+
+
+fuzz-tests_with_switch/test_018_seed_22.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_018_seed_22.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_018_seed_22.amber: Buffers have different values. 32 values differed, first difference at byte 0 values 8 != 1
+
+
+fuzz-tests_with_switch/test_062_seed_86.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_062_seed_86.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_062_seed_86.amber: Buffers have different values. 126 values differed, first difference at byte 10244 values 21 != 11
+
+
+fuzz-tests_with_switch/test_019_seed_23.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_019_seed_23.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_019_seed_23.amber: Buffers have different values. 160 values differed, first difference at byte 10240 values 32 != 1
+
+
+fuzz-tests_with_switch/test_098_seed_133.mlir:
+Passed Raiser: True
+------ stdout ------
+
+Summary of Failures:
+  /tmp/fuzz-tests_with_switch_glsl-amber/test_098_seed_133.amber
+
+Summary: 0 pass, 1 fail
+
+------ stderr ------
+/tmp/fuzz-tests_with_switch_glsl-amber/test_098_seed_133.amber: Buffers have different values. 158 values differed, first difference at byte 2052 values 31 != 1
+

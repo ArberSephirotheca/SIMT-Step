@@ -1,0 +1,36 @@
+#!amber
+
+SHADER compute coop_mat_shader
+#version 450
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+
+layout(local_size_x = 32) in;
+
+layout(set = 0, binding = 0) buffer OutBuffer {
+    float Out[];
+};
+
+void main() {
+    // Just create a cooperative matrix and write a constant
+    coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator> mat;
+
+    mat = coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator>(1.0);
+
+    // Each invocation writes something so we know it ran
+    if (gl_LocalInvocationIndex == 0) {
+        Out[0] = 123.0;
+    }
+}
+END
+
+BUFFER OutBuffer DATA_TYPE float STD430 SIZE 4 FILL 0.0
+
+PIPELINE compute pipeline
+  ATTACH coop_mat_shader
+  BIND BUFFER OutBuffer AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+
+RUN pipeline 1 1 1
+
+EXPECT OutBuffer IDX 0 EQ 123.0

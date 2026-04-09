@@ -1,0 +1,417 @@
+Failures: 5
+----------------
+
+----------------
+['python', 'directx\\fuzz-tests_with_switch\\test_030_seed_37.py']
+---stdout ---
+testout68192784.cpp
+Microsoft (R) Incremental Linker Version 14.50.35725.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:testout68192784.exe 
+testout68192784.obj 
+Adapter: NVIDIA GeForce RTX 4070 Laptop GPU (Vendor=0x10de Device=0x2860)
+
+
+---stderr ---
+Microsoft (R) C/C++ Optimizing Compiler Version 19.50.35725 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+buf0[1792]: expected=22 actual=6
+buf0[1793]: expected=22 actual=11
+buf0[1795]: expected=22 actual=5
+buf0[1796]: expected=22 actual=11
+buf0[1798]: expected=22 actual=6
+buf0[1799]: expected=22 actual=11
+buf0[1801]: expected=22 actual=5
+buf0[1802]: expected=22 actual=11
+buf0[1804]: expected=22 actual=6
+buf0[1805]: expected=22 actual=11
+buf0[1807]: expected=22 actual=5
+buf0[1808]: expected=22 actual=11
+buf0[1810]: expected=22 actual=6
+buf0[1811]: expected=22 actual=11
+buf0[1813]: expected=22 actual=5
+buf0[1814]: expected=22 actual=11
+buf0[1816]: expected=22 actual=6
+buf0[1817]: expected=22 actual=11
+buf0[1819]: expected=22 actual=5
+buf0[1820]: expected=22 actual=11
+buf0[1822]: expected=22 actual=6
+buf0[1823]: expected=22 actual=11
+buf0[1825]: expected=21 actual=6
+buf0[1826]: expected=21 actual=10
+buf0[1828]: expected=21 actual=5
+buf0[1829]: expected=21 actual=10
+buf0[1831]: expected=21 actual=6
+buf0[1832]: expected=21 actual=10
+buf0[1834]: expected=21 actual=5
+buf0[1835]: expected=21 actual=10
+buf0[1837]: expected=21 actual=6
+buf0[1838]: expected=21 actual=10
+buf0[1840]: expected=21 actual=5
+buf0[1841]: expected=21 actual=10
+buf0[1843]: expected=21 actual=6
+buf0[1844]: expected=21 actual=10
+buf0[1846]: expected=21 actual=5
+buf0[1847]: expected=21 actual=10
+buf0[1849]: expected=21 actual=6
+buf0[1850]: expected=21 actual=10
+buf0[1852]: expected=21 actual=5
+buf0[1853]: expected=21 actual=10
+buf0[1855]: expected=21 actual=6
+buf0[2048]: expected=22 actual=6
+buf0[2049]: expected=22 actual=11
+buf0[2051]: expected=22 actual=5
+buf0[2052]: expected=22 actual=11
+buf0[2054]: expected=22 actual=6
+buf0[2055]: expected=22 actual=11
+buf0[2057]: expected=22 actual=5
+buf0[2058]: expected=22 actual=11
+buf0[2060]: expected=22 actual=6
+buf0[2061]: expected=22 actual=11
+buf0[2063]: expected=22 actual=5
+buf0[2064]: expected=22 actual=11
+buf0[2066]: expected=22 actual=6
+buf0[2067]: expected=22 actual=11
+buf0[2069]: expected=22 actual=5
+buf0[2070]: expected=22 actual=11
+buf0[2072]: expected=22 actual=6
+buf0[2073]: expected=22 actual=11
+buf0[2075]: expected=22 actual=5
+buf0[2076]: expected=22 actual=11
+buf0[2078]: expected=22 actual=6
+buf0[2079]: expected=22 actual=11
+buf0[2081]: expected=21 actual=6
+buf0[2082]: expected=21 actual=10
+buf0[2084]: expected=21 actual=5
+buf0[2085]: expected=21 actual=10
+buf0[2087]: expected=21 actual=6
+buf0[2088]: expected=21 actual=10
+buf0[2090]: expected=21 actual=5
+buf0[2091]: expected=21 actual=10
+buf0[2093]: expected=21 actual=6
+buf0[2094]: expected=21 actual=10
+buf0[2096]: expected=21 actual=5
+buf0[2097]: expected=21 actual=10
+buf0[2099]: expected=21 actual=6
+buf0[2100]: expected=21 actual=10
+buf0[2102]: expected=21 actual=5
+buf0[2103]: expected=21 actual=10
+buf0[2105]: expected=21 actual=6
+buf0[2106]: expected=21 actual=10
+buf0[2108]: expected=21 actual=5
+buf0[2109]: expected=21 actual=10
+buf0[2111]: expected=21 actual=6
+Traceback (most recent call last):
+  File "C:\Users\merli\directxtests\directx\fuzz-tests_with_switch\test_030_seed_37.py", line 825, in <module>
+    sp.run(['testout68192784.exe'], check=True, env=os.environ.copy())
+  File "C:\Users\merli\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['testout68192784.exe']' returned non-zero exit status 1.
+
+----------------
+['python', 'directx\\fuzz-tests_with_switch\\test_088_seed_120.py']
+---stdout ---
+testout77781618.cpp
+Microsoft (R) Incremental Linker Version 14.50.35725.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:testout77781618.exe 
+testout77781618.obj 
+Adapter: NVIDIA GeForce RTX 4070 Laptop GPU (Vendor=0x10de Device=0x2860)
+
+
+---stderr ---
+Microsoft (R) C/C++ Optimizing Compiler Version 19.50.35725 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+buf0[1280]: expected=22 actual=11
+buf0[1281]: expected=22 actual=11
+buf0[1283]: expected=22 actual=11
+buf0[1284]: expected=22 actual=11
+buf0[1286]: expected=22 actual=11
+buf0[1287]: expected=22 actual=11
+buf0[1289]: expected=22 actual=11
+buf0[1290]: expected=22 actual=11
+buf0[1292]: expected=22 actual=11
+buf0[1293]: expected=22 actual=11
+buf0[1295]: expected=22 actual=11
+buf0[1296]: expected=22 actual=11
+buf0[1298]: expected=22 actual=11
+buf0[1299]: expected=22 actual=11
+buf0[1301]: expected=22 actual=11
+buf0[1302]: expected=22 actual=11
+buf0[1304]: expected=22 actual=11
+buf0[1305]: expected=22 actual=11
+buf0[1307]: expected=22 actual=11
+buf0[1308]: expected=22 actual=11
+buf0[1310]: expected=22 actual=11
+buf0[1311]: expected=22 actual=11
+buf0[1313]: expected=21 actual=11
+buf0[1314]: expected=21 actual=10
+buf0[1316]: expected=21 actual=11
+buf0[1317]: expected=21 actual=10
+buf0[1319]: expected=21 actual=11
+buf0[1320]: expected=21 actual=10
+buf0[1322]: expected=21 actual=11
+buf0[1323]: expected=21 actual=10
+buf0[1325]: expected=21 actual=11
+buf0[1326]: expected=21 actual=10
+buf0[1328]: expected=21 actual=11
+buf0[1329]: expected=21 actual=10
+buf0[1331]: expected=21 actual=11
+buf0[1332]: expected=21 actual=10
+buf0[1334]: expected=21 actual=11
+buf0[1335]: expected=21 actual=10
+buf0[1337]: expected=21 actual=11
+buf0[1338]: expected=21 actual=10
+buf0[1340]: expected=21 actual=11
+buf0[1341]: expected=21 actual=10
+buf0[1343]: expected=21 actual=11
+Traceback (most recent call last):
+  File "C:\Users\merli\directxtests\directx\fuzz-tests_with_switch\test_088_seed_120.py", line 723, in <module>
+    sp.run(['testout77781618.exe'], check=True, env=os.environ.copy())
+  File "C:\Users\merli\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['testout77781618.exe']' returned non-zero exit status 1.
+
+----------------
+['python', 'directx\\fuzz-tests_with_switch\\test_073_seed_100.py']
+---stdout ---
+testout21153618.cpp
+Microsoft (R) Incremental Linker Version 14.50.35725.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:testout21153618.exe 
+testout21153618.obj 
+Adapter: NVIDIA GeForce RTX 4070 Laptop GPU (Vendor=0x10de Device=0x2860)
+
+
+---stderr ---
+Microsoft (R) C/C++ Optimizing Compiler Version 19.50.35725 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+buf0[256]: expected=11 actual=6
+buf0[260]: expected=11 actual=5
+buf0[262]: expected=11 actual=6
+buf0[266]: expected=11 actual=5
+buf0[268]: expected=11 actual=6
+buf0[272]: expected=11 actual=5
+buf0[274]: expected=11 actual=6
+buf0[278]: expected=11 actual=5
+buf0[280]: expected=11 actual=6
+buf0[284]: expected=11 actual=5
+buf0[286]: expected=11 actual=6
+buf0[290]: expected=10 actual=5
+buf0[292]: expected=10 actual=5
+buf0[296]: expected=10 actual=5
+buf0[298]: expected=10 actual=5
+buf0[302]: expected=10 actual=5
+buf0[304]: expected=10 actual=5
+buf0[308]: expected=10 actual=5
+buf0[310]: expected=10 actual=5
+buf0[314]: expected=10 actual=5
+buf0[316]: expected=10 actual=5
+buf0[513]: expected=11 actual=6
+buf0[515]: expected=11 actual=5
+buf0[519]: expected=11 actual=6
+buf0[521]: expected=11 actual=5
+buf0[525]: expected=11 actual=6
+buf0[527]: expected=11 actual=5
+buf0[531]: expected=11 actual=6
+buf0[533]: expected=11 actual=5
+buf0[537]: expected=11 actual=6
+buf0[539]: expected=11 actual=5
+buf0[543]: expected=11 actual=6
+buf0[545]: expected=11 actual=6
+buf0[549]: expected=11 actual=5
+buf0[551]: expected=11 actual=6
+buf0[555]: expected=11 actual=5
+buf0[557]: expected=11 actual=6
+buf0[561]: expected=11 actual=5
+buf0[563]: expected=11 actual=6
+buf0[567]: expected=11 actual=5
+buf0[569]: expected=11 actual=6
+buf0[573]: expected=11 actual=5
+buf0[575]: expected=11 actual=6
+buf0[768]: expected=22 actual=11
+buf0[769]: expected=22 actual=11
+buf0[771]: expected=22 actual=11
+buf0[772]: expected=22 actual=11
+buf0[774]: expected=22 actual=11
+buf0[775]: expected=22 actual=11
+buf0[777]: expected=22 actual=11
+buf0[778]: expected=22 actual=11
+buf0[780]: expected=22 actual=11
+buf0[781]: expected=22 actual=11
+buf0[783]: expected=22 actual=11
+buf0[784]: expected=22 actual=11
+buf0[786]: expected=22 actual=11
+buf0[787]: expected=22 actual=11
+buf0[789]: expected=22 actual=11
+buf0[790]: expected=22 actual=11
+buf0[792]: expected=22 actual=11
+buf0[793]: expected=22 actual=11
+buf0[795]: expected=22 actual=11
+buf0[796]: expected=22 actual=11
+buf0[798]: expected=22 actual=11
+buf0[799]: expected=22 actual=11
+buf0[801]: expected=21 actual=11
+buf0[802]: expected=21 actual=10
+buf0[804]: expected=21 actual=11
+buf0[805]: expected=21 actual=10
+buf0[807]: expected=21 actual=11
+buf0[808]: expected=21 actual=10
+buf0[810]: expected=21 actual=11
+buf0[811]: expected=21 actual=10
+buf0[813]: expected=21 actual=11
+buf0[814]: expected=21 actual=10
+buf0[816]: expected=21 actual=11
+buf0[817]: expected=21 actual=10
+buf0[819]: expected=21 actual=11
+buf0[820]: expected=21 actual=10
+buf0[822]: expected=21 actual=11
+buf0[823]: expected=21 actual=10
+buf0[825]: expected=21 actual=11
+buf0[826]: expected=21 actual=10
+buf0[828]: expected=21 actual=11
+buf0[829]: expected=21 actual=10
+buf0[831]: expected=21 actual=11
+Traceback (most recent call last):
+  File "C:\Users\merli\directxtests\directx\fuzz-tests_with_switch\test_073_seed_100.py", line 602, in <module>
+    sp.run(['testout21153618.exe'], check=True, env=os.environ.copy())
+  File "C:\Users\merli\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['testout21153618.exe']' returned non-zero exit status 1.
+
+----------------
+['python', 'directx\\fuzz-tests_with_switch\\test_079_seed_107.py']
+---stdout ---
+testout29831787.cpp
+Microsoft (R) Incremental Linker Version 14.50.35725.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:testout29831787.exe 
+testout29831787.obj 
+Adapter: NVIDIA GeForce RTX 4070 Laptop GPU (Vendor=0x10de Device=0x2860)
+
+
+---stderr ---
+Microsoft (R) C/C++ Optimizing Compiler Version 19.50.35725 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+buf0[2606]: expected=12 actual=6
+buf0[2607]: expected=12 actual=6
+buf0[2609]: expected=12 actual=6
+buf0[2610]: expected=12 actual=6
+buf0[2612]: expected=12 actual=6
+buf0[2613]: expected=12 actual=6
+buf0[2615]: expected=12 actual=6
+buf0[2616]: expected=12 actual=6
+buf0[2618]: expected=12 actual=6
+buf0[2619]: expected=12 actual=6
+buf0[2621]: expected=12 actual=6
+buf0[2622]: expected=12 actual=6
+Traceback (most recent call last):
+  File "C:\Users\merli\directxtests\directx\fuzz-tests_with_switch\test_079_seed_107.py", line 653, in <module>
+    sp.run(['testout29831787.exe'], check=True, env=os.environ.copy())
+  File "C:\Users\merli\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['testout29831787.exe']' returned non-zero exit status 1.
+
+----------------
+['python', 'directx\\fuzz-tests_with_switch\\test_099_seed_134.py']
+---stdout ---
+testout71250228.cpp
+Microsoft (R) Incremental Linker Version 14.50.35725.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:testout71250228.exe 
+testout71250228.obj 
+Adapter: NVIDIA GeForce RTX 4070 Laptop GPU (Vendor=0x10de Device=0x2860)
+
+
+---stderr ---
+Microsoft (R) C/C++ Optimizing Compiler Version 19.50.35725 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+buf0[266]: expected=15 actual=8
+buf0[268]: expected=15 actual=7
+buf0[269]: expected=15 actual=8
+buf0[271]: expected=15 actual=7
+buf0[272]: expected=15 actual=8
+buf0[274]: expected=15 actual=7
+buf0[275]: expected=15 actual=8
+buf0[277]: expected=15 actual=7
+buf0[278]: expected=15 actual=8
+buf0[280]: expected=15 actual=7
+buf0[281]: expected=15 actual=8
+buf0[283]: expected=15 actual=7
+buf0[284]: expected=15 actual=8
+buf0[286]: expected=15 actual=7
+buf0[287]: expected=15 actual=8
+buf0[289]: expected=21 actual=11
+buf0[290]: expected=21 actual=10
+buf0[292]: expected=21 actual=11
+buf0[293]: expected=21 actual=10
+buf0[295]: expected=21 actual=11
+buf0[296]: expected=21 actual=10
+buf0[298]: expected=21 actual=11
+buf0[299]: expected=21 actual=10
+buf0[301]: expected=21 actual=11
+buf0[302]: expected=21 actual=10
+buf0[304]: expected=21 actual=11
+buf0[305]: expected=21 actual=10
+buf0[307]: expected=21 actual=11
+buf0[308]: expected=21 actual=10
+buf0[310]: expected=21 actual=11
+buf0[311]: expected=21 actual=10
+buf0[313]: expected=21 actual=11
+buf0[314]: expected=21 actual=10
+buf0[316]: expected=21 actual=11
+buf0[317]: expected=21 actual=10
+buf0[319]: expected=21 actual=11
+buf0[522]: expected=15 actual=8
+buf0[524]: expected=15 actual=7
+buf0[525]: expected=15 actual=8
+buf0[527]: expected=15 actual=7
+buf0[528]: expected=15 actual=8
+buf0[530]: expected=15 actual=7
+buf0[531]: expected=15 actual=8
+buf0[533]: expected=15 actual=7
+buf0[534]: expected=15 actual=8
+buf0[536]: expected=15 actual=7
+buf0[537]: expected=15 actual=8
+buf0[539]: expected=15 actual=7
+buf0[540]: expected=15 actual=8
+buf0[542]: expected=15 actual=7
+buf0[543]: expected=15 actual=8
+buf0[545]: expected=21 actual=11
+buf0[546]: expected=21 actual=10
+buf0[548]: expected=21 actual=11
+buf0[549]: expected=21 actual=10
+buf0[551]: expected=21 actual=11
+buf0[552]: expected=21 actual=10
+buf0[554]: expected=21 actual=11
+buf0[555]: expected=21 actual=10
+buf0[557]: expected=21 actual=11
+buf0[558]: expected=21 actual=10
+buf0[560]: expected=21 actual=11
+buf0[561]: expected=21 actual=10
+buf0[563]: expected=21 actual=11
+buf0[564]: expected=21 actual=10
+buf0[566]: expected=21 actual=11
+buf0[567]: expected=21 actual=10
+buf0[569]: expected=21 actual=11
+buf0[570]: expected=21 actual=10
+buf0[572]: expected=21 actual=11
+buf0[573]: expected=21 actual=10
+buf0[575]: expected=21 actual=11
+Traceback (most recent call last):
+  File "C:\Users\merli\directxtests\directx\fuzz-tests_with_switch\test_099_seed_134.py", line 508, in <module>
+    sp.run(['testout71250228.exe'], check=True, env=os.environ.copy())
+  File "C:\Users\merli\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['testout71250228.exe']' returned non-zero exit status 1.
+

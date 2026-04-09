@@ -1,0 +1,55 @@
+#!amber
+
+SHADER compute coop_mat_shader GLSL
+#version 450
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+layout(local_size_x = 32) in;
+
+layout(set = 0, binding = 0) buffer ABuffer {
+    float A[];
+};
+
+layout(set = 0, binding = 1) buffer BBuffer {
+    float B[];
+};
+
+layout(set = 0, binding = 2) buffer CBuffer {
+    float C[];
+};
+
+layout(set = 0, binding = 3) buffer OutBuffer {
+    float Out[];
+};
+
+void main() {
+    coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseA> matA;
+    coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseB> matB;
+    coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator> matC;
+
+    coopMatLoad(matA, A, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+    coopMatLoad(matB, B, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+    coopMatLoad(matC, C, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+
+    matC = coopMatMulAdd(matA, matB, matC);
+
+    coopMatStore(matC, Out, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+}
+END
+
+BUFFER ABuffer   DATA_TYPE float STD430 SIZE 256 FILL 1.0
+BUFFER BBuffer   DATA_TYPE float STD430 SIZE 256 FILL 2.0
+BUFFER CBuffer   DATA_TYPE float STD430 SIZE 256 FILL 0.0
+BUFFER OutBuffer DATA_TYPE float STD430 SIZE 256 FILL 0.0
+
+PIPELINE compute pipeline
+  ATTACH coop_mat_shader
+  BIND BUFFER ABuffer AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER BBuffer AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER CBuffer AS storage DESCRIPTOR_SET 0 BINDING 2
+  BIND BUFFER OutBuffer AS storage DESCRIPTOR_SET 0 BINDING 3
+END
+
+RUN pipeline 1 1 1
+
+EXPECT OutBuffer IDX 0 EQ 32.0

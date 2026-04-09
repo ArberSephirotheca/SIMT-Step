@@ -1,0 +1,66 @@
+
+---
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_010_seed_13.amber:
+
+Summary of Failures:
+  C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_010_seed_13.amber
+
+Summary: 0 pass, 1 fail
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_010_seed_13.amber: Buffers have different values. 32 values differed, first difference at byte 2048 values 32 != 11
+
+---
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_015_seed_19.amber:
+
+Summary of Failures:
+  C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_015_seed_19.amber
+
+Summary: 0 pass, 1 fail
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_015_seed_19.amber: Buffers have different values. 64 values differed, first difference at byte 3072 values 32 != 11
+
+---
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_019_seed_23.amber:
+
+Summary of Failures:
+  C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_019_seed_23.amber
+
+Summary: 0 pass, 1 fail
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_019_seed_23.amber: Buffers have different values. 64 values differed, first difference at byte 10240 values 64 != 1
+
+---
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_034_seed_46.amber:
+
+Summary of Failures:
+  C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_034_seed_46.amber
+
+Summary: 0 pass, 1 fail
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_034_seed_46.amber: Buffers have different values. 128 values differed, first difference at byte 7176 values 21 != 11
+
+---
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_044_seed_60.amber:
+
+Summary of Failures:
+  C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_044_seed_60.amber
+
+Summary: 0 pass, 1 fail
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_044_seed_60.amber: Buffers have different values. 96 values differed, first difference at byte 3072 values 32 != 11
+
+---
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_059_seed_82.amber:
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_059_seed_82.amber: Buffers have different values. 223 values differed, first difference at byte 2048 values 32 != 16
+
+Summary of Failures:
+  C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_059_seed_82.amber
+
+Summary: 0 pass, 1 fail
+
+---
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_094_seed_127.amber:
+
+Summary of Failures:
+  C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_094_seed_127.amber
+
+Summary: 0 pass, 1 fail
+C:\Users\CHPLU\glsl-amber_64\fuzz-tests_with_switch\test_094_seed_127.amber: Buffers have different values. 191 values differed, first difference at byte 3072 values 64 != 32
+
+------
+Failures: 7 / 100

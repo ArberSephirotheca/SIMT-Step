@@ -1,0 +1,103 @@
+
+
+Failures: 11/62
+---------------------------------------
+
+fuzz-tests_func_non_uniform/test_038_seed_46.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[316]: expected=4 actual=3
+test_038_seed_46.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_038_seed_46.cu:366: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_017_seed_21.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=32 actual=8
+test_017_seed_21.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_017_seed_21.cu:377: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_000_seed_44.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=31 actual=8
+test_000_seed_44.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_000_seed_44.cu:312: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_036_seed_44.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=31 actual=8
+test_036_seed_44.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_036_seed_44.cu:312: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_012_seed_13.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=16 actual=8
+test_012_seed_13.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_012_seed_13.cu:208: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_003_seed_3.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=16 actual=8
+test_003_seed_3.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_003_seed_3.cu:156: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_051_seed_60.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[258]: expected=16 actual=8
+test_051_seed_60.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_051_seed_60.cu:438: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_027_seed_35.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[23]: expected=7 actual=5
+test_027_seed_35.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_027_seed_35.cu:164: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_011_seed_12.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[291]: expected=29 actual=22
+test_011_seed_12.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_011_seed_12.cu:349: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_011_seed_13.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=16 actual=8
+test_011_seed_13.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_011_seed_13.cu:208: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests_func_non_uniform/test_048_seed_57.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=20 actual=15
+test_048_seed_57.out: /tmp/fuzz-tests_func_non_uniform_cuda/test_048_seed_57.cu:194: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+

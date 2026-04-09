@@ -1,0 +1,6727 @@
+
+
+Failures: 747/10000
+---------------------------------------
+
+fuzz-tests/test_858_seed_858.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=3 actual=2
+test_858_seed_858.out: /tmp/test_858_seed_858.cu:265: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9585_seed_9585.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_9585_seed_9585.out: /tmp/test_9585_seed_9585.cu:248: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1486_seed_1486.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1486_seed_1486.out: /tmp/test_1486_seed_1486.cu:365: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8044_seed_8044.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_8044_seed_8044.out: /tmp/test_8044_seed_8044.cu:181: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4663_seed_4663.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_4663_seed_4663.out: /tmp/test_4663_seed_4663.cu:376: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9515_seed_9515.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=3 actual=2
+test_9515_seed_9515.out: /tmp/test_9515_seed_9515.cu:230: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2886_seed_2886.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2886_seed_2886.out: /tmp/test_2886_seed_2886.cu:337: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8434_seed_8434.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_8434_seed_8434.out: /tmp/test_8434_seed_8434.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4563_seed_4563.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_4563_seed_4563.out: /tmp/test_4563_seed_4563.cu:233: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_855_seed_855.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_855_seed_855.out: /tmp/test_855_seed_855.cu:255: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4108_seed_4108.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_4108_seed_4108.out: /tmp/test_4108_seed_4108.cu:375: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8103_seed_8103.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_8103_seed_8103.out: /tmp/test_8103_seed_8103.cu:313: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6905_seed_6905.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_6905_seed_6905.out: /tmp/test_6905_seed_6905.cu:531: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_833_seed_833.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[65]: expected=2 actual=1
+test_833_seed_833.out: /tmp/test_833_seed_833.cu:334: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9827_seed_9827.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_9827_seed_9827.out: /tmp/test_9827_seed_9827.cu:263: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_933_seed_933.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[49]: expected=2 actual=1
+test_933_seed_933.out: /tmp/test_933_seed_933.cu:318: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4405_seed_4405.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=2 actual=1
+test_4405_seed_4405.out: /tmp/test_4405_seed_4405.cu:421: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5602_seed_5602.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5602_seed_5602.out: /tmp/test_5602_seed_5602.cu:291: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2181_seed_2181.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2181_seed_2181.out: /tmp/test_2181_seed_2181.cu:269: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2650_seed_2650.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_2650_seed_2650.out: /tmp/test_2650_seed_2650.cu:466: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5927_seed_5927.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_5927_seed_5927.out: /tmp/test_5927_seed_5927.cu:394: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_343_seed_343.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_343_seed_343.out: /tmp/test_343_seed_343.cu:244: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2019_seed_2019.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_2019_seed_2019.out: /tmp/test_2019_seed_2019.cu:302: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8798_seed_8798.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_8798_seed_8798.out: /tmp/test_8798_seed_8798.cu:298: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8385_seed_8385.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_8385_seed_8385.out: /tmp/test_8385_seed_8385.cu:328: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8825_seed_8825.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_8825_seed_8825.out: /tmp/test_8825_seed_8825.cu:581: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2993_seed_2993.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_2993_seed_2993.out: /tmp/test_2993_seed_2993.cu:257: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1714_seed_1714.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_1714_seed_1714.out: /tmp/test_1714_seed_1714.cu:188: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6545_seed_6545.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_6545_seed_6545.out: /tmp/test_6545_seed_6545.cu:255: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2789_seed_2789.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=3 actual=2
+test_2789_seed_2789.out: /tmp/test_2789_seed_2789.cu:498: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3500_seed_3500.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[48]: expected=4 actual=3
+test_3500_seed_3500.out: /tmp/test_3500_seed_3500.cu:374: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7337_seed_7337.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_7337_seed_7337.out: /tmp/test_7337_seed_7337.cu:600: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7783_seed_7783.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_7783_seed_7783.out: /tmp/test_7783_seed_7783.cu:216: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5367_seed_5367.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_5367_seed_5367.out: /tmp/test_5367_seed_5367.cu:206: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_543_seed_543.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_543_seed_543.out: /tmp/test_543_seed_543.cu:293: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6432_seed_6432.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_6432_seed_6432.out: /tmp/test_6432_seed_6432.cu:255: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4629_seed_4629.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4629_seed_4629.out: /tmp/test_4629_seed_4629.cu:296: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8606_seed_8606.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_8606_seed_8606.out: /tmp/test_8606_seed_8606.cu:265: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3605_seed_3605.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_3605_seed_3605.out: /tmp/test_3605_seed_3605.cu:354: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3785_seed_3785.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_3785_seed_3785.out: /tmp/test_3785_seed_3785.cu:235: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8456_seed_8456.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_8456_seed_8456.out: /tmp/test_8456_seed_8456.cu:521: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7885_seed_7885.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_7885_seed_7885.out: /tmp/test_7885_seed_7885.cu:407: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3545_seed_3545.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_3545_seed_3545.out: /tmp/test_3545_seed_3545.cu:193: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_965_seed_965.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_965_seed_965.out: /tmp/test_965_seed_965.cu:291: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8895_seed_8895.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_8895_seed_8895.out: /tmp/test_8895_seed_8895.cu:285: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9891_seed_9891.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9891_seed_9891.out: /tmp/test_9891_seed_9891.cu:301: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4528_seed_4528.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_4528_seed_4528.out: /tmp/test_4528_seed_4528.cu:286: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4951_seed_4951.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_4951_seed_4951.out: /tmp/test_4951_seed_4951.cu:434: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3780_seed_3780.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_3780_seed_3780.out: /tmp/test_3780_seed_3780.cu:294: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6093_seed_6093.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6093_seed_6093.out: /tmp/test_6093_seed_6093.cu:186: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1697_seed_1697.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_1697_seed_1697.out: /tmp/test_1697_seed_1697.cu:293: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3228_seed_3228.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_3228_seed_3228.out: /tmp/test_3228_seed_3228.cu:409: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9739_seed_9739.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_9739_seed_9739.out: /tmp/test_9739_seed_9739.cu:230: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7810_seed_7810.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=1
+test_7810_seed_7810.out: /tmp/test_7810_seed_7810.cu:238: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4633_seed_4633.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_4633_seed_4633.out: /tmp/test_4633_seed_4633.cu:241: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3113_seed_3113.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3113_seed_3113.out: /tmp/test_3113_seed_3113.cu:309: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_235_seed_235.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=2 actual=1
+test_235_seed_235.out: /tmp/test_235_seed_235.cu:412: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1005_seed_1005.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_1005_seed_1005.out: /tmp/test_1005_seed_1005.cu:363: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5063_seed_5063.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5063_seed_5063.out: /tmp/test_5063_seed_5063.cu:285: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3682_seed_3682.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=4 actual=3
+test_3682_seed_3682.out: /tmp/test_3682_seed_3682.cu:298: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7194_seed_7194.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_7194_seed_7194.out: /tmp/test_7194_seed_7194.cu:230: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1128_seed_1128.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_1128_seed_1128.out: /tmp/test_1128_seed_1128.cu:425: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1395_seed_1395.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_1395_seed_1395.out: /tmp/test_1395_seed_1395.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7633_seed_7633.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7633_seed_7633.out: /tmp/test_7633_seed_7633.cu:244: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3478_seed_3478.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3478_seed_3478.out: /tmp/test_3478_seed_3478.cu:404: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_471_seed_471.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_471_seed_471.out: /tmp/test_471_seed_471.cu:272: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9635_seed_9635.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_9635_seed_9635.out: /tmp/test_9635_seed_9635.cu:478: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3808_seed_3808.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_3808_seed_3808.out: /tmp/test_3808_seed_3808.cu:442: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7269_seed_7269.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_7269_seed_7269.out: /tmp/test_7269_seed_7269.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9139_seed_9139.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_9139_seed_9139.out: /tmp/test_9139_seed_9139.cu:302: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2062_seed_2062.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_2062_seed_2062.out: /tmp/test_2062_seed_2062.cu:411: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9581_seed_9581.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_9581_seed_9581.out: /tmp/test_9581_seed_9581.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3389_seed_3389.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3389_seed_3389.out: /tmp/test_3389_seed_3389.cu:242: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_103_seed_103.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_103_seed_103.out: /tmp/test_103_seed_103.cu:278: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1729_seed_1729.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1729_seed_1729.out: /tmp/test_1729_seed_1729.cu:303: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1553_seed_1553.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_1553_seed_1553.out: /tmp/test_1553_seed_1553.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3796_seed_3796.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=3 actual=2
+test_3796_seed_3796.out: /tmp/test_3796_seed_3796.cu:239: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7291_seed_7291.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_7291_seed_7291.out: /tmp/test_7291_seed_7291.cu:257: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3210_seed_3210.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_3210_seed_3210.out: /tmp/test_3210_seed_3210.cu:247: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3978_seed_3978.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_3978_seed_3978.out: /tmp/test_3978_seed_3978.cu:390: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4961_seed_4961.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_4961_seed_4961.out: /tmp/test_4961_seed_4961.cu:646: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2207_seed_2207.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_2207_seed_2207.out: /tmp/test_2207_seed_2207.cu:383: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6401_seed_6401.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_6401_seed_6401.out: /tmp/test_6401_seed_6401.cu:314: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6945_seed_6945.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_6945_seed_6945.out: /tmp/test_6945_seed_6945.cu:568: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3582_seed_3582.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_3582_seed_3582.out: /tmp/test_3582_seed_3582.cu:365: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7131_seed_7131.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7131_seed_7131.out: /tmp/test_7131_seed_7131.cu:448: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5351_seed_5351.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_5351_seed_5351.out: /tmp/test_5351_seed_5351.cu:234: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7329_seed_7329.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_7329_seed_7329.out: /tmp/test_7329_seed_7329.cu:304: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2962_seed_2962.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2962_seed_2962.out: /tmp/test_2962_seed_2962.cu:357: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5565_seed_5565.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_5565_seed_5565.out: /tmp/test_5565_seed_5565.cu:395: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7323_seed_7323.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_7323_seed_7323.out: /tmp/test_7323_seed_7323.cu:181: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2545_seed_2545.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_2545_seed_2545.out: /tmp/test_2545_seed_2545.cu:348: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6328_seed_6328.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_6328_seed_6328.out: /tmp/test_6328_seed_6328.cu:428: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2769_seed_2769.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_2769_seed_2769.out: /tmp/test_2769_seed_2769.cu:221: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5711_seed_5711.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_5711_seed_5711.out: /tmp/test_5711_seed_5711.cu:356: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1148_seed_1148.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_1148_seed_1148.out: /tmp/test_1148_seed_1148.cu:503: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1476_seed_1476.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1476_seed_1476.out: /tmp/test_1476_seed_1476.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7014_seed_7014.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_7014_seed_7014.out: /tmp/test_7014_seed_7014.cu:278: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7016_seed_7016.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_7016_seed_7016.out: /tmp/test_7016_seed_7016.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8409_seed_8409.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_8409_seed_8409.out: /tmp/test_8409_seed_8409.cu:282: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5706_seed_5706.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_5706_seed_5706.out: /tmp/test_5706_seed_5706.cu:185: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8646_seed_8646.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_8646_seed_8646.out: /tmp/test_8646_seed_8646.cu:245: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_259_seed_259.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_259_seed_259.out: /tmp/test_259_seed_259.cu:223: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5137_seed_5137.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_5137_seed_5137.out: /tmp/test_5137_seed_5137.cu:452: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3795_seed_3795.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_3795_seed_3795.out: /tmp/test_3795_seed_3795.cu:319: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7424_seed_7424.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_7424_seed_7424.out: /tmp/test_7424_seed_7424.cu:266: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4176_seed_4176.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_4176_seed_4176.out: /tmp/test_4176_seed_4176.cu:306: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7239_seed_7239.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[49]: expected=3 actual=2
+test_7239_seed_7239.out: /tmp/test_7239_seed_7239.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1088_seed_1088.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_1088_seed_1088.out: /tmp/test_1088_seed_1088.cu:375: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5228_seed_5228.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_5228_seed_5228.out: /tmp/test_5228_seed_5228.cu:293: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7027_seed_7027.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7027_seed_7027.out: /tmp/test_7027_seed_7027.cu:244: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5977_seed_5977.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=4 actual=3
+test_5977_seed_5977.out: /tmp/test_5977_seed_5977.cu:251: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4138_seed_4138.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_4138_seed_4138.out: /tmp/test_4138_seed_4138.cu:429: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3002_seed_3002.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3002_seed_3002.out: /tmp/test_3002_seed_3002.cu:383: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2484_seed_2484.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[49]: expected=2 actual=1
+test_2484_seed_2484.out: /tmp/test_2484_seed_2484.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6022_seed_6022.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_6022_seed_6022.out: /tmp/test_6022_seed_6022.cu:215: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2486_seed_2486.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_2486_seed_2486.out: /tmp/test_2486_seed_2486.cu:424: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2542_seed_2542.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_2542_seed_2542.out: /tmp/test_2542_seed_2542.cu:290: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8897_seed_8897.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_8897_seed_8897.out: /tmp/test_8897_seed_8897.cu:328: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5468_seed_5468.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_5468_seed_5468.out: /tmp/test_5468_seed_5468.cu:277: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8115_seed_8115.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_8115_seed_8115.out: /tmp/test_8115_seed_8115.cu:202: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7119_seed_7119.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_7119_seed_7119.out: /tmp/test_7119_seed_7119.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9858_seed_9858.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_9858_seed_9858.out: /tmp/test_9858_seed_9858.cu:482: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2620_seed_2620.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_2620_seed_2620.out: /tmp/test_2620_seed_2620.cu:320: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2680_seed_2680.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_2680_seed_2680.out: /tmp/test_2680_seed_2680.cu:182: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7674_seed_7674.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7674_seed_7674.out: /tmp/test_7674_seed_7674.cu:185: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6138_seed_6138.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_6138_seed_6138.out: /tmp/test_6138_seed_6138.cu:422: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6116_seed_6116.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_6116_seed_6116.out: /tmp/test_6116_seed_6116.cu:356: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8424_seed_8424.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_8424_seed_8424.out: /tmp/test_8424_seed_8424.cu:203: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8520_seed_8520.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_8520_seed_8520.out: /tmp/test_8520_seed_8520.cu:274: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6736_seed_6736.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=3 actual=2
+test_6736_seed_6736.out: /tmp/test_6736_seed_6736.cu:268: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2671_seed_2671.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_2671_seed_2671.out: /tmp/test_2671_seed_2671.cu:366: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3069_seed_3069.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3069_seed_3069.out: /tmp/test_3069_seed_3069.cu:331: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3982_seed_3982.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3982_seed_3982.out: /tmp/test_3982_seed_3982.cu:233: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7943_seed_7943.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_7943_seed_7943.out: /tmp/test_7943_seed_7943.cu:218: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4121_seed_4121.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_4121_seed_4121.out: /tmp/test_4121_seed_4121.cu:314: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_795_seed_795.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_795_seed_795.out: /tmp/test_795_seed_795.cu:208: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7958_seed_7958.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=2 actual=1
+test_7958_seed_7958.out: /tmp/test_7958_seed_7958.cu:335: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4847_seed_4847.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_4847_seed_4847.out: /tmp/test_4847_seed_4847.cu:233: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9279_seed_9279.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_9279_seed_9279.out: /tmp/test_9279_seed_9279.cu:268: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5195_seed_5195.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_5195_seed_5195.out: /tmp/test_5195_seed_5195.cu:513: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2543_seed_2543.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2543_seed_2543.out: /tmp/test_2543_seed_2543.cu:341: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5733_seed_5733.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5733_seed_5733.out: /tmp/test_5733_seed_5733.cu:284: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_445_seed_445.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_445_seed_445.out: /tmp/test_445_seed_445.cu:253: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4664_seed_4664.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_4664_seed_4664.out: /tmp/test_4664_seed_4664.cu:201: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7004_seed_7004.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=2 actual=1
+test_7004_seed_7004.out: /tmp/test_7004_seed_7004.cu:234: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9330_seed_9330.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9330_seed_9330.out: /tmp/test_9330_seed_9330.cu:452: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6708_seed_6708.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6708_seed_6708.out: /tmp/test_6708_seed_6708.cu:319: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2963_seed_2963.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2963_seed_2963.out: /tmp/test_2963_seed_2963.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3763_seed_3763.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_3763_seed_3763.out: /tmp/test_3763_seed_3763.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3183_seed_3183.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=3 actual=2
+test_3183_seed_3183.out: /tmp/test_3183_seed_3183.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9368_seed_9368.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_9368_seed_9368.out: /tmp/test_9368_seed_9368.cu:339: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5298_seed_5298.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_5298_seed_5298.out: /tmp/test_5298_seed_5298.cu:340: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7828_seed_7828.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_7828_seed_7828.out: /tmp/test_7828_seed_7828.cu:662: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1542_seed_1542.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1542_seed_1542.out: /tmp/test_1542_seed_1542.cu:337: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6764_seed_6764.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_6764_seed_6764.out: /tmp/test_6764_seed_6764.cu:446: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8961_seed_8961.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8961_seed_8961.out: /tmp/test_8961_seed_8961.cu:229: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3694_seed_3694.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_3694_seed_3694.out: /tmp/test_3694_seed_3694.cu:281: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_447_seed_447.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_447_seed_447.out: /tmp/test_447_seed_447.cu:270: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8010_seed_8010.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_8010_seed_8010.out: /tmp/test_8010_seed_8010.cu:278: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2888_seed_2888.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2888_seed_2888.out: /tmp/test_2888_seed_2888.cu:321: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6899_seed_6899.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_6899_seed_6899.out: /tmp/test_6899_seed_6899.cu:219: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5554_seed_5554.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_5554_seed_5554.out: /tmp/test_5554_seed_5554.cu:326: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4061_seed_4061.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_4061_seed_4061.out: /tmp/test_4061_seed_4061.cu:240: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4950_seed_4950.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_4950_seed_4950.out: /tmp/test_4950_seed_4950.cu:297: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2106_seed_2106.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2106_seed_2106.out: /tmp/test_2106_seed_2106.cu:360: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8664_seed_8664.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[49]: expected=2 actual=1
+test_8664_seed_8664.out: /tmp/test_8664_seed_8664.cu:284: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1551_seed_1551.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_1551_seed_1551.out: /tmp/test_1551_seed_1551.cu:284: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5258_seed_5258.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_5258_seed_5258.out: /tmp/test_5258_seed_5258.cu:308: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9671_seed_9671.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_9671_seed_9671.out: /tmp/test_9671_seed_9671.cu:215: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3266_seed_3266.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_3266_seed_3266.out: /tmp/test_3266_seed_3266.cu:375: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4005_seed_4005.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4005_seed_4005.out: /tmp/test_4005_seed_4005.cu:227: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4008_seed_4008.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_4008_seed_4008.out: /tmp/test_4008_seed_4008.cu:211: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3936_seed_3936.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_3936_seed_3936.out: /tmp/test_3936_seed_3936.cu:268: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7529_seed_7529.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_7529_seed_7529.out: /tmp/test_7529_seed_7529.cu:250: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_076_seed_76.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_076_seed_76.out: /tmp/test_076_seed_76.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9571_seed_9571.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_9571_seed_9571.out: /tmp/test_9571_seed_9571.cu:512: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2135_seed_2135.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=3 actual=2
+test_2135_seed_2135.out: /tmp/test_2135_seed_2135.cu:503: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7378_seed_7378.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_7378_seed_7378.out: /tmp/test_7378_seed_7378.cu:253: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_653_seed_653.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_653_seed_653.out: /tmp/test_653_seed_653.cu:240: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1544_seed_1544.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1544_seed_1544.out: /tmp/test_1544_seed_1544.cu:372: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4030_seed_4030.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4030_seed_4030.out: /tmp/test_4030_seed_4030.cu:264: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3511_seed_3511.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3511_seed_3511.out: /tmp/test_3511_seed_3511.cu:341: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7389_seed_7389.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_7389_seed_7389.out: /tmp/test_7389_seed_7389.cu:400: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8219_seed_8219.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_8219_seed_8219.out: /tmp/test_8219_seed_8219.cu:376: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6916_seed_6916.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=3 actual=2
+test_6916_seed_6916.out: /tmp/test_6916_seed_6916.cu:403: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8730_seed_8730.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8730_seed_8730.out: /tmp/test_8730_seed_8730.cu:267: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8420_seed_8420.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=2 actual=1
+test_8420_seed_8420.out: /tmp/test_8420_seed_8420.cu:425: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7627_seed_7627.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_7627_seed_7627.out: /tmp/test_7627_seed_7627.cu:205: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3508_seed_3508.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_3508_seed_3508.out: /tmp/test_3508_seed_3508.cu:297: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_486_seed_486.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_486_seed_486.out: /tmp/test_486_seed_486.cu:365: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8450_seed_8450.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_8450_seed_8450.out: /tmp/test_8450_seed_8450.cu:296: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7899_seed_7899.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_7899_seed_7899.out: /tmp/test_7899_seed_7899.cu:441: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9729_seed_9729.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_9729_seed_9729.out: /tmp/test_9729_seed_9729.cu:266: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7052_seed_7052.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7052_seed_7052.out: /tmp/test_7052_seed_7052.cu:340: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9238_seed_9238.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_9238_seed_9238.out: /tmp/test_9238_seed_9238.cu:264: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5120_seed_5120.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_5120_seed_5120.out: /tmp/test_5120_seed_5120.cu:337: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3052_seed_3052.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_3052_seed_3052.out: /tmp/test_3052_seed_3052.cu:575: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1999_seed_1999.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1999_seed_1999.out: /tmp/test_1999_seed_1999.cu:213: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3416_seed_3416.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_3416_seed_3416.out: /tmp/test_3416_seed_3416.cu:341: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6185_seed_6185.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6185_seed_6185.out: /tmp/test_6185_seed_6185.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5177_seed_5177.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_5177_seed_5177.out: /tmp/test_5177_seed_5177.cu:286: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9917_seed_9917.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=4 actual=3
+test_9917_seed_9917.out: /tmp/test_9917_seed_9917.cu:316: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8412_seed_8412.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8412_seed_8412.out: /tmp/test_8412_seed_8412.cu:357: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7187_seed_7187.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_7187_seed_7187.out: /tmp/test_7187_seed_7187.cu:375: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5785_seed_5785.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_5785_seed_5785.out: /tmp/test_5785_seed_5785.cu:257: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3709_seed_3709.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_3709_seed_3709.out: /tmp/test_3709_seed_3709.cu:272: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6988_seed_6988.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_6988_seed_6988.out: /tmp/test_6988_seed_6988.cu:468: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1677_seed_1677.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_1677_seed_1677.out: /tmp/test_1677_seed_1677.cu:545: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2110_seed_2110.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_2110_seed_2110.out: /tmp/test_2110_seed_2110.cu:247: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5768_seed_5768.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_5768_seed_5768.out: /tmp/test_5768_seed_5768.cu:322: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3612_seed_3612.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_3612_seed_3612.out: /tmp/test_3612_seed_3612.cu:405: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9842_seed_9842.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_9842_seed_9842.out: /tmp/test_9842_seed_9842.cu:219: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5068_seed_5068.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5068_seed_5068.out: /tmp/test_5068_seed_5068.cu:272: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3157_seed_3157.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=3 actual=2
+test_3157_seed_3157.out: /tmp/test_3157_seed_3157.cu:573: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3160_seed_3160.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_3160_seed_3160.out: /tmp/test_3160_seed_3160.cu:318: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_118_seed_118.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_118_seed_118.out: /tmp/test_118_seed_118.cu:403: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5324_seed_5324.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_5324_seed_5324.out: /tmp/test_5324_seed_5324.cu:445: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7670_seed_7670.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[48]: expected=2 actual=1
+test_7670_seed_7670.out: /tmp/test_7670_seed_7670.cu:321: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9783_seed_9783.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_9783_seed_9783.out: /tmp/test_9783_seed_9783.cu:363: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6839_seed_6839.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6839_seed_6839.out: /tmp/test_6839_seed_6839.cu:259: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_580_seed_580.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_580_seed_580.out: /tmp/test_580_seed_580.cu:220: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5566_seed_5566.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_5566_seed_5566.out: /tmp/test_5566_seed_5566.cu:280: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1593_seed_1593.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1593_seed_1593.out: /tmp/test_1593_seed_1593.cu:463: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1778_seed_1778.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_1778_seed_1778.out: /tmp/test_1778_seed_1778.cu:546: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7597_seed_7597.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_7597_seed_7597.out: /tmp/test_7597_seed_7597.cu:354: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2829_seed_2829.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_2829_seed_2829.out: /tmp/test_2829_seed_2829.cu:240: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6673_seed_6673.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_6673_seed_6673.out: /tmp/test_6673_seed_6673.cu:317: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7411_seed_7411.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7411_seed_7411.out: /tmp/test_7411_seed_7411.cu:177: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9347_seed_9347.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_9347_seed_9347.out: /tmp/test_9347_seed_9347.cu:333: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1671_seed_1671.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_1671_seed_1671.out: /tmp/test_1671_seed_1671.cu:242: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6512_seed_6512.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_6512_seed_6512.out: /tmp/test_6512_seed_6512.cu:258: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8967_seed_8967.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8967_seed_8967.out: /tmp/test_8967_seed_8967.cu:420: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3649_seed_3649.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_3649_seed_3649.out: /tmp/test_3649_seed_3649.cu:413: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_563_seed_563.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_563_seed_563.out: /tmp/test_563_seed_563.cu:417: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3540_seed_3540.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_3540_seed_3540.out: /tmp/test_3540_seed_3540.cu:252: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1257_seed_1257.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1257_seed_1257.out: /tmp/test_1257_seed_1257.cu:476: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5187_seed_5187.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_5187_seed_5187.out: /tmp/test_5187_seed_5187.cu:331: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1765_seed_1765.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1765_seed_1765.out: /tmp/test_1765_seed_1765.cu:231: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9175_seed_9175.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_9175_seed_9175.out: /tmp/test_9175_seed_9175.cu:306: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1807_seed_1807.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1807_seed_1807.out: /tmp/test_1807_seed_1807.cu:456: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6765_seed_6765.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_6765_seed_6765.out: /tmp/test_6765_seed_6765.cu:204: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8932_seed_8932.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_8932_seed_8932.out: /tmp/test_8932_seed_8932.cu:481: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7295_seed_7295.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7295_seed_7295.out: /tmp/test_7295_seed_7295.cu:365: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7188_seed_7188.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=3 actual=2
+test_7188_seed_7188.out: /tmp/test_7188_seed_7188.cu:388: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1084_seed_1084.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_1084_seed_1084.out: /tmp/test_1084_seed_1084.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8225_seed_8225.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_8225_seed_8225.out: /tmp/test_8225_seed_8225.cu:228: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4446_seed_4446.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4446_seed_4446.out: /tmp/test_4446_seed_4446.cu:443: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5265_seed_5265.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5265_seed_5265.out: /tmp/test_5265_seed_5265.cu:192: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9648_seed_9648.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_9648_seed_9648.out: /tmp/test_9648_seed_9648.cu:249: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5278_seed_5278.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_5278_seed_5278.out: /tmp/test_5278_seed_5278.cu:563: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1364_seed_1364.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_1364_seed_1364.out: /tmp/test_1364_seed_1364.cu:326: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4819_seed_4819.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=3 actual=2
+test_4819_seed_4819.out: /tmp/test_4819_seed_4819.cu:271: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4287_seed_4287.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4287_seed_4287.out: /tmp/test_4287_seed_4287.cu:398: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7065_seed_7065.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7065_seed_7065.out: /tmp/test_7065_seed_7065.cu:351: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4930_seed_4930.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_4930_seed_4930.out: /tmp/test_4930_seed_4930.cu:351: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2711_seed_2711.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_2711_seed_2711.out: /tmp/test_2711_seed_2711.cu:412: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1952_seed_1952.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1952_seed_1952.out: /tmp/test_1952_seed_1952.cu:172: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5204_seed_5204.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[48]: expected=4 actual=3
+test_5204_seed_5204.out: /tmp/test_5204_seed_5204.cu:358: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1307_seed_1307.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_1307_seed_1307.out: /tmp/test_1307_seed_1307.cu:257: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_017_seed_17.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_017_seed_17.out: /tmp/test_017_seed_17.cu:206: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2086_seed_2086.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_2086_seed_2086.out: /tmp/test_2086_seed_2086.cu:196: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1360_seed_1360.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_1360_seed_1360.out: /tmp/test_1360_seed_1360.cu:250: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2046_seed_2046.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2046_seed_2046.out: /tmp/test_2046_seed_2046.cu:402: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1485_seed_1485.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1485_seed_1485.out: /tmp/test_1485_seed_1485.cu:379: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6240_seed_6240.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6240_seed_6240.out: /tmp/test_6240_seed_6240.cu:414: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4017_seed_4017.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_4017_seed_4017.out: /tmp/test_4017_seed_4017.cu:267: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5269_seed_5269.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5269_seed_5269.out: /tmp/test_5269_seed_5269.cu:272: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9583_seed_9583.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_9583_seed_9583.out: /tmp/test_9583_seed_9583.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5842_seed_5842.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_5842_seed_5842.out: /tmp/test_5842_seed_5842.cu:393: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7603_seed_7603.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_7603_seed_7603.out: /tmp/test_7603_seed_7603.cu:242: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8055_seed_8055.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=3 actual=2
+test_8055_seed_8055.out: /tmp/test_8055_seed_8055.cu:210: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8660_seed_8660.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8660_seed_8660.out: /tmp/test_8660_seed_8660.cu:446: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9054_seed_9054.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_9054_seed_9054.out: /tmp/test_9054_seed_9054.cu:218: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4684_seed_4684.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4684_seed_4684.out: /tmp/test_4684_seed_4684.cu:198: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5737_seed_5737.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5737_seed_5737.out: /tmp/test_5737_seed_5737.cu:350: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3960_seed_3960.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_3960_seed_3960.out: /tmp/test_3960_seed_3960.cu:326: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3567_seed_3567.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_3567_seed_3567.out: /tmp/test_3567_seed_3567.cu:351: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6691_seed_6691.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_6691_seed_6691.out: /tmp/test_6691_seed_6691.cu:386: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6970_seed_6970.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6970_seed_6970.out: /tmp/test_6970_seed_6970.cu:347: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1539_seed_1539.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_1539_seed_1539.out: /tmp/test_1539_seed_1539.cu:272: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3509_seed_3509.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_3509_seed_3509.out: /tmp/test_3509_seed_3509.cu:282: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9554_seed_9554.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_9554_seed_9554.out: /tmp/test_9554_seed_9554.cu:257: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3414_seed_3414.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_3414_seed_3414.out: /tmp/test_3414_seed_3414.cu:374: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4870_seed_4870.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_4870_seed_4870.out: /tmp/test_4870_seed_4870.cu:352: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6897_seed_6897.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_6897_seed_6897.out: /tmp/test_6897_seed_6897.cu:241: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5652_seed_5652.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5652_seed_5652.out: /tmp/test_5652_seed_5652.cu:445: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5304_seed_5304.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_5304_seed_5304.out: /tmp/test_5304_seed_5304.cu:527: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7478_seed_7478.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7478_seed_7478.out: /tmp/test_7478_seed_7478.cu:490: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4502_seed_4502.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_4502_seed_4502.out: /tmp/test_4502_seed_4502.cu:275: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_829_seed_829.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_829_seed_829.out: /tmp/test_829_seed_829.cu:340: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5788_seed_5788.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5788_seed_5788.out: /tmp/test_5788_seed_5788.cu:326: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8673_seed_8673.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=3 actual=2
+test_8673_seed_8673.out: /tmp/test_8673_seed_8673.cu:331: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1401_seed_1401.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_1401_seed_1401.out: /tmp/test_1401_seed_1401.cu:424: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4651_seed_4651.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_4651_seed_4651.out: /tmp/test_4651_seed_4651.cu:214: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3873_seed_3873.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_3873_seed_3873.out: /tmp/test_3873_seed_3873.cu:284: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7768_seed_7768.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=3 actual=2
+test_7768_seed_7768.out: /tmp/test_7768_seed_7768.cu:284: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5938_seed_5938.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_5938_seed_5938.out: /tmp/test_5938_seed_5938.cu:227: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2808_seed_2808.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2808_seed_2808.out: /tmp/test_2808_seed_2808.cu:278: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4137_seed_4137.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_4137_seed_4137.out: /tmp/test_4137_seed_4137.cu:453: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4110_seed_4110.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_4110_seed_4110.out: /tmp/test_4110_seed_4110.cu:198: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3037_seed_3037.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_3037_seed_3037.out: /tmp/test_3037_seed_3037.cu:271: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5238_seed_5238.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_5238_seed_5238.out: /tmp/test_5238_seed_5238.cu:231: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5869_seed_5869.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_5869_seed_5869.out: /tmp/test_5869_seed_5869.cu:226: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5156_seed_5156.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_5156_seed_5156.out: /tmp/test_5156_seed_5156.cu:376: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7802_seed_7802.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_7802_seed_7802.out: /tmp/test_7802_seed_7802.cu:273: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9003_seed_9003.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_9003_seed_9003.out: /tmp/test_9003_seed_9003.cu:315: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8948_seed_8948.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_8948_seed_8948.out: /tmp/test_8948_seed_8948.cu:273: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1287_seed_1287.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1287_seed_1287.out: /tmp/test_1287_seed_1287.cu:296: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7377_seed_7377.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7377_seed_7377.out: /tmp/test_7377_seed_7377.cu:475: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1600_seed_1600.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_1600_seed_1600.out: /tmp/test_1600_seed_1600.cu:395: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5144_seed_5144.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5144_seed_5144.out: /tmp/test_5144_seed_5144.cu:392: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6859_seed_6859.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_6859_seed_6859.out: /tmp/test_6859_seed_6859.cu:373: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6473_seed_6473.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_6473_seed_6473.out: /tmp/test_6473_seed_6473.cu:376: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9416_seed_9416.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_9416_seed_9416.out: /tmp/test_9416_seed_9416.cu:303: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1185_seed_1185.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_1185_seed_1185.out: /tmp/test_1185_seed_1185.cu:378: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6036_seed_6036.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_6036_seed_6036.out: /tmp/test_6036_seed_6036.cu:231: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7693_seed_7693.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_7693_seed_7693.out: /tmp/test_7693_seed_7693.cu:248: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1905_seed_1905.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_1905_seed_1905.out: /tmp/test_1905_seed_1905.cu:241: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8725_seed_8725.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_8725_seed_8725.out: /tmp/test_8725_seed_8725.cu:211: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1988_seed_1988.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1988_seed_1988.out: /tmp/test_1988_seed_1988.cu:298: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4783_seed_4783.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_4783_seed_4783.out: /tmp/test_4783_seed_4783.cu:280: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9616_seed_9616.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9616_seed_9616.out: /tmp/test_9616_seed_9616.cu:411: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_849_seed_849.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[48]: expected=2 actual=1
+test_849_seed_849.out: /tmp/test_849_seed_849.cu:238: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3683_seed_3683.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_3683_seed_3683.out: /tmp/test_3683_seed_3683.cu:224: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_182_seed_182.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_182_seed_182.out: /tmp/test_182_seed_182.cu:256: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8488_seed_8488.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_8488_seed_8488.out: /tmp/test_8488_seed_8488.cu:303: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3059_seed_3059.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_3059_seed_3059.out: /tmp/test_3059_seed_3059.cu:282: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4318_seed_4318.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4318_seed_4318.out: /tmp/test_4318_seed_4318.cu:373: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8262_seed_8262.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_8262_seed_8262.out: /tmp/test_8262_seed_8262.cu:256: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5088_seed_5088.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=3 actual=2
+test_5088_seed_5088.out: /tmp/test_5088_seed_5088.cu:230: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8973_seed_8973.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_8973_seed_8973.out: /tmp/test_8973_seed_8973.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7114_seed_7114.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_7114_seed_7114.out: /tmp/test_7114_seed_7114.cu:443: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4595_seed_4595.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_4595_seed_4595.out: /tmp/test_4595_seed_4595.cu:302: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4282_seed_4282.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_4282_seed_4282.out: /tmp/test_4282_seed_4282.cu:327: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3845_seed_3845.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_3845_seed_3845.out: /tmp/test_3845_seed_3845.cu:503: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1630_seed_1630.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1630_seed_1630.out: /tmp/test_1630_seed_1630.cu:349: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9443_seed_9443.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9443_seed_9443.out: /tmp/test_9443_seed_9443.cu:266: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_203_seed_203.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_203_seed_203.out: /tmp/test_203_seed_203.cu:207: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2548_seed_2548.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_2548_seed_2548.out: /tmp/test_2548_seed_2548.cu:437: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2345_seed_2345.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[67]: expected=2 actual=1
+test_2345_seed_2345.out: /tmp/test_2345_seed_2345.cu:238: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9533_seed_9533.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_9533_seed_9533.out: /tmp/test_9533_seed_9533.cu:212: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6742_seed_6742.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_6742_seed_6742.out: /tmp/test_6742_seed_6742.cu:305: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7381_seed_7381.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_7381_seed_7381.out: /tmp/test_7381_seed_7381.cu:291: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2924_seed_2924.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2924_seed_2924.out: /tmp/test_2924_seed_2924.cu:257: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2131_seed_2131.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2131_seed_2131.out: /tmp/test_2131_seed_2131.cu:385: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1657_seed_1657.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_1657_seed_1657.out: /tmp/test_1657_seed_1657.cu:283: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5226_seed_5226.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_5226_seed_5226.out: /tmp/test_5226_seed_5226.cu:310: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9177_seed_9177.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_9177_seed_9177.out: /tmp/test_9177_seed_9177.cu:222: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_165_seed_165.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_165_seed_165.out: /tmp/test_165_seed_165.cu:189: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3023_seed_3023.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_3023_seed_3023.out: /tmp/test_3023_seed_3023.cu:307: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9982_seed_9982.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=3 actual=2
+test_9982_seed_9982.out: /tmp/test_9982_seed_9982.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6262_seed_6262.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_6262_seed_6262.out: /tmp/test_6262_seed_6262.cu:197: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6276_seed_6276.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_6276_seed_6276.out: /tmp/test_6276_seed_6276.cu:321: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1397_seed_1397.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_1397_seed_1397.out: /tmp/test_1397_seed_1397.cu:325: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1967_seed_1967.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=1
+test_1967_seed_1967.out: /tmp/test_1967_seed_1967.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8346_seed_8346.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_8346_seed_8346.out: /tmp/test_8346_seed_8346.cu:462: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8379_seed_8379.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_8379_seed_8379.out: /tmp/test_8379_seed_8379.cu:434: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_922_seed_922.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_922_seed_922.out: /tmp/test_922_seed_922.cu:252: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7791_seed_7791.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7791_seed_7791.out: /tmp/test_7791_seed_7791.cu:268: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5312_seed_5312.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_5312_seed_5312.out: /tmp/test_5312_seed_5312.cu:340: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5415_seed_5415.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5415_seed_5415.out: /tmp/test_5415_seed_5415.cu:433: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4425_seed_4425.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_4425_seed_4425.out: /tmp/test_4425_seed_4425.cu:234: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_050_seed_50.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=3 actual=2
+test_050_seed_50.out: /tmp/test_050_seed_50.cu:385: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6254_seed_6254.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6254_seed_6254.out: /tmp/test_6254_seed_6254.cu:220: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6278_seed_6278.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_6278_seed_6278.out: /tmp/test_6278_seed_6278.cu:430: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4547_seed_4547.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_4547_seed_4547.out: /tmp/test_4547_seed_4547.cu:228: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2847_seed_2847.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2847_seed_2847.out: /tmp/test_2847_seed_2847.cu:190: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7489_seed_7489.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_7489_seed_7489.out: /tmp/test_7489_seed_7489.cu:391: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_595_seed_595.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_595_seed_595.out: /tmp/test_595_seed_595.cu:220: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6884_seed_6884.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_6884_seed_6884.out: /tmp/test_6884_seed_6884.cu:236: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8698_seed_8698.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_8698_seed_8698.out: /tmp/test_8698_seed_8698.cu:289: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_217_seed_217.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_217_seed_217.out: /tmp/test_217_seed_217.cu:281: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4625_seed_4625.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_4625_seed_4625.out: /tmp/test_4625_seed_4625.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7405_seed_7405.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7405_seed_7405.out: /tmp/test_7405_seed_7405.cu:255: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4910_seed_4910.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4910_seed_4910.out: /tmp/test_4910_seed_4910.cu:507: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3664_seed_3664.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_3664_seed_3664.out: /tmp/test_3664_seed_3664.cu:389: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2077_seed_2077.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_2077_seed_2077.out: /tmp/test_2077_seed_2077.cu:306: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8178_seed_8178.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_8178_seed_8178.out: /tmp/test_8178_seed_8178.cu:321: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6286_seed_6286.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_6286_seed_6286.out: /tmp/test_6286_seed_6286.cu:314: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8250_seed_8250.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_8250_seed_8250.out: /tmp/test_8250_seed_8250.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4572_seed_4572.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_4572_seed_4572.out: /tmp/test_4572_seed_4572.cu:360: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7543_seed_7543.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7543_seed_7543.out: /tmp/test_7543_seed_7543.cu:400: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6849_seed_6849.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6849_seed_6849.out: /tmp/test_6849_seed_6849.cu:239: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6272_seed_6272.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6272_seed_6272.out: /tmp/test_6272_seed_6272.cu:322: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3645_seed_3645.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_3645_seed_3645.out: /tmp/test_3645_seed_3645.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9536_seed_9536.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9536_seed_9536.out: /tmp/test_9536_seed_9536.cu:264: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7446_seed_7446.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=3 actual=2
+test_7446_seed_7446.out: /tmp/test_7446_seed_7446.cu:288: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1079_seed_1079.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_1079_seed_1079.out: /tmp/test_1079_seed_1079.cu:398: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1306_seed_1306.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1306_seed_1306.out: /tmp/test_1306_seed_1306.cu:424: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8717_seed_8717.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=2 actual=1
+test_8717_seed_8717.out: /tmp/test_8717_seed_8717.cu:286: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2466_seed_2466.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_2466_seed_2466.out: /tmp/test_2466_seed_2466.cu:218: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9745_seed_9745.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_9745_seed_9745.out: /tmp/test_9745_seed_9745.cu:263: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4966_seed_4966.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4966_seed_4966.out: /tmp/test_4966_seed_4966.cu:366: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4409_seed_4409.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_4409_seed_4409.out: /tmp/test_4409_seed_4409.cu:527: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5376_seed_5376.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=3 actual=2
+test_5376_seed_5376.out: /tmp/test_5376_seed_5376.cu:268: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7596_seed_7596.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_7596_seed_7596.out: /tmp/test_7596_seed_7596.cu:285: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2273_seed_2273.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_2273_seed_2273.out: /tmp/test_2273_seed_2273.cu:383: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6187_seed_6187.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6187_seed_6187.out: /tmp/test_6187_seed_6187.cu:281: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3878_seed_3878.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_3878_seed_3878.out: /tmp/test_3878_seed_3878.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4192_seed_4192.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_4192_seed_4192.out: /tmp/test_4192_seed_4192.cu:562: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9849_seed_9849.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9849_seed_9849.out: /tmp/test_9849_seed_9849.cu:470: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4646_seed_4646.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4646_seed_4646.out: /tmp/test_4646_seed_4646.cu:380: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1760_seed_1760.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_1760_seed_1760.out: /tmp/test_1760_seed_1760.cu:217: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9206_seed_9206.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_9206_seed_9206.out: /tmp/test_9206_seed_9206.cu:316: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2562_seed_2562.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_2562_seed_2562.out: /tmp/test_2562_seed_2562.cu:367: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7811_seed_7811.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=2 actual=1
+test_7811_seed_7811.out: /tmp/test_7811_seed_7811.cu:401: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7394_seed_7394.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_7394_seed_7394.out: /tmp/test_7394_seed_7394.cu:254: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2264_seed_2264.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2264_seed_2264.out: /tmp/test_2264_seed_2264.cu:289: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3784_seed_3784.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[49]: expected=3 actual=2
+test_3784_seed_3784.out: /tmp/test_3784_seed_3784.cu:255: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2088_seed_2088.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_2088_seed_2088.out: /tmp/test_2088_seed_2088.cu:548: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5194_seed_5194.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_5194_seed_5194.out: /tmp/test_5194_seed_5194.cu:584: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1775_seed_1775.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_1775_seed_1775.out: /tmp/test_1775_seed_1775.cu:239: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3307_seed_3307.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_3307_seed_3307.out: /tmp/test_3307_seed_3307.cu:234: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4844_seed_4844.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_4844_seed_4844.out: /tmp/test_4844_seed_4844.cu:288: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4567_seed_4567.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_4567_seed_4567.out: /tmp/test_4567_seed_4567.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_268_seed_268.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_268_seed_268.out: /tmp/test_268_seed_268.cu:252: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5885_seed_5885.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_5885_seed_5885.out: /tmp/test_5885_seed_5885.cu:440: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_176_seed_176.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_176_seed_176.out: /tmp/test_176_seed_176.cu:448: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2212_seed_2212.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_2212_seed_2212.out: /tmp/test_2212_seed_2212.cu:311: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8081_seed_8081.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_8081_seed_8081.out: /tmp/test_8081_seed_8081.cu:325: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1944_seed_1944.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_1944_seed_1944.out: /tmp/test_1944_seed_1944.cu:257: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2863_seed_2863.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2863_seed_2863.out: /tmp/test_2863_seed_2863.cu:306: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1389_seed_1389.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1389_seed_1389.out: /tmp/test_1389_seed_1389.cu:336: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7604_seed_7604.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7604_seed_7604.out: /tmp/test_7604_seed_7604.cu:267: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4852_seed_4852.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4852_seed_4852.out: /tmp/test_4852_seed_4852.cu:271: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5684_seed_5684.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_5684_seed_5684.out: /tmp/test_5684_seed_5684.cu:330: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3970_seed_3970.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_3970_seed_3970.out: /tmp/test_3970_seed_3970.cu:352: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2128_seed_2128.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_2128_seed_2128.out: /tmp/test_2128_seed_2128.cu:265: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5844_seed_5844.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=2 actual=1
+test_5844_seed_5844.out: /tmp/test_5844_seed_5844.cu:322: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1625_seed_1625.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_1625_seed_1625.out: /tmp/test_1625_seed_1625.cu:413: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5500_seed_5500.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5500_seed_5500.out: /tmp/test_5500_seed_5500.cu:232: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4674_seed_4674.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_4674_seed_4674.out: /tmp/test_4674_seed_4674.cu:339: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5169_seed_5169.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_5169_seed_5169.out: /tmp/test_5169_seed_5169.cu:210: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7091_seed_7091.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_7091_seed_7091.out: /tmp/test_7091_seed_7091.cu:541: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1711_seed_1711.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1711_seed_1711.out: /tmp/test_1711_seed_1711.cu:611: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5153_seed_5153.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5153_seed_5153.out: /tmp/test_5153_seed_5153.cu:332: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1421_seed_1421.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1421_seed_1421.out: /tmp/test_1421_seed_1421.cu:384: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1289_seed_1289.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1289_seed_1289.out: /tmp/test_1289_seed_1289.cu:223: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1793_seed_1793.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[48]: expected=2 actual=1
+test_1793_seed_1793.out: /tmp/test_1793_seed_1793.cu:282: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1018_seed_1018.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1018_seed_1018.out: /tmp/test_1018_seed_1018.cu:223: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1643_seed_1643.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_1643_seed_1643.out: /tmp/test_1643_seed_1643.cu:274: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_229_seed_229.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_229_seed_229.out: /tmp/test_229_seed_229.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_498_seed_498.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_498_seed_498.out: /tmp/test_498_seed_498.cu:427: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7064_seed_7064.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_7064_seed_7064.out: /tmp/test_7064_seed_7064.cu:399: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3902_seed_3902.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_3902_seed_3902.out: /tmp/test_3902_seed_3902.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3098_seed_3098.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_3098_seed_3098.out: /tmp/test_3098_seed_3098.cu:313: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4827_seed_4827.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_4827_seed_4827.out: /tmp/test_4827_seed_4827.cu:230: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6787_seed_6787.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_6787_seed_6787.out: /tmp/test_6787_seed_6787.cu:413: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1642_seed_1642.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1642_seed_1642.out: /tmp/test_1642_seed_1642.cu:308: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9369_seed_9369.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_9369_seed_9369.out: /tmp/test_9369_seed_9369.cu:271: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2628_seed_2628.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2628_seed_2628.out: /tmp/test_2628_seed_2628.cu:354: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8723_seed_8723.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8723_seed_8723.out: /tmp/test_8723_seed_8723.cu:293: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3847_seed_3847.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_3847_seed_3847.out: /tmp/test_3847_seed_3847.cu:217: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5859_seed_5859.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_5859_seed_5859.out: /tmp/test_5859_seed_5859.cu:375: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9087_seed_9087.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9087_seed_9087.out: /tmp/test_9087_seed_9087.cu:284: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_523_seed_523.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_523_seed_523.out: /tmp/test_523_seed_523.cu:515: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6234_seed_6234.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6234_seed_6234.out: /tmp/test_6234_seed_6234.cu:333: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_016_seed_16.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_016_seed_16.out: /tmp/test_016_seed_16.cu:255: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7009_seed_7009.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_7009_seed_7009.out: /tmp/test_7009_seed_7009.cu:309: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5999_seed_5999.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5999_seed_5999.out: /tmp/test_5999_seed_5999.cu:184: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_904_seed_904.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_904_seed_904.out: /tmp/test_904_seed_904.cu:294: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2552_seed_2552.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_2552_seed_2552.out: /tmp/test_2552_seed_2552.cu:193: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4406_seed_4406.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_4406_seed_4406.out: /tmp/test_4406_seed_4406.cu:456: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6997_seed_6997.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_6997_seed_6997.out: /tmp/test_6997_seed_6997.cu:272: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1675_seed_1675.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_1675_seed_1675.out: /tmp/test_1675_seed_1675.cu:208: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2073_seed_2073.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_2073_seed_2073.out: /tmp/test_2073_seed_2073.cu:298: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1225_seed_1225.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1225_seed_1225.out: /tmp/test_1225_seed_1225.cu:358: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_252_seed_252.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_252_seed_252.out: /tmp/test_252_seed_252.cu:268: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1518_seed_1518.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1518_seed_1518.out: /tmp/test_1518_seed_1518.cu:270: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2023_seed_2023.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2023_seed_2023.out: /tmp/test_2023_seed_2023.cu:295: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6367_seed_6367.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6367_seed_6367.out: /tmp/test_6367_seed_6367.cu:308: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_842_seed_842.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_842_seed_842.out: /tmp/test_842_seed_842.cu:225: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_509_seed_509.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_509_seed_509.out: /tmp/test_509_seed_509.cu:440: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8018_seed_8018.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_8018_seed_8018.out: /tmp/test_8018_seed_8018.cu:433: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3369_seed_3369.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_3369_seed_3369.out: /tmp/test_3369_seed_3369.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_114_seed_114.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_114_seed_114.out: /tmp/test_114_seed_114.cu:304: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1129_seed_1129.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1129_seed_1129.out: /tmp/test_1129_seed_1129.cu:379: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4986_seed_4986.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_4986_seed_4986.out: /tmp/test_4986_seed_4986.cu:349: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2753_seed_2753.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_2753_seed_2753.out: /tmp/test_2753_seed_2753.cu:267: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6393_seed_6393.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_6393_seed_6393.out: /tmp/test_6393_seed_6393.cu:338: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9730_seed_9730.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_9730_seed_9730.out: /tmp/test_9730_seed_9730.cu:342: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5085_seed_5085.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5085_seed_5085.out: /tmp/test_5085_seed_5085.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6325_seed_6325.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_6325_seed_6325.out: /tmp/test_6325_seed_6325.cu:449: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2303_seed_2303.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2303_seed_2303.out: /tmp/test_2303_seed_2303.cu:250: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7298_seed_7298.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7298_seed_7298.out: /tmp/test_7298_seed_7298.cu:404: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3551_seed_3551.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_3551_seed_3551.out: /tmp/test_3551_seed_3551.cu:205: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4325_seed_4325.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=3 actual=2
+test_4325_seed_4325.out: /tmp/test_4325_seed_4325.cu:234: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3507_seed_3507.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_3507_seed_3507.out: /tmp/test_3507_seed_3507.cu:263: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_690_seed_690.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_690_seed_690.out: /tmp/test_690_seed_690.cu:243: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9229_seed_9229.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_9229_seed_9229.out: /tmp/test_9229_seed_9229.cu:293: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4945_seed_4945.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_4945_seed_4945.out: /tmp/test_4945_seed_4945.cu:288: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4873_seed_4873.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_4873_seed_4873.out: /tmp/test_4873_seed_4873.cu:259: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8550_seed_8550.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_8550_seed_8550.out: /tmp/test_8550_seed_8550.cu:311: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7003_seed_7003.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_7003_seed_7003.out: /tmp/test_7003_seed_7003.cu:352: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8888_seed_8888.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_8888_seed_8888.out: /tmp/test_8888_seed_8888.cu:223: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2625_seed_2625.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2625_seed_2625.out: /tmp/test_2625_seed_2625.cu:447: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3961_seed_3961.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_3961_seed_3961.out: /tmp/test_3961_seed_3961.cu:224: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_161_seed_161.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_161_seed_161.out: /tmp/test_161_seed_161.cu:210: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3522_seed_3522.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_3522_seed_3522.out: /tmp/test_3522_seed_3522.cu:198: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1243_seed_1243.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_1243_seed_1243.out: /tmp/test_1243_seed_1243.cu:522: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7157_seed_7157.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_7157_seed_7157.out: /tmp/test_7157_seed_7157.cu:277: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7751_seed_7751.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_7751_seed_7751.out: /tmp/test_7751_seed_7751.cu:408: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5147_seed_5147.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5147_seed_5147.out: /tmp/test_5147_seed_5147.cu:438: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6544_seed_6544.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_6544_seed_6544.out: /tmp/test_6544_seed_6544.cu:475: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9316_seed_9316.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_9316_seed_9316.out: /tmp/test_9316_seed_9316.cu:700: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9028_seed_9028.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_9028_seed_9028.out: /tmp/test_9028_seed_9028.cu:300: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3339_seed_3339.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_3339_seed_3339.out: /tmp/test_3339_seed_3339.cu:595: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4329_seed_4329.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_4329_seed_4329.out: /tmp/test_4329_seed_4329.cu:339: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9059_seed_9059.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_9059_seed_9059.out: /tmp/test_9059_seed_9059.cu:254: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2582_seed_2582.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_2582_seed_2582.out: /tmp/test_2582_seed_2582.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6148_seed_6148.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_6148_seed_6148.out: /tmp/test_6148_seed_6148.cu:299: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5359_seed_5359.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=3 actual=2
+test_5359_seed_5359.out: /tmp/test_5359_seed_5359.cu:302: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2715_seed_2715.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2715_seed_2715.out: /tmp/test_2715_seed_2715.cu:312: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3175_seed_3175.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_3175_seed_3175.out: /tmp/test_3175_seed_3175.cu:364: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4897_seed_4897.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_4897_seed_4897.out: /tmp/test_4897_seed_4897.cu:452: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5213_seed_5213.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_5213_seed_5213.out: /tmp/test_5213_seed_5213.cu:218: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5651_seed_5651.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_5651_seed_5651.out: /tmp/test_5651_seed_5651.cu:288: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5606_seed_5606.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5606_seed_5606.out: /tmp/test_5606_seed_5606.cu:400: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1083_seed_1083.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_1083_seed_1083.out: /tmp/test_1083_seed_1083.cu:519: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7990_seed_7990.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7990_seed_7990.out: /tmp/test_7990_seed_7990.cu:512: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7421_seed_7421.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_7421_seed_7421.out: /tmp/test_7421_seed_7421.cu:379: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5956_seed_5956.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_5956_seed_5956.out: /tmp/test_5956_seed_5956.cu:234: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3919_seed_3919.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3919_seed_3919.out: /tmp/test_3919_seed_3919.cu:401: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_937_seed_937.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_937_seed_937.out: /tmp/test_937_seed_937.cu:287: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8252_seed_8252.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8252_seed_8252.out: /tmp/test_8252_seed_8252.cu:313: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5062_seed_5062.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_5062_seed_5062.out: /tmp/test_5062_seed_5062.cu:321: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6725_seed_6725.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_6725_seed_6725.out: /tmp/test_6725_seed_6725.cu:443: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8750_seed_8750.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_8750_seed_8750.out: /tmp/test_8750_seed_8750.cu:244: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2177_seed_2177.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2177_seed_2177.out: /tmp/test_2177_seed_2177.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4040_seed_4040.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_4040_seed_4040.out: /tmp/test_4040_seed_4040.cu:249: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9821_seed_9821.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9821_seed_9821.out: /tmp/test_9821_seed_9821.cu:251: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8204_seed_8204.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8204_seed_8204.out: /tmp/test_8204_seed_8204.cu:238: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9262_seed_9262.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_9262_seed_9262.out: /tmp/test_9262_seed_9262.cu:187: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7691_seed_7691.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7691_seed_7691.out: /tmp/test_7691_seed_7691.cu:372: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2910_seed_2910.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_2910_seed_2910.out: /tmp/test_2910_seed_2910.cu:218: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4593_seed_4593.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4593_seed_4593.out: /tmp/test_4593_seed_4593.cu:300: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2483_seed_2483.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_2483_seed_2483.out: /tmp/test_2483_seed_2483.cu:376: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_403_seed_403.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[65]: expected=3 actual=2
+test_403_seed_403.out: /tmp/test_403_seed_403.cu:418: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2784_seed_2784.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_2784_seed_2784.out: /tmp/test_2784_seed_2784.cu:302: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5718_seed_5718.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_5718_seed_5718.out: /tmp/test_5718_seed_5718.cu:271: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3145_seed_3145.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3145_seed_3145.out: /tmp/test_3145_seed_3145.cu:298: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3703_seed_3703.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_3703_seed_3703.out: /tmp/test_3703_seed_3703.cu:533: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7801_seed_7801.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7801_seed_7801.out: /tmp/test_7801_seed_7801.cu:222: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_433_seed_433.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_433_seed_433.out: /tmp/test_433_seed_433.cu:188: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2419_seed_2419.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_2419_seed_2419.out: /tmp/test_2419_seed_2419.cu:393: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6360_seed_6360.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_6360_seed_6360.out: /tmp/test_6360_seed_6360.cu:364: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_714_seed_714.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_714_seed_714.out: /tmp/test_714_seed_714.cu:383: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4922_seed_4922.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_4922_seed_4922.out: /tmp/test_4922_seed_4922.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6612_seed_6612.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_6612_seed_6612.out: /tmp/test_6612_seed_6612.cu:264: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7466_seed_7466.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7466_seed_7466.out: /tmp/test_7466_seed_7466.cu:586: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7154_seed_7154.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_7154_seed_7154.out: /tmp/test_7154_seed_7154.cu:289: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1337_seed_1337.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_1337_seed_1337.out: /tmp/test_1337_seed_1337.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_061_seed_61.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_061_seed_61.out: /tmp/test_061_seed_61.cu:391: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7734_seed_7734.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7734_seed_7734.out: /tmp/test_7734_seed_7734.cu:236: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4161_seed_4161.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4161_seed_4161.out: /tmp/test_4161_seed_4161.cu:437: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6100_seed_6100.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_6100_seed_6100.out: /tmp/test_6100_seed_6100.cu:471: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_890_seed_890.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_890_seed_890.out: /tmp/test_890_seed_890.cu:250: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2618_seed_2618.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2618_seed_2618.out: /tmp/test_2618_seed_2618.cu:294: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7861_seed_7861.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_7861_seed_7861.out: /tmp/test_7861_seed_7861.cu:232: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_158_seed_158.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_158_seed_158.out: /tmp/test_158_seed_158.cu:360: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9421_seed_9421.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_9421_seed_9421.out: /tmp/test_9421_seed_9421.cu:336: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3218_seed_3218.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_3218_seed_3218.out: /tmp/test_3218_seed_3218.cu:216: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5353_seed_5353.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_5353_seed_5353.out: /tmp/test_5353_seed_5353.cu:291: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3375_seed_3375.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_3375_seed_3375.out: /tmp/test_3375_seed_3375.cu:240: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3922_seed_3922.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=2 actual=1
+test_3922_seed_3922.out: /tmp/test_3922_seed_3922.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8712_seed_8712.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_8712_seed_8712.out: /tmp/test_8712_seed_8712.cu:357: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7058_seed_7058.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_7058_seed_7058.out: /tmp/test_7058_seed_7058.cu:302: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_071_seed_71.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_071_seed_71.out: /tmp/test_071_seed_71.cu:410: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5503_seed_5503.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_5503_seed_5503.out: /tmp/test_5503_seed_5503.cu:313: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7167_seed_7167.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[65]: expected=3 actual=2
+test_7167_seed_7167.out: /tmp/test_7167_seed_7167.cu:241: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8881_seed_8881.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_8881_seed_8881.out: /tmp/test_8881_seed_8881.cu:412: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1903_seed_1903.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1903_seed_1903.out: /tmp/test_1903_seed_1903.cu:246: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2758_seed_2758.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=3 actual=1
+test_2758_seed_2758.out: /tmp/test_2758_seed_2758.cu:350: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2802_seed_2802.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_2802_seed_2802.out: /tmp/test_2802_seed_2802.cu:431: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6078_seed_6078.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_6078_seed_6078.out: /tmp/test_6078_seed_6078.cu:223: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5814_seed_5814.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_5814_seed_5814.out: /tmp/test_5814_seed_5814.cu:225: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1703_seed_1703.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_1703_seed_1703.out: /tmp/test_1703_seed_1703.cu:475: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9916_seed_9916.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_9916_seed_9916.out: /tmp/test_9916_seed_9916.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7581_seed_7581.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7581_seed_7581.out: /tmp/test_7581_seed_7581.cu:420: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1377_seed_1377.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1377_seed_1377.out: /tmp/test_1377_seed_1377.cu:264: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6724_seed_6724.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_6724_seed_6724.out: /tmp/test_6724_seed_6724.cu:254: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7413_seed_7413.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_7413_seed_7413.out: /tmp/test_7413_seed_7413.cu:270: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3476_seed_3476.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_3476_seed_3476.out: /tmp/test_3476_seed_3476.cu:250: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6801_seed_6801.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=3 actual=2
+test_6801_seed_6801.out: /tmp/test_6801_seed_6801.cu:266: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3244_seed_3244.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_3244_seed_3244.out: /tmp/test_3244_seed_3244.cu:214: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9928_seed_9928.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_9928_seed_9928.out: /tmp/test_9928_seed_9928.cu:264: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4688_seed_4688.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4688_seed_4688.out: /tmp/test_4688_seed_4688.cu:230: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5878_seed_5878.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5878_seed_5878.out: /tmp/test_5878_seed_5878.cu:422: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_143_seed_143.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_143_seed_143.out: /tmp/test_143_seed_143.cu:334: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9921_seed_9921.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_9921_seed_9921.out: /tmp/test_9921_seed_9921.cu:229: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8106_seed_8106.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_8106_seed_8106.out: /tmp/test_8106_seed_8106.cu:328: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_480_seed_480.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_480_seed_480.out: /tmp/test_480_seed_480.cu:282: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_801_seed_801.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_801_seed_801.out: /tmp/test_801_seed_801.cu:354: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5217_seed_5217.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_5217_seed_5217.out: /tmp/test_5217_seed_5217.cu:301: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5024_seed_5024.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_5024_seed_5024.out: /tmp/test_5024_seed_5024.cu:291: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3866_seed_3866.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_3866_seed_3866.out: /tmp/test_3866_seed_3866.cu:347: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7794_seed_7794.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=3 actual=2
+test_7794_seed_7794.out: /tmp/test_7794_seed_7794.cu:359: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9646_seed_9646.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=2 actual=1
+test_9646_seed_9646.out: /tmp/test_9646_seed_9646.cu:276: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_583_seed_583.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_583_seed_583.out: /tmp/test_583_seed_583.cu:384: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1077_seed_1077.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_1077_seed_1077.out: /tmp/test_1077_seed_1077.cu:532: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1949_seed_1949.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_1949_seed_1949.out: /tmp/test_1949_seed_1949.cu:167: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4979_seed_4979.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_4979_seed_4979.out: /tmp/test_4979_seed_4979.cu:465: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1934_seed_1934.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_1934_seed_1934.out: /tmp/test_1934_seed_1934.cu:275: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2284_seed_2284.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_2284_seed_2284.out: /tmp/test_2284_seed_2284.cu:340: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2326_seed_2326.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2326_seed_2326.out: /tmp/test_2326_seed_2326.cu:531: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2262_seed_2262.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_2262_seed_2262.out: /tmp/test_2262_seed_2262.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8828_seed_8828.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8828_seed_8828.out: /tmp/test_8828_seed_8828.cu:309: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2737_seed_2737.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[64]: expected=2 actual=1
+test_2737_seed_2737.out: /tmp/test_2737_seed_2737.cu:391: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1529_seed_1529.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_1529_seed_1529.out: /tmp/test_1529_seed_1529.cu:230: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3775_seed_3775.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3775_seed_3775.out: /tmp/test_3775_seed_3775.cu:404: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5633_seed_5633.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_5633_seed_5633.out: /tmp/test_5633_seed_5633.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4814_seed_4814.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_4814_seed_4814.out: /tmp/test_4814_seed_4814.cu:291: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6770_seed_6770.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_6770_seed_6770.out: /tmp/test_6770_seed_6770.cu:609: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6565_seed_6565.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_6565_seed_6565.out: /tmp/test_6565_seed_6565.cu:288: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_601_seed_601.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_601_seed_601.out: /tmp/test_601_seed_601.cu:284: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7940_seed_7940.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=2 actual=1
+test_7940_seed_7940.out: /tmp/test_7940_seed_7940.cu:274: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1268_seed_1268.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_1268_seed_1268.out: /tmp/test_1268_seed_1268.cu:207: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7335_seed_7335.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_7335_seed_7335.out: /tmp/test_7335_seed_7335.cu:287: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9513_seed_9513.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_9513_seed_9513.out: /tmp/test_9513_seed_9513.cu:328: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4426_seed_4426.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[34]: expected=3 actual=2
+test_4426_seed_4426.out: /tmp/test_4426_seed_4426.cu:262: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_278_seed_278.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_278_seed_278.out: /tmp/test_278_seed_278.cu:350: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6594_seed_6594.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_6594_seed_6594.out: /tmp/test_6594_seed_6594.cu:325: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6430_seed_6430.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6430_seed_6430.out: /tmp/test_6430_seed_6430.cu:416: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4718_seed_4718.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_4718_seed_4718.out: /tmp/test_4718_seed_4718.cu:280: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4378_seed_4378.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_4378_seed_4378.out: /tmp/test_4378_seed_4378.cu:200: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5648_seed_5648.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_5648_seed_5648.out: /tmp/test_5648_seed_5648.cu:306: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3442_seed_3442.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_3442_seed_3442.out: /tmp/test_3442_seed_3442.cu:285: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4915_seed_4915.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_4915_seed_4915.out: /tmp/test_4915_seed_4915.cu:334: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5548_seed_5548.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_5548_seed_5548.out: /tmp/test_5548_seed_5548.cu:354: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4840_seed_4840.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4840_seed_4840.out: /tmp/test_4840_seed_4840.cu:419: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6488_seed_6488.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6488_seed_6488.out: /tmp/test_6488_seed_6488.cu:205: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6483_seed_6483.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=3 actual=2
+test_6483_seed_6483.out: /tmp/test_6483_seed_6483.cu:226: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1838_seed_1838.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1838_seed_1838.out: /tmp/test_1838_seed_1838.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6687_seed_6687.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_6687_seed_6687.out: /tmp/test_6687_seed_6687.cu:260: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5013_seed_5013.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_5013_seed_5013.out: /tmp/test_5013_seed_5013.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7488_seed_7488.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7488_seed_7488.out: /tmp/test_7488_seed_7488.cu:305: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7813_seed_7813.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_7813_seed_7813.out: /tmp/test_7813_seed_7813.cu:323: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8652_seed_8652.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_8652_seed_8652.out: /tmp/test_8652_seed_8652.cu:212: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8355_seed_8355.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_8355_seed_8355.out: /tmp/test_8355_seed_8355.cu:323: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8363_seed_8363.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_8363_seed_8363.out: /tmp/test_8363_seed_8363.cu:341: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5926_seed_5926.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[50]: expected=3 actual=2
+test_5926_seed_5926.out: /tmp/test_5926_seed_5926.cu:444: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3328_seed_3328.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=4 actual=3
+test_3328_seed_3328.out: /tmp/test_3328_seed_3328.cu:170: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3888_seed_3888.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_3888_seed_3888.out: /tmp/test_3888_seed_3888.cu:352: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8979_seed_8979.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8979_seed_8979.out: /tmp/test_8979_seed_8979.cu:457: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5416_seed_5416.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_5416_seed_5416.out: /tmp/test_5416_seed_5416.cu:277: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3271_seed_3271.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_3271_seed_3271.out: /tmp/test_3271_seed_3271.cu:183: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7341_seed_7341.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_7341_seed_7341.out: /tmp/test_7341_seed_7341.cu:196: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8276_seed_8276.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_8276_seed_8276.out: /tmp/test_8276_seed_8276.cu:347: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2567_seed_2567.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_2567_seed_2567.out: /tmp/test_2567_seed_2567.cu:245: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4746_seed_4746.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4746_seed_4746.out: /tmp/test_4746_seed_4746.cu:228: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9446_seed_9446.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_9446_seed_9446.out: /tmp/test_9446_seed_9446.cu:324: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7914_seed_7914.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7914_seed_7914.out: /tmp/test_7914_seed_7914.cu:416: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8074_seed_8074.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_8074_seed_8074.out: /tmp/test_8074_seed_8074.cu:309: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2704_seed_2704.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_2704_seed_2704.out: /tmp/test_2704_seed_2704.cu:354: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8856_seed_8856.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_8856_seed_8856.out: /tmp/test_8856_seed_8856.cu:289: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1629_seed_1629.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1629_seed_1629.out: /tmp/test_1629_seed_1629.cu:583: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7891_seed_7891.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_7891_seed_7891.out: /tmp/test_7891_seed_7891.cu:252: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3621_seed_3621.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_3621_seed_3621.out: /tmp/test_3621_seed_3621.cu:362: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9551_seed_9551.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_9551_seed_9551.out: /tmp/test_9551_seed_9551.cu:331: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2895_seed_2895.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2895_seed_2895.out: /tmp/test_2895_seed_2895.cu:286: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2594_seed_2594.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_2594_seed_2594.out: /tmp/test_2594_seed_2594.cu:305: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6666_seed_6666.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6666_seed_6666.out: /tmp/test_6666_seed_6666.cu:319: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2091_seed_2091.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_2091_seed_2091.out: /tmp/test_2091_seed_2091.cu:319: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4548_seed_4548.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_4548_seed_4548.out: /tmp/test_4548_seed_4548.cu:320: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2856_seed_2856.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2856_seed_2856.out: /tmp/test_2856_seed_2856.cu:340: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8761_seed_8761.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_8761_seed_8761.out: /tmp/test_8761_seed_8761.cu:430: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_971_seed_971.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_971_seed_971.out: /tmp/test_971_seed_971.cu:576: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6874_seed_6874.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_6874_seed_6874.out: /tmp/test_6874_seed_6874.cu:512: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_503_seed_503.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=3 actual=2
+test_503_seed_503.out: /tmp/test_503_seed_503.cu:214: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9261_seed_9261.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=4 actual=3
+test_9261_seed_9261.out: /tmp/test_9261_seed_9261.cu:268: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8462_seed_8462.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_8462_seed_8462.out: /tmp/test_8462_seed_8462.cu:445: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5418_seed_5418.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_5418_seed_5418.out: /tmp/test_5418_seed_5418.cu:396: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6674_seed_6674.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6674_seed_6674.out: /tmp/test_6674_seed_6674.cu:293: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6376_seed_6376.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6376_seed_6376.out: /tmp/test_6376_seed_6376.cu:412: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3580_seed_3580.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_3580_seed_3580.out: /tmp/test_3580_seed_3580.cu:239: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5282_seed_5282.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_5282_seed_5282.out: /tmp/test_5282_seed_5282.cu:417: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4610_seed_4610.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4610_seed_4610.out: /tmp/test_4610_seed_4610.cu:379: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3128_seed_3128.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[51]: expected=2 actual=1
+test_3128_seed_3128.out: /tmp/test_3128_seed_3128.cu:364: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2214_seed_2214.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2214_seed_2214.out: /tmp/test_2214_seed_2214.cu:357: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8983_seed_8983.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_8983_seed_8983.out: /tmp/test_8983_seed_8983.cu:226: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8111_seed_8111.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8111_seed_8111.out: /tmp/test_8111_seed_8111.cu:309: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8175_seed_8175.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_8175_seed_8175.out: /tmp/test_8175_seed_8175.cu:191: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1246_seed_1246.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_1246_seed_1246.out: /tmp/test_1246_seed_1246.cu:480: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6334_seed_6334.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_6334_seed_6334.out: /tmp/test_6334_seed_6334.cu:417: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9025_seed_9025.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_9025_seed_9025.out: /tmp/test_9025_seed_9025.cu:285: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3827_seed_3827.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=3 actual=2
+test_3827_seed_3827.out: /tmp/test_3827_seed_3827.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_3541_seed_3541.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_3541_seed_3541.out: /tmp/test_3541_seed_3541.cu:330: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7153_seed_7153.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_7153_seed_7153.out: /tmp/test_7153_seed_7153.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6459_seed_6459.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_6459_seed_6459.out: /tmp/test_6459_seed_6459.cu:300: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_825_seed_825.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_825_seed_825.out: /tmp/test_825_seed_825.cu:194: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2259_seed_2259.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_2259_seed_2259.out: /tmp/test_2259_seed_2259.cu:290: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1153_seed_1153.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_1153_seed_1153.out: /tmp/test_1153_seed_1153.cu:351: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5423_seed_5423.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_5423_seed_5423.out: /tmp/test_5423_seed_5423.cu:317: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7132_seed_7132.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_7132_seed_7132.out: /tmp/test_7132_seed_7132.cu:448: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6344_seed_6344.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_6344_seed_6344.out: /tmp/test_6344_seed_6344.cu:282: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6491_seed_6491.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_6491_seed_6491.out: /tmp/test_6491_seed_6491.cu:221: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4254_seed_4254.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[66]: expected=2 actual=1
+test_4254_seed_4254.out: /tmp/test_4254_seed_4254.cu:459: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4130_seed_4130.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4130_seed_4130.out: /tmp/test_4130_seed_4130.cu:243: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_132_seed_132.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_132_seed_132.out: /tmp/test_132_seed_132.cu:468: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2528_seed_2528.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2528_seed_2528.out: /tmp/test_2528_seed_2528.cu:397: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2183_seed_2183.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2183_seed_2183.out: /tmp/test_2183_seed_2183.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7322_seed_7322.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=2 actual=1
+test_7322_seed_7322.out: /tmp/test_7322_seed_7322.cu:358: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1758_seed_1758.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_1758_seed_1758.out: /tmp/test_1758_seed_1758.cu:384: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1961_seed_1961.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_1961_seed_1961.out: /tmp/test_1961_seed_1961.cu:186: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5237_seed_5237.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[2]: expected=2 actual=1
+test_5237_seed_5237.out: /tmp/test_5237_seed_5237.cu:323: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1628_seed_1628.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_1628_seed_1628.out: /tmp/test_1628_seed_1628.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1189_seed_1189.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[49]: expected=4 actual=3
+test_1189_seed_1189.out: /tmp/test_1189_seed_1189.cu:253: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2903_seed_2903.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[49]: expected=3 actual=2
+test_2903_seed_2903.out: /tmp/test_2903_seed_2903.cu:272: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4748_seed_4748.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_4748_seed_4748.out: /tmp/test_4748_seed_4748.cu:217: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9331_seed_9331.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_9331_seed_9331.out: /tmp/test_9331_seed_9331.cu:370: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9312_seed_9312.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=4 actual=3
+test_9312_seed_9312.out: /tmp/test_9312_seed_9312.cu:252: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_691_seed_691.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_691_seed_691.out: /tmp/test_691_seed_691.cu:322: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7474_seed_7474.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_7474_seed_7474.out: /tmp/test_7474_seed_7474.cu:240: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6797_seed_6797.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[48]: expected=3 actual=2
+test_6797_seed_6797.out: /tmp/test_6797_seed_6797.cu:698: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2768_seed_2768.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[3]: expected=2 actual=1
+test_2768_seed_2768.out: /tmp/test_2768_seed_2768.cu:261: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_060_seed_60.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[16]: expected=3 actual=2
+test_060_seed_60.out: /tmp/test_060_seed_60.cu:245: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8880_seed_8880.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_8880_seed_8880.out: /tmp/test_8880_seed_8880.cu:439: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6864_seed_6864.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_6864_seed_6864.out: /tmp/test_6864_seed_6864.cu:381: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_5585_seed_5585.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_5585_seed_5585.out: /tmp/test_5585_seed_5585.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2990_seed_2990.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_2990_seed_2990.out: /tmp/test_2990_seed_2990.cu:237: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8028_seed_8028.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8028_seed_8028.out: /tmp/test_8028_seed_8028.cu:328: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_440_seed_440.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_440_seed_440.out: /tmp/test_440_seed_440.cu:274: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4400_seed_4400.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_4400_seed_4400.out: /tmp/test_4400_seed_4400.cu:384: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9867_seed_9867.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_9867_seed_9867.out: /tmp/test_9867_seed_9867.cu:232: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7853_seed_7853.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=3 actual=2
+test_7853_seed_7853.out: /tmp/test_7853_seed_7853.cu:282: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_997_seed_997.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_997_seed_997.out: /tmp/test_997_seed_997.cu:400: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7264_seed_7264.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=4 actual=3
+test_7264_seed_7264.out: /tmp/test_7264_seed_7264.cu:498: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_397_seed_397.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[35]: expected=2 actual=1
+test_397_seed_397.out: /tmp/test_397_seed_397.cu:313: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_374_seed_374.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_374_seed_374.out: /tmp/test_374_seed_374.cu:386: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4447_seed_4447.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=3 actual=2
+test_4447_seed_4447.out: /tmp/test_4447_seed_4447.cu:214: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_7384_seed_7384.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_7384_seed_7384.out: /tmp/test_7384_seed_7384.cu:248: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_479_seed_479.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[18]: expected=2 actual=1
+test_479_seed_479.out: /tmp/test_479_seed_479.cu:444: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1815_seed_1815.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=2 actual=1
+test_1815_seed_1815.out: /tmp/test_1815_seed_1815.cu:405: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_991_seed_991.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_991_seed_991.out: /tmp/test_991_seed_991.cu:244: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1455_seed_1455.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[32]: expected=3 actual=2
+test_1455_seed_1455.out: /tmp/test_1455_seed_1455.cu:348: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_4777_seed_4777.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_4777_seed_4777.out: /tmp/test_4777_seed_4777.cu:342: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_703_seed_703.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[33]: expected=2 actual=1
+test_703_seed_703.out: /tmp/test_703_seed_703.cu:283: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_1887_seed_1887.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_1887_seed_1887.out: /tmp/test_1887_seed_1887.cu:262: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2247_seed_2247.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=4 actual=3
+test_2247_seed_2247.out: /tmp/test_2247_seed_2247.cu:401: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9452_seed_9452.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[1]: expected=2 actual=1
+test_9452_seed_9452.out: /tmp/test_9452_seed_9452.cu:188: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_9286_seed_9286.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_9286_seed_9286.out: /tmp/test_9286_seed_9286.cu:292: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8956_seed_8956.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_8956_seed_8956.out: /tmp/test_8956_seed_8956.cu:289: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_6941_seed_6941.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[19]: expected=2 actual=1
+test_6941_seed_6941.out: /tmp/test_6941_seed_6941.cu:228: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_2940_seed_2940.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=4 actual=3
+test_2940_seed_2940.out: /tmp/test_2940_seed_2940.cu:302: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_8358_seed_8358.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[0]: expected=2 actual=1
+test_8358_seed_8358.out: /tmp/test_8358_seed_8358.cu:216: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
+
+fuzz-tests/test_160_seed_160.mlir:
+Passed Raiser: True
+------ stdout ------
+
+------ stderr ------
+[17]: expected=2 actual=1
+test_160_seed_160.out: /tmp/test_160_seed_160.cu:279: int main(): Assertion `expected0[i] == host_actual0[i]' failed.
+
