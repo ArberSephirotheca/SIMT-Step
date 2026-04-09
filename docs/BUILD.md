@@ -25,7 +25,23 @@ The root `CMakeLists.txt` still auto-detects `/opt/llvm`; if you export `LLVM_PR
 cmake --build build
 ```
 
-This produces the shared library `libsimt-step` and several command-line tools under `build/tools/`. At the moment **`simt-hlsl-import` is the only fully functional driver** (use it to translate HLSL sources to `simt_step` MLIR). The other executables (`simt-convert`, `simt-run`, `simt-opt`, `simt-step-parse`) are still work in progress or utility stubs, and the `check-*` targets simply exercise their current smoke tests.
+This produces the shared library `libsimt-step` and several command-line tools under `build/tools/`. `simt-hlsl-import` remains the broad reference driver for source translation to `simt_step` MLIR. `simt-cuda-import` now supports one intentionally narrow Phase 6 CUDA slice: a parameterless `__global__` kernel with a single top-level full-mask `__any_sync`. Treat that supported CUDA subset as a contract boundary, not a claim of broad CUDA frontend coverage. The other executables (`simt-convert`, `simt-run`, `simt-opt`, `simt-step-parse`) are still work in progress or utility stubs, and the `check-*` targets simply exercise their current smoke tests.
+
+Validate the CUDA slice with the checked fixtures under `tools/simt-cuda-import/test/`:
+
+```bash
+cmake --build build --target simt-cuda-import -j4
+bash tools/simt-cuda-import/test/check_fixtures.sh build/tools/simt-cuda-import/simt-cuda-import
+cd /Users/zheyuan/GPU-DRF/faial-rs && cargo test -p faial_frontend_simt --test export_mlir
+```
+
+If your configure step uses `-DMLIR_FILE_CHECK=/usr/bin/true`, treat that as build sanity only. It does not provide meaningful lit/FileCheck coverage for the CUDA importer.
+
+For Phase 6 CUDA-boundary work, the C++ fixture check and the Rust exporter test
+form one honest validation chain: `SIMT-Step` owns raw normalization of the
+supported CUDA subset, while `faial_frontend_simt` owns the checked import
+contract that reaches `faial_drf`. Final DRF verdict authority still lives in
+Rust.
 
 - `simple-program-runner` lives under `build/test/` and runs the minimal CPS interpreter against a `simt_step` MLIR module. Example:
   ```bash

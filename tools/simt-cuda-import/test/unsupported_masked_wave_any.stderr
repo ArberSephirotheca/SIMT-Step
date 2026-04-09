@@ -1,0 +1,1 @@
+simt-cuda-import: CUDA importer only supports full-mask __any_sync(0xffffffffu, predicate); masked collectives remain unsupported

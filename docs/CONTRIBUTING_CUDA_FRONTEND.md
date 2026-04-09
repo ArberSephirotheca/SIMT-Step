@@ -5,21 +5,32 @@
 SIMT-Step provides an MLIR dialect (`simt_step`) that captures SIMT execution
 explicitly, plus a lowering pipeline that turns structured control flow into the
 mask-aware form our interpreter understands. We already have an HLSL importer
-(`tools/simt-hlsl-import`) producing this dialect; the CUDA frontend will follow
-the same architecture. At the moment `simt-hlsl-import` is the only fully
-functional importer—treat it as the reference when you want to see how HLSL
-lowering translates into `simt_step` MLIR:
+(`tools/simt-hlsl-import`) producing this dialect, and the CUDA frontend now
+reuses the same architecture for one intentionally narrow slice. Treat HLSL as
+the broad reference when you want to see how source lowering translates into
+`simt_step` MLIR:
 
 ```bash
 ./build/tools/simt-hlsl-import/simt-hlsl-import tools/simt-hlsl-import/test/simple.hlsl
 ```
 
-The CUDA frontend will reuse the same lowering algebra:
+The CUDA frontend reuses the same lowering algebra:
 
 1. Parse CUDA via Clang.
 2. Translate the AST into our tagless-final lowering algebra (shared between all
    frontends).
 3. Emit `simt_step` IR for kernels.
+
+For the current Phase 6 slice, the emitted raw MLIR is expected to carry only
+non-policy boundary facts:
+
+- canonical line-start `loc(...)` provenance
+- concrete `simt.num_threads` launch geometry for the supported one-warp slice
+- stable subgroup `site_id` attributes on emitted subgroup ops, currently from
+  an importer-local sequence seeded at `70` and assigned in source order
+
+Do not extend that metadata into `participantMask(policy)` or final DRF
+judgments. Those remain Rust-side responsibilities.
 
 The shared frontend infrastructure lives under:
 
@@ -27,8 +38,8 @@ The shared frontend infrastructure lives under:
   support, result helpers.
 - `lib/frontends/common/` – implementations (e.g., loop scope support).
 
-The CUDA-specific pieces will live under `lib/frontends/` and
-`tools/simt-cuda-import/` (prototype name—you can iterate on it).
+The CUDA-specific pieces live under `lib/frontends/` and
+`tools/simt-cuda-import/`.
 
 ---
 
@@ -58,7 +69,16 @@ The CUDA-specific pieces will live under `lib/frontends/` and
    cmake --build build --target simt-hlsl-import
    build/tools/simt-hlsl-import/simt-hlsl-import tools/simt-hlsl-import/test/simple.hlsl
    ```
-   Once the CUDA frontend emerges, we will mirror these tests with CUDA kernels.
+   For the current CUDA slice, use the checked fixtures instead of pretending
+   `MLIR_FILE_CHECK=/usr/bin/true` gives real lit coverage:
+   ```bash
+   cmake --build build --target simt-cuda-import -j4
+   bash tools/simt-cuda-import/test/check_fixtures.sh build/tools/simt-cuda-import/simt-cuda-import
+   cd /Users/zheyuan/GPU-DRF/faial-rs && cargo test -p faial_frontend_simt --test export_mlir
+   ```
+   That dual-toolchain chain is the minimum honest validation path for the
+   supported CUDA subset. `SIMT-Step` alone does not own the checked Rust import
+   boundary or final verdict semantics.
 
 ---
 
@@ -66,39 +86,41 @@ The CUDA-specific pieces will live under `lib/frontends/` and
 
 | Path | Purpose |
 | ---- | ------- |
-| `lib/frontends/CUDA.cpp` | Current placeholder—returns an empty module. |
+| `lib/frontends/CUDA.cpp` | Current narrow CUDA lowering slice: one parameterless `__global__` kernel with one top-level full-mask `__any_sync`, plus explicit rejection diagnostics, canonicalized source locations, fixed one-warp launch metadata, and stable subgroup `site_id` emission for the supported slice. |
 | `include/simt-step/frontends/Common/*` | Tagless-final lowering algebra & loop/switch helpers shared across frontends. |
 | `tools/simt-hlsl-import/` | Useful reference implementation (HLSL importer) showing how to wire interpretations, diagnostics, and tests. |
 | `docs/LOWERING_ALGEBRA_DESIGN.md` | Design rationale behind the algebra you will reuse. |
 
 ---
 
-## 4. Suggested First Tasks
+## 4. Current Follow-Up Tasks
 
-1. **Bootstrap the tool skeleton**
-   - Add a new executable target (`tools/simt-cuda-import/`) mirroring the layout
-     of the HLSL importer.
-   - Link against `simt-frontends-common`, `simt-step`, Clang libraries.
-   - Keep a simple `translateCudaToMLIR` function returning an empty module until
-     lowering code lands.
+1. **Keep the supported CUDA subset honest**
+   - Preserve the current contract: one parameterless `__global__` kernel, one
+     top-level full-mask `__any_sync`, optional top-level `if`, and explicit
+     rejection diagnostics for everything else.
+   - Pair every accepted CUDA fixture with a checked raw `*.mlir` golden and
+     every rejected fixture with a checked `*.stderr` golden.
 
-2. **Hook Clang to parse CUDA**
-   - Look at `FunctionLoweringVisitor` in the HLSL importer for reference.
-   - Drive Clang in CUDA mode (pass `-x cuda` and relevant `--cuda-gpu-arch`
-     flags).
-   - Dump the AST or use Clang’s diagnostics to ensure kernels are discovered.
+2. **Reduce checked-fixture translation churn without moving semantics**
+   - Prefer pushing non-policy facts such as `loc(...)`, workgroup shape, and
+     stable `site_id` metadata into raw importer output when there is an honest,
+     deterministic rule.
+   - Do not move `participantMask(policy)`, `mem_drf`, `drf_full`, or
+     `drf_partial(policy)` semantics into `SIMT-Step`.
 
-3. **Lower straight-line kernels**
-   - Start from a trivial kernel (`__global__ void add(int* out, int v)`).
+3. **Validate across both toolchains**
+   - Use `tools/simt-cuda-import/test/check_fixtures.sh` for raw importer
+     regressions.
+   - Pair it with `cargo test -p faial_frontend_simt --test export_mlir` so the
+     checked Rust boundary stays aligned with the raw CUDA importer output.
 
-4. **Add regression tests**
-   - Mirror the HLSL workflow: pair each CUDA
-     kernel (`*.cu`) with a `*.mlir` FileCheck file.
-   - Add a lit config (similar to `tools/simt-hlsl-import/test/CMakeLists.txt`).
-
-5. **Track missing features**
-   - Draft `docs/TODO_CUDA_IMPORT.md` to document gaps (control flow, intrinsics,
-     memory spaces, etc.). This helps future contributors pick a task.
+4. **Keep masked/reconverged CUDA sites locked**
+   - Do not broaden the frontend to masked or reconverged collectives until the
+     checked boundary can carry honest `liveMask`, `activeMask`, and
+     `expectedMask` evidence.
+   - Do not advertise broader CUDA verdict support by collapsing
+     `expectedMask` into `participantMask(policy)`.
 
 ---
 
@@ -106,3 +128,6 @@ The CUDA-specific pieces will live under `lib/frontends/` and
 
 - **Stay tagless-final** – don’t call `OpBuilder` directly from shared helpers.
   Always go through the algebra so analysis/emit modes stay aligned.
+- **Keep metadata non-policy** – raw CUDA output may carry source provenance,
+  workgroup shape, and stable site ids, but it must not invent
+  `participantMask(policy)` or any verdict-owned mask witness.

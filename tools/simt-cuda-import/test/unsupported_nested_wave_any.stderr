@@ -1,0 +1,1 @@
+simt-cuda-import: CUDA vote intrinsics are only supported at top level; nested or reconverged collectives remain unsupported
