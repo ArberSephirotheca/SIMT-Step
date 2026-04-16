@@ -1098,6 +1098,20 @@ private:
         }
     }
 
+    static std::uint32_t wmmaFragmentRows(const WmmaFragmentValue &fragment) {
+        return fragment.rows();
+    }
+
+    static std::uint32_t wmmaFragmentCols(const WmmaFragmentValue &fragment) {
+        return fragment.cols();
+    }
+
+    static std::size_t wmmaFragmentElementIndex(const WmmaFragmentValue &fragment,
+                                                std::uint32_t row,
+                                                std::uint32_t col) {
+        return static_cast<std::size_t>(row) * wmmaFragmentCols(fragment) + col;
+    }
+
     static bool sameWmmaFragment(const WmmaFragmentValue &lhs,
                                  const WmmaFragmentValue &rhs) {
         return lhs.role == rhs.role && lhs.layout == rhs.layout &&
@@ -1227,8 +1241,7 @@ private:
             fragment.m = static_cast<std::uint32_t>(fragmentType.getM());
             fragment.n = static_cast<std::uint32_t>(fragmentType.getN());
             fragment.k = static_cast<std::uint32_t>(fragmentType.getK());
-            fragment.elements.assign(
-                static_cast<std::size_t>(fragment.m * fragment.n), *fillValue);
+            fragment.elements.assign(fragment.elementCount(), *fillValue);
             ValueType fragmentValue = makeWmmaFragmentValue(std::move(fragment));
 
             mask = syncPoint.expectedMask;
@@ -1289,10 +1302,11 @@ private:
             fragment.m = static_cast<std::uint32_t>(fragmentType.getM());
             fragment.n = static_cast<std::uint32_t>(fragmentType.getN());
             fragment.k = static_cast<std::uint32_t>(fragmentType.getK());
-            fragment.elements.resize(
-                static_cast<std::size_t>(fragment.m * fragment.n));
-            for (std::uint32_t row = 0; row < fragment.m; ++row) {
-                for (std::uint32_t col = 0; col < fragment.n; ++col) {
+            const std::uint32_t rows = wmmaFragmentRows(fragment);
+            const std::uint32_t cols = wmmaFragmentCols(fragment);
+            fragment.elements.resize(static_cast<std::size_t>(rows) * cols);
+            for (std::uint32_t row = 0; row < rows; ++row) {
+                for (std::uint32_t col = 0; col < cols; ++col) {
                     int64_t idx = linearizeWmmaIndex(
                         fragment.layout, baseIndex, stride, static_cast<int>(row),
                         static_cast<int>(col));
@@ -1300,8 +1314,8 @@ private:
                     if (valIt == resIt->second.end())
                         llvm::report_fatal_error(
                             "collective wmma_load_matrix: missing matrix element");
-                    fragment.elements[static_cast<std::size_t>(row) * fragment.n +
-                                      col] = valueToFloat32(valIt->second);
+                    fragment.elements[wmmaFragmentElementIndex(fragment, row, col)] =
+                        valueToFloat32(valIt->second);
                 }
             }
 
@@ -1347,33 +1361,37 @@ private:
                 }
             }
 
+            const std::uint32_t aRows = wmmaFragmentRows(*aFragment);
+            const std::uint32_t aCols = wmmaFragmentCols(*aFragment);
+            const std::uint32_t bRows = wmmaFragmentRows(*bFragment);
+            const std::uint32_t bCols = wmmaFragmentCols(*bFragment);
+            const std::uint32_t cRows = wmmaFragmentRows(*cFragment);
+            const std::uint32_t cCols = wmmaFragmentCols(*cFragment);
+            if (aCols != bRows || aRows != cRows || bCols != cCols)
+                llvm::report_fatal_error(
+                    "collective wmma_mma: incompatible fragment dimensions");
+
             WmmaFragmentValue result;
             result.role = WmmaFragmentValue::Role::Accumulator;
             result.layout = WmmaFragmentValue::Layout::None;
             result.m = cFragment->m;
             result.n = cFragment->n;
             result.k = cFragment->k;
-            result.elements.assign(
-                static_cast<std::size_t>(result.m * result.n), 0.0f);
+            result.elements.assign(result.elementCount(), 0.0f);
 
-            for (std::uint32_t row = 0; row < result.m; ++row) {
-                for (std::uint32_t col = 0; col < result.n; ++col) {
-                    float accum =
-                        cFragment->elements[static_cast<std::size_t>(row) * result.n +
-                                            col];
-                    for (std::uint32_t kk = 0; kk < result.k; ++kk) {
-                        float lhs =
-                            aFragment->elements[static_cast<std::size_t>(row) *
-                                                    aFragment->k +
-                                                kk];
-                        float rhs =
-                            bFragment->elements[static_cast<std::size_t>(kk) *
-                                                    bFragment->n +
-                                                col];
+            for (std::uint32_t row = 0; row < cRows; ++row) {
+                for (std::uint32_t col = 0; col < cCols; ++col) {
+                    float accum = cFragment->elements[
+                        wmmaFragmentElementIndex(*cFragment, row, col)];
+                    for (std::uint32_t kk = 0; kk < aCols; ++kk) {
+                        float lhs = aFragment->elements[
+                            wmmaFragmentElementIndex(*aFragment, row, kk)];
+                        float rhs = bFragment->elements[
+                            wmmaFragmentElementIndex(*bFragment, kk, col)];
                         accum += lhs * rhs;
                     }
-                    result.elements[static_cast<std::size_t>(row) * result.n +
-                                    col] = accum;
+                    result.elements[wmmaFragmentElementIndex(result, row, col)] =
+                        accum;
                 }
             }
 
@@ -1428,15 +1446,16 @@ private:
             }
 
             auto &mem = memoryMutable();
-            for (std::uint32_t row = 0; row < fragment->m; ++row) {
-                for (std::uint32_t col = 0; col < fragment->n; ++col) {
+            const std::uint32_t rows = wmmaFragmentRows(*fragment);
+            const std::uint32_t cols = wmmaFragmentCols(*fragment);
+            for (std::uint32_t row = 0; row < rows; ++row) {
+                for (std::uint32_t col = 0; col < cols; ++col) {
                     int64_t idx = linearizeWmmaIndex(
                         layout, baseIndex, stride, static_cast<int>(row),
                         static_cast<int>(col));
                     mem[resource][idx] = makeFloat32Value(
-                        fragment->elements[static_cast<std::size_t>(row) *
-                                               fragment->n +
-                                           col]);
+                        fragment->elements[wmmaFragmentElementIndex(*fragment, row,
+                                                                    col)]);
                 }
             }
 

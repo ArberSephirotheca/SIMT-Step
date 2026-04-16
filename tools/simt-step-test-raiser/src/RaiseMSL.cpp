@@ -79,16 +79,55 @@ private:
     return emitOp(op);
   }
 
-  const char *wmmaStructName(simt::dialect::WmmaRole role) const {
+  const char *wmmaRoleTag(simt::dialect::WmmaRole role) const {
     switch (role) {
     case simt::dialect::WmmaRole::MatrixA:
-      return "simt_wmma_matrix_a_16x16x16";
+      return "matrix_a";
     case simt::dialect::WmmaRole::MatrixB:
-      return "simt_wmma_matrix_b_16x16x16";
+      return "matrix_b";
     case simt::dialect::WmmaRole::Accumulator:
-      return "simt_wmma_accumulator_16x16x16";
+      return "accumulator";
     }
     llvm_unreachable("unsupported WMMA role");
+  }
+
+  unsigned wmmaRows(simt::dialect::WmmaFragmentType fragmentType) const {
+    switch (fragmentType.getRole()) {
+    case simt::dialect::WmmaRole::MatrixA:
+      return fragmentType.getM();
+    case simt::dialect::WmmaRole::MatrixB:
+      return fragmentType.getK();
+    case simt::dialect::WmmaRole::Accumulator:
+      return fragmentType.getM();
+    }
+    llvm_unreachable("unsupported WMMA role");
+  }
+
+  unsigned wmmaCols(simt::dialect::WmmaFragmentType fragmentType) const {
+    switch (fragmentType.getRole()) {
+    case simt::dialect::WmmaRole::MatrixA:
+      return fragmentType.getK();
+    case simt::dialect::WmmaRole::MatrixB:
+      return fragmentType.getN();
+    case simt::dialect::WmmaRole::Accumulator:
+      return fragmentType.getN();
+    }
+    llvm_unreachable("unsupported WMMA role");
+  }
+
+  unsigned wmmaRowTiles(simt::dialect::WmmaFragmentType fragmentType) const {
+    return wmmaRows(fragmentType) / kWmmaTileExtent;
+  }
+
+  unsigned wmmaColTiles(simt::dialect::WmmaFragmentType fragmentType) const {
+    return wmmaCols(fragmentType) / kWmmaTileExtent;
+  }
+
+  std::string wmmaStructName(simt::dialect::WmmaFragmentType fragmentType) const {
+    return std::string("simt_wmma_") + wmmaRoleTag(fragmentType.getRole()) + "_" +
+           std::to_string(fragmentType.getM()) + "x" +
+           std::to_string(fragmentType.getN()) + "x" +
+           std::to_string(fragmentType.getK());
   }
 
   const char *wmmaTileTypeName(mlir::Type elementType) const {
@@ -107,20 +146,16 @@ private:
     llvm_unreachable("unsupported WMMA scalar type");
   }
 
-  const char *wmmaTileMember(unsigned row, unsigned col) const {
-    static constexpr const char *Names[2][2] = {
-        {"tile_00", "tile_01"},
-        {"tile_10", "tile_11"},
-    };
-    assert(row < 2 && col < 2);
-    return Names[row][col];
-  }
-
   bool isSupportedWmmaFragmentType(
       simt::dialect::WmmaFragmentType fragmentType) const {
-    if (fragmentType.getM() != 16 || fragmentType.getN() != 16 ||
-        fragmentType.getK() != 16)
+    if (fragmentType.getM() == 0 || fragmentType.getN() == 0 ||
+        fragmentType.getK() == 0)
       return false;
+    if ((fragmentType.getM() % kWmmaTileExtent) != 0 ||
+        (fragmentType.getN() % kWmmaTileExtent) != 0 ||
+        (fragmentType.getK() % kWmmaTileExtent) != 0) {
+      return false;
+    }
 
     switch (fragmentType.getRole()) {
     case simt::dialect::WmmaRole::MatrixA:
@@ -144,20 +179,21 @@ private:
   }
 
   std::string wmmaTileRef(Value value, unsigned row, unsigned col) {
-    return getValueName(value) + "." + wmmaTileMember(row, col);
+    return wmmaTileRef(getValueName(value), row, col);
   }
 
   std::string wmmaTileRef(const std::string &valueName, unsigned row,
                           unsigned col) const {
-    return valueName + "." + wmmaTileMember(row, col);
+    return valueName + ".tiles[" + std::to_string(row) + "][" +
+           std::to_string(col) + "]";
   }
 
   std::string wmmaTilePtrExpr(Value resource, Value baseIndex, Value stride,
-                              unsigned row, unsigned col) {
+                              unsigned rowTile, unsigned colTile) {
     std::string expr = getValueName(resource) + " + " + getValueName(baseIndex);
     const std::string strideName = getValueName(stride);
-    const unsigned rowOffset = row * kWmmaTileExtent;
-    const unsigned colOffset = col * kWmmaTileExtent;
+    const unsigned rowOffset = rowTile * kWmmaTileExtent;
+    const unsigned colOffset = colTile * kWmmaTileExtent;
     if (rowOffset != 0 || colOffset != 0) {
       expr += " + ";
       if (rowOffset != 0 && colOffset != 0) {
@@ -290,20 +326,46 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
 )CPP";
   }
 
-  void emitWmmaStructDef(const char *name, const char *tileType) {
+  void emitWmmaStructDef(StringRef name, StringRef tileType,
+                         unsigned rowTiles, unsigned colTiles) {
     os << "struct " << name << " {\n";
-    os << "  " << tileType << " tile_00;\n";
-    os << "  " << tileType << " tile_01;\n";
-    os << "  " << tileType << " tile_10;\n";
-    os << "  " << tileType << " tile_11;\n";
+    os << "  " << tileType << " tiles[" << rowTiles << "][" << colTiles
+       << "];\n";
     os << "};\n";
   }
 
-  void emitWmmaSupportTypes() {
-    emitWmmaStructDef("simt_wmma_matrix_a_16x16x16", "simdgroup_half8x8");
-    emitWmmaStructDef("simt_wmma_matrix_b_16x16x16", "simdgroup_half8x8");
-    emitWmmaStructDef("simt_wmma_accumulator_16x16x16", "simdgroup_float8x8");
-    os << "\n";
+  void emitWmmaSupportTypes(Operation *op) {
+    std::vector<std::string> emittedNames;
+    auto tryEmit = [&](Type type) {
+      auto fragmentType = dyn_cast<simt::dialect::WmmaFragmentType>(type);
+      if (!fragmentType || !isSupportedWmmaFragmentType(fragmentType))
+        return;
+      std::string name = wmmaStructName(fragmentType);
+      if (std::find(emittedNames.begin(), emittedNames.end(), name) !=
+          emittedNames.end()) {
+        return;
+      }
+      emitWmmaStructDef(name, wmmaTileTypeName(fragmentType.getElementType()),
+                        wmmaRowTiles(fragmentType), wmmaColTiles(fragmentType));
+      emittedNames.push_back(std::move(name));
+    };
+
+    if (auto module = dyn_cast<ModuleOp>(op)) {
+      for (func::FuncOp func : module.getOps<func::FuncOp>()) {
+        for (Value arg : func.getArguments())
+          tryEmit(arg.getType());
+      }
+    }
+
+    op->walk([&](Operation *nested) {
+      for (Value operand : nested->getOperands())
+        tryEmit(operand.getType());
+      for (Value result : nested->getResults())
+        tryEmit(result.getType());
+    });
+
+    if (!emittedNames.empty())
+      os << "\n";
   }
 
   LogicalResult emitWrappedHarness(Operation *op, HarnessProps props,
@@ -493,7 +555,7 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
     if (auto fragmentType = dyn_cast<simt::dialect::WmmaFragmentType>(type)) {
       if (!isSupportedWmmaFragmentType(fragmentType))
         return failure();
-      os << wmmaStructName(fragmentType.getRole());
+      os << wmmaStructName(fragmentType);
       return success();
     }
 
@@ -574,7 +636,7 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
     os << "  return static_cast<int>(simd_sum(pred ? 1u : 0u));\n";
     os << "}\n";
     if (hasWmma)
-      emitWmmaSupportTypes();
+      emitWmmaSupportTypes(op);
     os << "\n";
     return success();
   }
@@ -786,8 +848,8 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
         cast<simt::dialect::WmmaFragmentType>(op.getResult().getType());
     if (!isSupportedWmmaFragmentType(fragmentType)) {
       return op.emitOpError(
-          "MSL WMMA lowering currently supports only accumulator fragments "
-          "for the 16x16x16 f16/f16/f32 slice");
+          "MSL WMMA lowering currently supports only f16/f16/f32 fragments "
+          "with extents that are multiples of 8");
     }
 
     const std::string resultName = addValueName(op.getResult());
@@ -795,14 +857,14 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
       return failure();
     os << " " << resultName << ";\n";
 
-    for (unsigned row = 0; row < 2; ++row) {
-      for (unsigned col = 0; col < 2; ++col) {
+    const unsigned rowTiles = wmmaRowTiles(fragmentType);
+    const unsigned colTiles = wmmaColTiles(fragmentType);
+    for (unsigned row = 0; row < rowTiles; ++row) {
+      for (unsigned col = 0; col < colTiles; ++col) {
         os << wmmaTileRef(resultName, row, col)
            << " = make_filled_simdgroup_matrix<"
            << wmmaScalarTypeName(fragmentType.getElementType()) << ", 8, 8>("
-           << getValueName(op.getOperand()) << ")";
-        if (!(row == 1 && col == 1))
-          os << ";\n";
+           << getValueName(op.getOperand()) << ");\n";
       }
     }
     return success();
@@ -813,8 +875,8 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
         cast<simt::dialect::WmmaFragmentType>(op.getResult().getType());
     if (!isSupportedWmmaFragmentType(fragmentType)) {
       return op.emitOpError(
-          "MSL WMMA lowering currently supports only the 16x16x16 "
-          "f16/f16/f32 slice");
+          "MSL WMMA lowering currently supports only f16/f16/f32 fragments "
+          "with extents that are multiples of 8");
     }
     if (!isSupportedWmmaResource(op.getResource())) {
       return op.emitOpError(
@@ -826,28 +888,34 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
       return failure();
     os << " " << resultName << ";\n";
 
-    for (unsigned row = 0; row < 2; ++row) {
-      for (unsigned col = 0; col < 2; ++col) {
+    const unsigned rowTiles = wmmaRowTiles(fragmentType);
+    const unsigned colTiles = wmmaColTiles(fragmentType);
+    for (unsigned row = 0; row < rowTiles; ++row) {
+      for (unsigned col = 0; col < colTiles; ++col) {
         os << "simdgroup_load(" << wmmaTileRef(resultName, row, col) << ", "
            << wmmaTilePtrExpr(op.getResource(), op.getBaseIndex(),
                               op.getStride(), row, col)
            << ", static_cast<ulong>(" << getValueName(op.getStride())
            << "), ulong2(0ul), " << wmmaTransposeFlag(fragmentType.getLayout())
-           << ")";
-        if (!(row == 1 && col == 1))
-          os << ";\n";
+           << ");\n";
       }
     }
     return success();
   }
 
   LogicalResult printOp(WmmaMmaOp &op) override {
+    auto aType = cast<simt::dialect::WmmaFragmentType>(op.getA().getType());
+    auto bType = cast<simt::dialect::WmmaFragmentType>(op.getB().getType());
+    auto accType = cast<simt::dialect::WmmaFragmentType>(op.getAcc().getType());
     auto resultType =
         cast<simt::dialect::WmmaFragmentType>(op.getResult().getType());
-    if (!isSupportedWmmaFragmentType(resultType)) {
+    if (!isSupportedWmmaFragmentType(aType) ||
+        !isSupportedWmmaFragmentType(bType) ||
+        !isSupportedWmmaFragmentType(accType) ||
+        !isSupportedWmmaFragmentType(resultType)) {
       return op.emitOpError(
-          "MSL WMMA lowering currently supports only the 16x16x16 "
-          "f16/f16/f32 slice");
+          "MSL WMMA lowering currently supports only f16/f16/f32 fragments "
+          "with extents that are multiples of 8");
     }
 
     const std::string resultName = addValueName(op.getResult());
@@ -855,22 +923,20 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
       return failure();
     os << " " << resultName << ";\n";
 
-    for (unsigned row = 0; row < 2; ++row) {
-      for (unsigned col = 0; col < 2; ++col) {
+    const unsigned rowTiles = wmmaRowTiles(resultType);
+    const unsigned colTiles = wmmaColTiles(resultType);
+    const unsigned kTiles = resultType.getK() / kWmmaTileExtent;
+    for (unsigned row = 0; row < rowTiles; ++row) {
+      for (unsigned col = 0; col < colTiles; ++col) {
         os << wmmaTileRef(resultName, row, col) << " = "
            << wmmaTileRef(op.getAcc(), row, col) << ";\n";
-        os << "simdgroup_multiply_accumulate("
-           << wmmaTileRef(resultName, row, col) << ", "
-           << wmmaTileRef(op.getA(), row, 0) << ", "
-           << wmmaTileRef(op.getB(), 0, col) << ", "
-           << wmmaTileRef(resultName, row, col) << ");\n";
-        os << "simdgroup_multiply_accumulate("
-           << wmmaTileRef(resultName, row, col) << ", "
-           << wmmaTileRef(op.getA(), row, 1) << ", "
-           << wmmaTileRef(op.getB(), 1, col) << ", "
-           << wmmaTileRef(resultName, row, col) << ")";
-        if (!(row == 1 && col == 1))
-          os << ";\n";
+        for (unsigned kk = 0; kk < kTiles; ++kk) {
+          os << "simdgroup_multiply_accumulate("
+             << wmmaTileRef(resultName, row, col) << ", "
+             << wmmaTileRef(op.getA(), row, kk) << ", "
+             << wmmaTileRef(op.getB(), kk, col) << ", "
+             << wmmaTileRef(resultName, row, col) << ");\n";
+        }
       }
     }
     return success();
@@ -881,24 +947,25 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
         cast<simt::dialect::WmmaFragmentType>(op.getFragment().getType());
     if (!isSupportedWmmaFragmentType(fragmentType)) {
       return op.emitOpError(
-          "MSL WMMA lowering currently supports only the 16x16x16 "
-          "f16/f16/f32 slice");
+          "MSL WMMA lowering currently supports only f16/f16/f32 fragments "
+          "with extents that are multiples of 8");
     }
     if (!isSupportedWmmaResource(op.getResource())) {
       return op.emitOpError(
           "MSL WMMA lowering currently requires global memory resources");
     }
 
-    for (unsigned row = 0; row < 2; ++row) {
-      for (unsigned col = 0; col < 2; ++col) {
+    const unsigned rowTiles = wmmaRowTiles(fragmentType);
+    const unsigned colTiles = wmmaColTiles(fragmentType);
+    for (unsigned row = 0; row < rowTiles; ++row) {
+      for (unsigned col = 0; col < colTiles; ++col) {
         os << "simdgroup_store(" << wmmaTileRef(op.getFragment(), row, col)
            << ", "
            << wmmaTilePtrExpr(op.getResource(), op.getBaseIndex(),
                               op.getStride(), row, col)
            << ", static_cast<ulong>(" << getValueName(op.getStride())
-           << "), ulong2(0ul), " << wmmaTransposeFlag(op.getLayout()) << ")";
-        if (!(row == 1 && col == 1))
-          os << ";\n";
+           << "), ulong2(0ul), " << wmmaTransposeFlag(op.getLayout())
+           << ");\n";
       }
     }
     return success();

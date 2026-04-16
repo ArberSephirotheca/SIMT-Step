@@ -61,6 +61,30 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
 }
 
 private:
+unsigned wmmaRows(simt::dialect::WmmaFragmentType fragmentType) const {
+    switch (fragmentType.getRole()) {
+    case simt::dialect::WmmaRole::MatrixA:
+        return fragmentType.getM();
+    case simt::dialect::WmmaRole::MatrixB:
+        return fragmentType.getK();
+    case simt::dialect::WmmaRole::Accumulator:
+        return fragmentType.getM();
+    }
+    llvm_unreachable("unsupported WMMA role");
+}
+
+unsigned wmmaCols(simt::dialect::WmmaFragmentType fragmentType) const {
+    switch (fragmentType.getRole()) {
+    case simt::dialect::WmmaRole::MatrixA:
+        return fragmentType.getK();
+    case simt::dialect::WmmaRole::MatrixB:
+        return fragmentType.getN();
+    case simt::dialect::WmmaRole::Accumulator:
+        return fragmentType.getN();
+    }
+    llvm_unreachable("unsupported WMMA role");
+}
+
 StringRef wmmaRoleName(simt::dialect::WmmaRole role) const {
     switch (role) {
     case simt::dialect::WmmaRole::MatrixA:
@@ -94,8 +118,8 @@ LogicalResult emitType(Type type) override {
     if (auto fragmentType = dyn_cast<simt::dialect::WmmaFragmentType>(type)) {
         os << "coopmat<";
         if (failed(emitType(fragmentType.getElementType()))) return failure();
-        os << ", gl_ScopeSubgroup, " << fragmentType.getM() << ", "
-           << fragmentType.getN() << ", " << wmmaRoleName(fragmentType.getRole())
+        os << ", gl_ScopeSubgroup, " << wmmaRows(fragmentType) << ", "
+           << wmmaCols(fragmentType) << ", " << wmmaRoleName(fragmentType.getRole())
            << ">";
         return success();
     }

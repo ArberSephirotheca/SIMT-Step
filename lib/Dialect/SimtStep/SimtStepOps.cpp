@@ -195,10 +195,15 @@ static mlir::LogicalResult verifySupportedWmmaFragment(
     return op->emitOpError() << label
                              << " must have simt_step.wmma_fragment type";
 
-  if (fragmentType.getM() != 16 || fragmentType.getN() != 16 ||
-      fragmentType.getK() != 16) {
+  if (fragmentType.getM() == 0 || fragmentType.getN() == 0 ||
+      fragmentType.getK() == 0) {
     return op->emitOpError()
-           << label << " must use the currently supported m16n16k16 shape";
+           << label << " must use positive WMMA extents";
+  }
+  if ((fragmentType.getM() % 8) != 0 || (fragmentType.getN() % 8) != 0 ||
+      (fragmentType.getK() % 8) != 0) {
+    return op->emitOpError()
+           << label << " must use WMMA extents that are multiples of 8";
   }
 
   switch (fragmentType.getRole()) {
@@ -676,6 +681,12 @@ mlir::LogicalResult WmmaMmaOp::verify() {
     return emitOpError("result must be an accumulator fragment");
   if (accType != resultType)
     return emitOpError("result type must match accumulator type exactly");
+  if (aType.getM() != bType.getM() || aType.getM() != accType.getM())
+    return emitOpError("all WMMA operands must agree on m");
+  if (aType.getN() != bType.getN() || aType.getN() != accType.getN())
+    return emitOpError("all WMMA operands must agree on n");
+  if (aType.getK() != bType.getK() || aType.getK() != accType.getK())
+    return emitOpError("all WMMA operands must agree on k");
 
   return mlir::success();
 }

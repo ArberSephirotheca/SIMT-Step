@@ -71,8 +71,12 @@ mlir::LogicalResult WmmaFragmentType::verify(
     mlir::Type elementType, simt::dialect::WmmaLayout layout) {
   if (!elementType)
     return emitError() << "wmma fragment element type must be non-null";
-  if (m != 16 || n != 16 || k != 16)
-    return emitError() << "only m16n16k16 fragments are currently supported";
+  if (m == 0 || n == 0 || k == 0)
+    return emitError() << "wmma fragment extents must be positive";
+  if ((m % 8) != 0 || (n % 8) != 0 || (k % 8) != 0) {
+    return emitError()
+           << "currently supported WMMA fragment extents must be multiples of 8";
+  }
 
   switch (role) {
   case simt::dialect::WmmaRole::MatrixA:

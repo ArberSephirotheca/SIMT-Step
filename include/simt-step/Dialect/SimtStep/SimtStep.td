@@ -123,9 +123,8 @@ def SimtStep_WmmaFragmentType : TypeDef<SimtStep_Dialect, "WmmaFragment"> {
   let mnemonic = "wmma_fragment";
   let summary = "Warp-level matrix fragment";
   let description = [{
-    Represents a WMMA fragment in the exact pedagogical CUDA slice currently
-    supported by SIMT-Step:
-    - shape `m16n16k16`
+    Represents a WMMA fragment for the currently supported pedagogical slice:
+    - static `m x n x k` extents that are positive multiples of `8`
     - `matrix_a` fragments with `f16` elements and `col_major` layout
     - `matrix_b` fragments with `f16` elements and `row_major` layout
     - `accumulator` fragments with `f32` elements and `none` layout
@@ -244,8 +243,8 @@ def SimtStep_WmmaLoadMatrixOp : Op<SimtStep_Dialect, "wmma_load_matrix",
   let summary = "Collectively load a matrix fragment from memory";
   let description = [{
     Collectively loads a matrix fragment from a SIMT-Step resource. The current
-    implementation supports only the exact `m16n16k16` CUDA WMMA slice used by
-    the reference example.
+    implementation supports the pedagogical `f16/f16/f32` slice with static
+    extents that are positive multiples of `8`.
   }];
 
   let arguments = (ins SimtStep_ResourceType:$resource,

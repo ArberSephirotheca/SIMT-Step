@@ -23,6 +23,36 @@ struct WmmaFragmentValue {
     std::uint32_t n = 16;
     std::uint32_t k = 16;
     std::vector<float> elements;
+
+    std::uint32_t rows() const {
+        switch (role) {
+        case Role::MatrixA:
+            return m;
+        case Role::MatrixB:
+            return k;
+        case Role::Accumulator:
+            return m;
+        }
+        assert(false && "unreachable WMMA fragment role");
+        return 0;
+    }
+
+    std::uint32_t cols() const {
+        switch (role) {
+        case Role::MatrixA:
+            return k;
+        case Role::MatrixB:
+            return n;
+        case Role::Accumulator:
+            return n;
+        }
+        assert(false && "unreachable WMMA fragment role");
+        return 0;
+    }
+
+    std::size_t elementCount() const {
+        return static_cast<std::size_t>(rows()) * cols();
+    }
 };
 
 /// Scalar value domain interpreted by the CPS engine.

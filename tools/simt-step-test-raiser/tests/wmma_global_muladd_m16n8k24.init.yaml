@@ -1,0 +1,10 @@
+buffers:
+  - buffer: buf0
+    size: 384
+    fill: 1
+  - buffer: buf1
+    size: 192
+    fill: 2
+  - buffer: buf2
+    size: 128
+    fill: 0
