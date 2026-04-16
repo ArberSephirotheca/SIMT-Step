@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace simt::test_raiser;
@@ -280,18 +281,38 @@ private:
   LogicalResult emitHostArray(StringRef name, Type elementType,
                               ArrayRef<int64_t> values) {
     const size_t count = values.empty() ? 1 : values.size();
+    int64_t fillValue = 0;
+    if (!values.empty()) {
+      std::unordered_map<int64_t, size_t> counts;
+      size_t bestCount = 0;
+      for (int64_t value : values) {
+        size_t current = ++counts[value];
+        if (current > bestCount) {
+          bestCount = current;
+          fillValue = value;
+        }
+      }
+    }
+
     os << "static ";
     if (failed(emitHostScalarType(elementType)))
       return failure();
-    os << " " << name << "[" << count << "] = {";
+    os << " " << name << "[" << count << "];\n";
+    os << "for (size_t " << name << "_idx = 0; " << name << "_idx < " << count
+       << "; ++" << name << "_idx) " << name << "[" << name << "_idx] = ";
+    if (failed(emitHostScalarLiteral(elementType, fillValue)))
+      return failure();
+    os << ";\n";
+
     for (size_t i = 0; i < count; ++i) {
       const int64_t value = values.empty() ? 0 : values[i];
+      if (value == fillValue)
+        continue;
+      os << name << "[" << i << "] = ";
       if (failed(emitHostScalarLiteral(elementType, value)))
         return failure();
-      if (i + 1 < count)
-        os << ", ";
+      os << ";\n";
     }
-    os << "};\n";
     return success();
   }
 
