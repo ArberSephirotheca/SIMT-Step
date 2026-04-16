@@ -13,6 +13,7 @@
 #include <ctime>
 #include <random>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 
@@ -366,17 +367,37 @@ static inline bool simtBufferEqual(half actual, half expected) {
     LogicalResult emitTypedArray(const std::string &name, Type elementType,
                                  ArrayRef<int64_t> values) {
         const size_t count = values.empty() ? 1 : values.size();
+        int64_t fillValue = 0;
+        if (!values.empty()) {
+            std::unordered_map<int64_t, size_t> counts;
+            size_t bestCount = 0;
+            for (int64_t value : values) {
+                size_t current = ++counts[value];
+                if (current > bestCount) {
+                    bestCount = current;
+                    fillValue = value;
+                }
+            }
+        }
+
         if (failed(emitType(elementType)))
             return failure();
-        os << " " << name << "[" << count << "] = {";
+        os << " " << name << "[" << count << "];\n";
+        os << "for (size_t " << name << "_idx = 0; " << name << "_idx < " << count
+           << "; ++" << name << "_idx) " << name << "[" << name << "_idx] = ";
+        if (failed(emitTypedLiteral(elementType, fillValue)))
+            return failure();
+        os << ";\n";
+
         for (size_t i = 0; i < count; ++i) {
             const int64_t value = values.empty() ? 0 : values[i];
+            if (value == fillValue)
+                continue;
+            os << name << "[" << i << "] = ";
             if (failed(emitTypedLiteral(elementType, value)))
                 return failure();
-            if (i + 1 < count)
-                os << ", ";
+            os << ";\n";
         }
-        os << "};\n";
         return success();
     }
 
