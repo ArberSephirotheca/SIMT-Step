@@ -105,13 +105,32 @@ llvm::LogicalResult getExpectedBuffer(
         return llvm::failure();
     }
 
-    for (auto [i, buf] : llvm::enumerate(buffers)){
+    auto getFillValue = [&](unsigned argIndex) {
+        for (const auto &bufopt : options.perBuffer) {
+            if (bufopt.argIndex == argIndex)
+                return bufopt.fill.value_or(0);
+        }
+        return int64_t{0};
+    };
+
+    auto findBufferIndex = [&](unsigned argIndex) {
+        for (size_t i = 0; i < buffers.size(); ++i) {
+            if (buffers[i].argIndex == argIndex)
+                return static_cast<int64_t>(i);
+        }
+        return int64_t{-1};
+    };
+
+    for (const auto &buf : buffers){
         expectedBuffer.push_back(buf.values);
-        inputBuffer.push_back(std::vector<int64_t>(buf.values.size(), 0));
+        inputBuffer.push_back(std::vector<int64_t>(buf.values.size(), getFillValue(buf.argIndex)));
     }
 
     for (auto entry : init_entries){
-        inputBuffer[entry.argIndex][entry.index] = entry.value;
+        int64_t index = findBufferIndex(entry.argIndex);
+        if (index < 0)
+            continue;
+        inputBuffer[index][entry.index] = entry.value;
     }
 
     return llvm::success();

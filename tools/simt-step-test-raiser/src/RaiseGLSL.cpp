@@ -13,27 +13,31 @@
 #include "llvm/Support/LogicalResult.h"
 #include <random>
 
-
 using namespace simt::test_raiser;
 using namespace llvm;
 using namespace mlir;
 
 class GlslRaiser : public BaseRaiser {
-
 public:
-
 using BaseRaiser::BaseRaiser;
 
 std::map<std::string, std::vector<int>> funcBufferMaps;
+bool hasWmma = false;
 
 LogicalResult emitHarness(Operation* op, HarnessProps props) override {
+    hasWmma = false;
+    op->walk([&](Operation *nested) {
+        if (isa<WmmaFillOp, WmmaLoadMatrixOp, WmmaMmaOp, WmmaStoreMatrixOp>(nested)) {
+            hasWmma = true;
+        }
+    });
+
     if (!props.noWrapper){
         os << "import subprocess\nimport os\n";
         os << "PROGRAM = \"\"\"\\\n";
     }
     if (failed(emitAmberHarness(*this, op, "GLSL", props))) return failure();
     if (!props.noWrapper){
-
         std::random_device dev;
         std::mt19937 rng(dev());
         std::uniform_int_distribution<std::mt19937::result_type> dist6(10000000,99999999);
@@ -43,7 +47,6 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
         os << "if __name__ == \"__main__\":\n";
         os.indent();
         os << "with open(\"" << fname << ".amber\", \"w\") as f: f.write(PROGRAM)\n";
-        // os << "assert os.environ[\"AMBERPATH\"], \"Please specify a path to amber in $AMBERPATH\"\n";
         os << "try:\n";
         os.indent();
         os << "subprocess.run([\"amber\", \"" << fname << ".amber\"])\n";
@@ -58,18 +61,51 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
 }
 
 private:
+StringRef wmmaRoleName(simt::dialect::WmmaRole role) const {
+    switch (role) {
+    case simt::dialect::WmmaRole::MatrixA:
+        return "gl_MatrixUseA";
+    case simt::dialect::WmmaRole::MatrixB:
+        return "gl_MatrixUseB";
+    case simt::dialect::WmmaRole::Accumulator:
+        return "gl_MatrixUseAccumulator";
+    }
+    llvm_unreachable("unsupported WMMA role");
+}
+
+StringRef wmmaLayoutName(simt::dialect::WmmaLayout layout) const {
+    switch (layout) {
+    case simt::dialect::WmmaLayout::RowMajor:
+        return "gl_CooperativeMatrixLayoutRowMajor";
+    case simt::dialect::WmmaLayout::ColMajor:
+        return "gl_CooperativeMatrixLayoutColumnMajor";
+    case simt::dialect::WmmaLayout::None:
+        break;
+    }
+    llvm_unreachable("unsupported WMMA layout");
+}
+
 LogicalResult emitMainFuncTop(func::FuncOp& f) override {
     os << "void main()";
     return success();
 }
 
 LogicalResult emitType(Type type) override {
+    if (auto fragmentType = dyn_cast<simt::dialect::WmmaFragmentType>(type)) {
+        os << "coopmat<";
+        if (failed(emitType(fragmentType.getElementType()))) return failure();
+        os << ", gl_ScopeSubgroup, " << fragmentType.getM() << ", "
+           << fragmentType.getN() << ", " << wmmaRoleName(fragmentType.getRole())
+           << ">";
+        return success();
+    }
+
     if (type.isInteger()){
         switch (type.getIntOrFloatBitWidth()){
             case 1:
                 os << "bool";
                 break;
-            case 32: 
+            case 32:
                 os << (type.isUnsignedInteger() ? "uint" : "int");
                 break;
             case 64:
@@ -77,10 +113,12 @@ LogicalResult emitType(Type type) override {
                 break;
             default:
                 llvm_unreachable("Unsupported int type");
-                break;
         }
     } else if (type.isFloat()){
         switch (type.getIntOrFloatBitWidth()) {
+            case 16:
+                os << "float16_t";
+                break;
             case 32:
                 os << "float";
                 break;
@@ -89,7 +127,6 @@ LogicalResult emitType(Type type) override {
                 break;
             default:
                 llvm_unreachable("Unsupported float type");
-                break;
         }
     } else if (auto vectype = dyn_cast<mlir::VectorType>(type)) {
         long len = vectype.getShape().vec()[0];
@@ -98,7 +135,7 @@ LogicalResult emitType(Type type) override {
         }
         if (vectype.getElementType().isInteger()) os << "i";
         os << "vec" << len;
-    } else if (auto indextype = dyn_cast<mlir::IndexType>(type)){
+    } else if (isa<mlir::IndexType>(type)){
         os << "uint";
     } else {
         llvm_unreachable("Unsupported type");
@@ -108,19 +145,27 @@ LogicalResult emitType(Type type) override {
 }
 
 LogicalResult emitShaderPrologue(Operation* op) override {
-    os << 
-        "#version 430\n"
-        "#extension GL_KHR_shader_subgroup_ballot  : enable\n"
-        "#extension GL_KHR_shader_subgroup_vote    : enable\n"
-        "#extension GL_KHR_shader_subgroup_basic   : enable\n"
-        "#extension GL_KHR_memory_scope_semantics  : enable\n"
-        "#extension GL_ARB_gpu_shader_int64        : enable\n";
-    os  << "layout(local_size_x = " << std::to_string(ntx)
-        << ", local_size_y = " << std::to_string(nty) 
-        << ", local_size_z = " << std::to_string(ntz) << ") in;\n";
+    if (hasWmma) {
+        os << "#version 450\n"
+              "#extension GL_KHR_cooperative_matrix      : require\n"
+              "#extension GL_KHR_memory_scope_semantics  : require\n"
+              "#extension GL_AMD_gpu_shader_half_float   : enable\n"
+              "#extension GL_KHR_shader_subgroup_ballot  : enable\n"
+              "#extension GL_KHR_shader_subgroup_vote    : enable\n"
+              "#extension GL_KHR_shader_subgroup_basic   : enable\n"
+              "#extension GL_ARB_gpu_shader_int64        : enable\n";
+    } else {
+        os << "#version 430\n"
+              "#extension GL_KHR_shader_subgroup_ballot  : enable\n"
+              "#extension GL_KHR_shader_subgroup_vote    : enable\n"
+              "#extension GL_KHR_shader_subgroup_basic   : enable\n"
+              "#extension GL_KHR_memory_scope_semantics  : enable\n"
+              "#extension GL_ARB_gpu_shader_int64        : enable\n";
+    }
+    os << "layout(local_size_x = " << std::to_string(ntx)
+       << ", local_size_y = " << std::to_string(nty)
+       << ", local_size_z = " << std::to_string(ntz) << ") in;\n";
 
-    
-    // Declare all buffers at top of program
     int locs = 0;
     auto m = dyn_cast<ModuleOp>(op);
     assert(m);
@@ -137,15 +182,10 @@ LogicalResult emitShaderPrologue(Operation* op) override {
         }
     }
 
-    // GLSL doesn't really support passing arrays without explicit lengths,
-    // but SIMT Step does and passes them as arguments. We need to figure out
-    // which arguments corrispond to which buffers and remove the buffer parameters
-    // in the function call.
     f->walk([&](Operation* op) -> WalkResult {
         auto call = dyn_cast<func::CallOp>(op);
         if (!call) return WalkResult::advance();
         std::string fname = call.getCallee().str();
-        
 
         std::vector<int> bufmap;
         llvm::BitVector bv {false};
@@ -162,7 +202,6 @@ LogicalResult emitShaderPrologue(Operation* op) override {
         funcBufferMaps[fname] = bufmap;
 
         call->eraseOperands(bv);
-
         return WalkResult::advance();
     });
 
@@ -176,19 +215,16 @@ LogicalResult emitCast(Value in, Value out) override {
     return success();
 }
 
-/////////////// 'arith' dialect ///////////////
+/////////////// arith dialect ///////////////
 LogicalResult printOp(arith::RemFOp &op) override {
     return emitFuncCall(op.getResult(), "mod", {op->getOperand(0), op->getOperand(1)});
 }
 
-/////////////// 'func' dialect ///////////////
+/////////////// func dialect ///////////////
 LogicalResult printOp(func::FuncOp &op) override {
     if (op.getSymName() == "main"){
         if (failed(emitMainFuncTop(op))) return failure();
     } else {
-        // This portion handles replacing the buffer arguments with the buffers
-        // themselves, and removing them from the function signature before running
-        // the normal function printer.
         assert(op.getFunctionType().getNumResults() <= 1);
         if (op.getFunctionType().getNumResults() == 0){
             os << "void";
@@ -219,7 +255,7 @@ LogicalResult printOp(func::FuncOp &op) override {
     return success();
 }
 
-/////////////// 'simt_step' dialect ///////////////
+/////////////// simt_step dialect ///////////////
 
 LogicalResult emitConstVec(Value v, std::string name){
     if (failed(emitValueDefine(v))) return failure();
@@ -283,19 +319,45 @@ LogicalResult printOp(GroupIndexOp& op) override {
 }
 
 LogicalResult printOp(WmmaFillOp& op) override {
-    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    if (failed(emitType(op.getResult().getType()))) return failure();
+    os << " " << addValueName(op.getResult()) << ";\n";
+    os << getValueName(op.getResult()) << " = ";
+    if (failed(emitType(op.getResult().getType()))) return failure();
+    os << "(" << getValueName(op.getOperand()) << ")";
+    return success();
 }
 
 LogicalResult printOp(WmmaLoadMatrixOp& op) override {
-    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    auto fragmentType = dyn_cast<simt::dialect::WmmaFragmentType>(op.getResult().getType());
+    if (!fragmentType)
+        return op.emitOpError("expected WMMA fragment result type");
+    if (failed(emitType(op.getResult().getType()))) return failure();
+    os << " " << addValueName(op.getResult()) << ";\n";
+    os << "coopMatLoad(" << getValueName(op.getResult()) << ", "
+       << getValueName(op.getResource()) << ", "
+       << getValueName(op.getBaseIndex()) << ", "
+       << getValueName(op.getStride()) << ", "
+       << wmmaLayoutName(fragmentType.getLayout()) << ")";
+    return success();
 }
 
 LogicalResult printOp(WmmaMmaOp& op) override {
-    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    if (failed(emitType(op.getResult().getType()))) return failure();
+    os << " " << addValueName(op.getResult()) << ";\n";
+    os << getValueName(op.getResult()) << " = coopMatMulAdd("
+       << getValueName(op.getA()) << ", "
+       << getValueName(op.getB()) << ", "
+       << getValueName(op.getAcc()) << ")";
+    return success();
 }
 
 LogicalResult printOp(WmmaStoreMatrixOp& op) override {
-    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    os << "coopMatStore(" << getValueName(op.getFragment()) << ", "
+       << getValueName(op.getResource()) << ", "
+       << getValueName(op.getBaseIndex()) << ", "
+       << getValueName(op.getStride()) << ", "
+       << wmmaLayoutName(op.getLayout()) << ")";
+    return success();
 }
 
 };

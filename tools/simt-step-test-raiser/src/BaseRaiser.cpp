@@ -654,6 +654,61 @@ LogicalResult getMainInfo(Operation* op, int64_t& ntx, int64_t& nty, int64_t& nt
     return failure();
 }
 
+static std::vector<simt::dialect::ResourceType>
+getMainResourceTypes(Operation *op) {
+    std::vector<simt::dialect::ResourceType> result;
+    auto mod = dyn_cast<ModuleOp>(op);
+    if (!mod)
+        return result;
+    auto func = mod.lookupSymbol<func::FuncOp>("main");
+    if (!func)
+        return result;
+    for (auto arg : func.getArguments()) {
+        if (auto resourceType =
+                dyn_cast<simt::dialect::ResourceType>(arg.getType())) {
+            result.push_back(resourceType);
+        }
+    }
+    return result;
+}
+
+static bool hasWmmaOps(Operation *op) {
+    bool found = false;
+    op->walk([&](Operation *nested) {
+        if (isa<WmmaFillOp, WmmaLoadMatrixOp, WmmaMmaOp, WmmaStoreMatrixOp>(
+                nested)) {
+            found = true;
+        }
+    });
+    return found;
+}
+
+static FailureOr<StringRef> amberDataTypeName(Type type) {
+    if (type.isInteger(32))
+        return StringRef("int32");
+    if (type.isInteger(64))
+        return StringRef("int64");
+    if (type.isF16())
+        return StringRef("float16");
+    if (type.isF32())
+        return StringRef("float");
+    if (type.isF64())
+        return StringRef("double");
+    return failure();
+}
+
+static LogicalResult emitAmberScalar(raw_ostream &os, Type type, int64_t value) {
+    if (type.isInteger()) {
+        os << value;
+        return success();
+    }
+    if (type.isF16() || type.isF32() || type.isF64()) {
+        os << value << ".0";
+        return success();
+    }
+    return failure();
+}
+
 LogicalResult emitAmberHarness(
         BaseRaiser& b, 
         Operation* op, 
@@ -673,6 +728,18 @@ LogicalResult emitAmberHarness(
     }
 
     b.os << "#!amber\n";
+    if (lang == "GLSL" && hasWmmaOps(op)) {
+        b.os << "DEVICE_EXTENSION VK_KHR_vulkan_memory_model\n";
+        b.os << "DEVICE_EXTENSION VK_KHR_cooperative_matrix\n";
+        b.os << "DEVICE_EXTENSION VK_KHR_shader_float16_int8\n";
+        b.os << "DEVICE_EXTENSION VK_KHR_16bit_storage\n";
+        b.os << "DEVICE_EXTENSION VK_KHR_storage_buffer_storage_class\n";
+        b.os << "DEVICE_FEATURE VulkanMemoryModelFeatures.vulkanMemoryModel\n";
+        b.os << "DEVICE_FEATURE CooperativeMatrixFeaturesKHR.cooperativeMatrix\n";
+        b.os << "DEVICE_FEATURE Float16Int8Features.shaderFloat16\n";
+        b.os << "DEVICE_FEATURE Storage16BitFeatures.storageBuffer16BitAccess\n";
+        b.os << "DEVICE_FEATURE Storage16BitFeatures.uniformAndStorageBuffer16BitAccess\n";
+    }
     if (!props.noF64) b.os << "DEVICE_FEATURE shaderFloat64\n";
     if (!props.noI64) b.os << "DEVICE_FEATURE shaderInt64\n";
     if (!props.noSizeControl) b.os << "DEVICE_FEATURE SubgroupSizeControl.subgroupSizeControl\n";
@@ -685,19 +752,38 @@ LogicalResult emitAmberHarness(
     
     b.os << "\nEND\n";
 
+    auto resourceTypes = getMainResourceTypes(op);
     int bnum = 0;
     for (auto [outbuffer, inbuffer] : llvm::zip(props.expected, props.input)){
-        b.os << "BUFFER actual" << bnum << " DATA_TYPE int32 DATA\n  ";
+        Type bufferElementType = IntegerType::get(op->getContext(), 32);
+        if (static_cast<size_t>(bnum) < resourceTypes.size())
+            bufferElementType = resourceTypes[bnum].getElementType();
+
+        auto amberType = amberDataTypeName(bufferElementType);
+        if (failed(amberType))
+            return op->emitOpError("unsupported Amber buffer element type");
+
+        b.os << "BUFFER actual" << bnum << " DATA_TYPE " << *amberType << " DATA\n  ";
         if (inbuffer.size()){
-            for (int i : inbuffer) b.os << i << " ";
+            for (int64_t i : inbuffer) {
+                if (failed(emitAmberScalar(b.os, bufferElementType, i)))
+                    return op->emitOpError("unsupported Amber input literal");
+                b.os << " ";
+            }
         } else {
-            b.os << "0";
+            if (failed(emitAmberScalar(b.os, bufferElementType, 0)))
+                return op->emitOpError("unsupported Amber zero literal");
         }
-        b.os << "\nEND\nBUFFER expected" << bnum << " DATA_TYPE int32 DATA\n  ";
+        b.os << "\nEND\nBUFFER expected" << bnum << " DATA_TYPE " << *amberType << " DATA\n  ";
         if (outbuffer.size()){
-            for (int i : outbuffer) b.os << i << " ";
+            for (int64_t i : outbuffer) {
+                if (failed(emitAmberScalar(b.os, bufferElementType, i)))
+                    return op->emitOpError("unsupported Amber expected literal");
+                b.os << " ";
+            }
         } else {
-            b.os << "0";
+            if (failed(emitAmberScalar(b.os, bufferElementType, 0)))
+                return op->emitOpError("unsupported Amber zero literal");
         }
         b.os << "\nEND\n";
         bnum++;
