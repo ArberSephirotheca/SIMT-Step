@@ -463,6 +463,22 @@ private:
         }
         return success();
     }
+
+    LogicalResult printOp(WmmaFillOp &op) override {
+        return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    }
+
+    LogicalResult printOp(WmmaLoadMatrixOp &op) override {
+        return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    }
+
+    LogicalResult printOp(WmmaMmaOp &op) override {
+        return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    }
+
+    LogicalResult printOp(WmmaStoreMatrixOp &op) override {
+        return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+    }
 };
 
 namespace simt::test_raiser {
