@@ -379,6 +379,10 @@ LogicalResult printOp(WmmaFillOp& op) override {
     return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
 }
 
+LogicalResult printOp(WmmaPoisonOp& op) override {
+    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+}
+
 LogicalResult printOp(WmmaLoadMatrixOp& op) override {
     return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
 }

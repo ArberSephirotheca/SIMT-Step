@@ -28,6 +28,7 @@
 
 ### WMMA fragment ops
 - `simt_step.wmma_fill` – collectively fills an accumulator fragment from a uniform `f32` value.
+- `simt_step.wmma_poison` – produces a WMMA fragment with poison/unknown contents, primarily for tests that need target-level uninitialized fragment declarations.
 - `simt_step.wmma_load_matrix` – collectively loads a fragment from a typed resource with explicit `base` and `stride` operands.
 - `simt_step.wmma_mma` – collectively computes `A * B + C` over three fragment operands and returns an accumulator fragment.
 - `simt_step.wmma_store_matrix` – collectively stores an accumulator fragment to a typed resource with explicit `base`, `stride`, and layout.
@@ -35,6 +36,7 @@
 Current interpreter restrictions for the WMMA ops:
 - subgroup width must be exactly `32`
 - all lanes in the warp must participate in the collective
+- `wmma_store_matrix` cannot materialize a `wmma_poison` fragment to concrete interpreter memory
 - `wmma_load_matrix` and `wmma_store_matrix` currently require uniform resource/base/stride across the warp
 - `wmma_mma` currently requires identical fragment operands across the warp
 

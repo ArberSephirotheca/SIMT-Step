@@ -43,7 +43,8 @@ getMainResourceTypes(Operation *op) {
 static bool hasWmmaOps(Operation *op) {
   bool found = false;
   op->walk([&](Operation *nested) {
-    if (isa<WmmaFillOp, WmmaLoadMatrixOp, WmmaMmaOp, WmmaStoreMatrixOp>(nested))
+    if (isa<WmmaFillOp, WmmaPoisonOp, WmmaLoadMatrixOp, WmmaMmaOp,
+            WmmaStoreMatrixOp>(nested))
       found = true;
   });
   return found;
@@ -888,6 +889,22 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
            << getValueName(op.getOperand()) << ");\n";
       }
     }
+    return success();
+  }
+
+  LogicalResult printOp(WmmaPoisonOp &op) override {
+    auto fragmentType =
+        cast<simt::dialect::WmmaFragmentType>(op.getResult().getType());
+    if (!isSupportedWmmaFragmentType(fragmentType)) {
+      return op.emitOpError(
+          "MSL WMMA lowering currently supports only f16/f16/f32 fragments "
+          "with extents that are multiples of 8");
+    }
+
+    const std::string resultName = addValueName(op.getResult());
+    if (failed(emitType(fragmentType)))
+      return failure();
+    os << " " << resultName;
     return success();
   }
 

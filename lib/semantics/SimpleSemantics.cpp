@@ -81,6 +81,9 @@ auto SimpleSemantics::evalOperation(mlir::Operation *op,
     if (op->getName().getStringRef() == "simt_step.wmma_fill")
         return handleWmmaFill(op, context);
 
+    if (op->getName().getStringRef() == "simt_step.wmma_poison")
+        return handleWmmaPoison(op, context);
+
     if (op->getName().getStringRef() == "simt_step.wmma_load_matrix")
         return handleWmmaLoadMatrix(op, context);
 
@@ -813,6 +816,37 @@ auto SimpleSemantics::handleWmmaFill(mlir::Operation *op,
     constexpr std::uint32_t WmmaFillOp = 5;
     CollectiveEffect effect;
     effect.operation = WmmaFillOp;
+    effect.activeMask = expectedMask;
+    effect.token = static_cast<std::uint32_t>(
+        reinterpret_cast<std::uintptr_t>(op) ^
+        (reinterpret_cast<std::uintptr_t>(op) >> 32));
+    return StepType::suspend(effect, []() -> StepType { return StepType::halt(); });
+}
+
+auto SimpleSemantics::handleWmmaPoison(mlir::Operation *op,
+                                       SemanticsContext &context) -> StepType {
+    if (op->getNumOperands() != 0)
+        return StepType::halt();
+
+    if (context.subgroupWidth != 32) {
+        llvm::errs() << "simple semantics: simt_step.wmma_poison currently "
+                        "requires subgroup width 32\n";
+        return StepType::halt();
+    }
+    std::uint64_t expectedMask = (1ull << 32) - 1ull;
+
+    ExecutionMode mode = resolveExecutionMode(
+        context, op->getName().getStringRef(),
+        context.policy ? context.policy->waveOps : ExecutionMode::Collective);
+    if (mode != ExecutionMode::Collective) {
+        llvm::errs() << "simple semantics: simt_step.wmma_poison currently "
+                        "requires collective execution mode\n";
+        return StepType::halt();
+    }
+
+    constexpr std::uint32_t WmmaPoisonOp = 9;
+    CollectiveEffect effect;
+    effect.operation = WmmaPoisonOp;
     effect.activeMask = expectedMask;
     effect.token = static_cast<std::uint32_t>(
         reinterpret_cast<std::uintptr_t>(op) ^

@@ -27,7 +27,8 @@ bool hasWmma = false;
 LogicalResult emitHarness(Operation* op, HarnessProps props) override {
     hasWmma = false;
     op->walk([&](Operation *nested) {
-        if (isa<WmmaFillOp, WmmaLoadMatrixOp, WmmaMmaOp, WmmaStoreMatrixOp>(nested)) {
+        if (isa<WmmaFillOp, WmmaPoisonOp, WmmaLoadMatrixOp, WmmaMmaOp,
+                WmmaStoreMatrixOp>(nested)) {
             hasWmma = true;
         }
     });
@@ -348,6 +349,12 @@ LogicalResult printOp(WmmaFillOp& op) override {
     os << getValueName(op.getResult()) << " = ";
     if (failed(emitType(op.getResult().getType()))) return failure();
     os << "(" << getValueName(op.getOperand()) << ")";
+    return success();
+}
+
+LogicalResult printOp(WmmaPoisonOp& op) override {
+    if (failed(emitType(op.getResult().getType()))) return failure();
+    os << " " << addValueName(op.getResult());
     return success();
 }
 

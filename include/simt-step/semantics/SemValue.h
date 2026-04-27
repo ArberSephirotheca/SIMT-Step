@@ -22,6 +22,7 @@ struct WmmaFragmentValue {
     std::uint32_t m = 16;
     std::uint32_t n = 16;
     std::uint32_t k = 16;
+    bool poison = false;
     std::vector<float> elements;
 
     std::uint32_t rows() const {

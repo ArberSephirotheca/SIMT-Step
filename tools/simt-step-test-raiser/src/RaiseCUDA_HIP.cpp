@@ -652,6 +652,13 @@ LogicalResult printOp(WmmaFillOp &op) override {
     return success();
 }
 
+LogicalResult printOp(WmmaPoisonOp &op) override {
+    if (failed(emitType(op.getResult().getType())))
+        return failure();
+    os << " " << addValueName(op.getResult());
+    return success();
+}
+
 LogicalResult printOp(WmmaLoadMatrixOp &op) override {
     if (failed(emitType(op.getResult().getType())))
         return failure();

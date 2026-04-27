@@ -238,6 +238,20 @@ def SimtStep_WmmaFillOp : Op<SimtStep_Dialect, "wmma_fill"> {
   let hasVerifier = 1;
 }
 
+def SimtStep_WmmaPoisonOp : Op<SimtStep_Dialect, "wmma_poison"> {
+  let traits = [SimtStep_WaveTrait];
+  let summary = "Produce an uninitialized WMMA fragment";
+  let description = [{
+    Produces a WMMA fragment with poison/unknown contents. This op is intended
+    for tests that need to model a target-level fragment declaration without
+    an initialization call such as fill_fragment or load_matrix_sync.
+  }];
+
+  let results = (outs SimtStep_WmmaFragmentType:$fragment);
+
+  let hasVerifier = 1;
+}
+
 def SimtStep_WmmaLoadMatrixOp : Op<SimtStep_Dialect, "wmma_load_matrix",
     [SimtStep_WaveTrait, MemoryEffects<[MemRead]>]> {
   let summary = "Collectively load a matrix fragment from memory";

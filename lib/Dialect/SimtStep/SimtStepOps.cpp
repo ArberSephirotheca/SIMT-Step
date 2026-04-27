@@ -628,6 +628,11 @@ mlir::LogicalResult WmmaFillOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult WmmaPoisonOp::verify() {
+  return verifySupportedWmmaFragment(getOperation(), getFragment().getType(),
+                                     "result");
+}
+
 mlir::LogicalResult WmmaLoadMatrixOp::verify() {
   if (failed(verifySupportedWmmaFragment(getOperation(), getFragment().getType(),
                                          "result")))

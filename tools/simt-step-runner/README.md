@@ -37,8 +37,13 @@ The interpreter currently supports one explicit WMMA slice:
 - `!simt_step.wmma_fragment<MatrixA, 16 x 16 x 16, f16, ColMajor>`
 - `!simt_step.wmma_fragment<MatrixB, 16 x 16 x 16, f16, RowMajor>`
 - `!simt_step.wmma_fragment<Accumulator, 16 x 16 x 16, f32, None>`
-- ops: `simt_step.wmma_fill`, `simt_step.wmma_load_matrix`,
+- ops: `simt_step.wmma_fill`, `simt_step.wmma_poison`,
+  `simt_step.wmma_load_matrix`,
   `simt_step.wmma_mma`, `simt_step.wmma_store_matrix`
+
+`wmma_poison` models an uninitialized fragment for lowering tests. The runner can
+propagate it through WMMA values, but storing a poison fragment fails because the
+interpreter cannot materialize concrete buffer contents for an unknown value.
 
 ## Example
 

@@ -166,7 +166,8 @@ LogicalResult BaseRaiser::emitOp(mlir::Operation* op){
             BreakOp, ContinueOp, SwitchOp, WaveCountBitsOp,
             LaneIdOp, SubgroupIdOp, WaveAllOp, WaveAnyOp,
             GroupIdOp, GroupThreadIdOp, GroupIndexOp,
-            WmmaFillOp, WmmaLoadMatrixOp, WmmaMmaOp, WmmaStoreMatrixOp
+            WmmaFillOp, WmmaPoisonOp, WmmaLoadMatrixOp, WmmaMmaOp,
+            WmmaStoreMatrixOp
             >(
                 [&](auto op){return printOp(op);})
         
@@ -675,8 +676,8 @@ getMainResourceTypes(Operation *op) {
 static bool hasWmmaOps(Operation *op) {
     bool found = false;
     op->walk([&](Operation *nested) {
-        if (isa<WmmaFillOp, WmmaLoadMatrixOp, WmmaMmaOp, WmmaStoreMatrixOp>(
-                nested)) {
+        if (isa<WmmaFillOp, WmmaPoisonOp, WmmaLoadMatrixOp, WmmaMmaOp,
+                WmmaStoreMatrixOp>(nested)) {
             found = true;
         }
     });

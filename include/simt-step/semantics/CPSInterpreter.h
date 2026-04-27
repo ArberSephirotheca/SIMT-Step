@@ -1116,6 +1116,7 @@ private:
                                  const WmmaFragmentValue &rhs) {
         return lhs.role == rhs.role && lhs.layout == rhs.layout &&
                lhs.m == rhs.m && lhs.n == rhs.n && lhs.k == rhs.k &&
+               lhs.poison == rhs.poison &&
                lhs.elements == rhs.elements;
     }
 
@@ -1254,6 +1255,33 @@ private:
             return;
         }
 
+        if (llvm::isa<simt::dialect::WmmaPoisonOp>(op)) {
+            requireExactWmmaWarpMask(syncPoint.expectedMask, "wmma_poison");
+            auto poisonOp = llvm::cast<simt::dialect::WmmaPoisonOp>(
+                const_cast<mlir::Operation *>(op));
+            auto fragmentType =
+                requireWmmaFragmentType(poisonOp.getFragment().getType(),
+                                        "collective wmma_poison");
+
+            WmmaFragmentValue fragment;
+            fragment.role = convertWmmaRole(fragmentType.getRole());
+            fragment.layout = convertWmmaLayout(fragmentType.getLayout());
+            fragment.m = static_cast<std::uint32_t>(fragmentType.getM());
+            fragment.n = static_cast<std::uint32_t>(fragmentType.getN());
+            fragment.k = static_cast<std::uint32_t>(fragmentType.getK());
+            fragment.poison = true;
+            ValueType fragmentValue = makeWmmaFragmentValue(std::move(fragment));
+
+            std::uint64_t mask = syncPoint.expectedMask;
+            while (mask) {
+                unsigned lane = std::countr_zero(mask);
+                mask &= mask - 1;
+                syncPoint.results[lane] = fragmentValue;
+            }
+            syncPoint.operandPacks.clear();
+            return;
+        }
+
         if (llvm::isa<simt::dialect::WmmaLoadMatrixOp>(op)) {
             requireExactWmmaWarpMask(syncPoint.expectedMask, "wmma_load_matrix");
             auto loadOp = llvm::cast<simt::dialect::WmmaLoadMatrixOp>(
@@ -1377,6 +1405,19 @@ private:
             result.m = cFragment->m;
             result.n = cFragment->n;
             result.k = cFragment->k;
+            if (aFragment->poison || bFragment->poison || cFragment->poison) {
+                result.poison = true;
+                ValueType fragmentValue =
+                    makeWmmaFragmentValue(std::move(result));
+                mask = syncPoint.expectedMask;
+                while (mask) {
+                    unsigned lane = std::countr_zero(mask);
+                    mask &= mask - 1;
+                    syncPoint.results[lane] = fragmentValue;
+                }
+                syncPoint.operandPacks.clear();
+                return;
+            }
             result.elements.assign(result.elementCount(), 0.0f);
 
             for (std::uint32_t row = 0; row < cRows; ++row) {
@@ -1446,6 +1487,9 @@ private:
             }
 
             auto &mem = memoryMutable();
+            if (fragment->poison)
+                llvm::report_fatal_error(
+                    "collective wmma_store_matrix: cannot concretize poison fragment");
             const std::uint32_t rows = wmmaFragmentRows(*fragment);
             const std::uint32_t cols = wmmaFragmentCols(*fragment);
             for (std::uint32_t row = 0; row < rows; ++row) {

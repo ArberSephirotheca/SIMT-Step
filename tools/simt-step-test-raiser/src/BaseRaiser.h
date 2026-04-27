@@ -205,6 +205,7 @@ namespace simt::test_raiser {
             virtual LogicalResult printOp(GroupThreadIdOp& op) = 0;
             virtual LogicalResult printOp(GroupIndexOp& op) = 0;
             virtual LogicalResult printOp(WmmaFillOp& op) = 0;
+            virtual LogicalResult printOp(WmmaPoisonOp& op) = 0;
             virtual LogicalResult printOp(WmmaLoadMatrixOp& op) = 0;
             virtual LogicalResult printOp(WmmaMmaOp& op) = 0;
             virtual LogicalResult printOp(WmmaStoreMatrixOp& op) = 0;

@@ -51,6 +51,7 @@ private:
     StepType handleWaveCountBits(mlir::Operation *op, SemanticsContext &context);
     StepType handleWaveMma(mlir::Operation *op, SemanticsContext &context);
     StepType handleWmmaFill(mlir::Operation *op, SemanticsContext &context);
+    StepType handleWmmaPoison(mlir::Operation *op, SemanticsContext &context);
     StepType handleWmmaLoadMatrix(mlir::Operation *op, SemanticsContext &context);
     StepType handleWmmaMma(mlir::Operation *op, SemanticsContext &context);
     StepType handleWmmaStoreMatrix(mlir::Operation *op, SemanticsContext &context);
