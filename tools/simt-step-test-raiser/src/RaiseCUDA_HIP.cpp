@@ -624,11 +624,21 @@ LogicalResult printOp(SubgroupIdOp& op) override {
 }
 
 LogicalResult printOp(WaveAllOp& op) override {
-    return emitFuncCall(op.getResult(), "__all", {op.getOperand()});
+    if (RT == HIP){
+        return emitFuncCall(op.getResult(), "__all", {op.getOperand()});
+    } else {
+        os << "__all_sync(__activemask(), " << getValueName(op.getOperand()) << ")";
+        return success();
+    }
 }
 
 LogicalResult printOp(WaveAnyOp& op) override {
-    return emitFuncCall(op.getResult(), "__any", {op.getOperand()});
+    if (RT == HIP){
+        return emitFuncCall(op.getResult(), "__any", {op.getOperand()});
+    } else {
+        os << "__any_sync(__activemask(), " << getValueName(op.getOperand()) << ")";
+        return success();
+    }
 }
 
 LogicalResult printOp(GroupIdOp& op) override {

@@ -33,9 +33,13 @@ def run_raiser(file: Path, args: argparse.Namespace, failures: mp.Queue[FailInfo
     if args.no_wrapper and "--no-wrapper" not in raiser_cmd:
         raiser_cmd.append("--no-wrapper")
     
-    buffer_yaml = Path(no_ext + ".yaml")
-    if not args.no_yaml and buffer_yaml.exists():
-        raiser_cmd += ["--buffer-init-yaml", str(buffer_yaml)]
+    if not args.no_yaml:
+        buffer_yaml = Path(no_ext + ".yaml")
+        if buffer_yaml.exists():
+            raiser_cmd += ["--buffer-init-yaml", str(buffer_yaml)]
+        buffer_yaml = Path(no_ext + ".init.yaml")
+        if buffer_yaml.exists():
+            raiser_cmd += ["--buffer-init-yaml", str(buffer_yaml)]
     
     raiser_out_dir = args.output_dir if not args.ssh_dest else "/tmp/glsl-fuzz"
     raiser_cmd += ["-o", raiser_out_dir + "/" + Path(no_ext).name + "." + TARGETS[args.target if args.no_wrapper else "python"].ext]
