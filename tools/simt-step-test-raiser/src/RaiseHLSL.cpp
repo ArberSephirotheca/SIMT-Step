@@ -144,21 +144,17 @@ LogicalResult emitHarness(Operation* op, HarnessProps props) override {
         os.indent();
         os << "with open('" << fname << ".cpp', 'w') as f: f.write(DRIVER)\n";
         os << "with open('" << fname << ".hlsl', 'w') as f: f.write(PROGRAM)\n";
-        if (!props.noCleanup){
-            os << "try:\n";
-            os.indent();
-        }
-        os << "sp.run(['cl', '/EHsc', f\"/DDEVICE_NUM={0 if 'DEVICE_NUM' not in os.environ else os.environ['DEVICE_NUM']}\", '" << fname << ".cpp'], check=True, env=os.environ.copy())\n";
+        os << "try:\n";
+        os.indent();
+        os << "sp.run(['cl', '/EHsc', '" << fname << ".cpp'], check=True, env=os.environ.copy())\n";
         os << "sp.run(['" << fname << ".exe'], check=True, env=os.environ.copy())\n";
-        if (!props.noCleanup){
-            os.unindent() << "finally:\n";
-            os.indent();
-            os << "os.remove('" << fname << ".cpp')\n"
-                "if os.path.exists('" << fname << ".exe'): os.remove('" << fname << ".exe')\n"
-                "if os.path.exists('" << fname << ".obj'): os.remove('" << fname << ".obj')\n"
-                "if os.path.exists('" << fname << ".hlsl'): os.remove('" << fname << ".hlsl')\n";
-            os.unindent();
-        }
+        os.unindent() << "finally:\n";
+        os.indent();
+        os << "os.remove('" << fname << ".cpp')\n"
+              "if os.path.exists('" << fname << ".exe'): os.remove('" << fname << ".exe')\n"
+              "if os.path.exists('" << fname << ".obj'): os.remove('" << fname << ".obj')\n"
+              "if os.path.exists('" << fname << ".hlsl'): os.remove('" << fname << ".hlsl')\n";
+        os.unindent();
         os.unindent();
 
     }
@@ -377,6 +373,22 @@ LogicalResult printOp(GroupThreadIdOp& op) override {
 
 LogicalResult printOp(GroupIndexOp& op) override {
     return emitConstVec(op.getResult(), "group_index");
+}
+
+LogicalResult printOp(WmmaFillOp& op) override {
+    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+}
+
+LogicalResult printOp(WmmaLoadMatrixOp& op) override {
+    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+}
+
+LogicalResult printOp(WmmaMmaOp& op) override {
+    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
+}
+
+LogicalResult printOp(WmmaStoreMatrixOp& op) override {
+    return op.emitOpError("WMMA ops are only supported by the CUDA/HIP raisers");
 }
 
 };

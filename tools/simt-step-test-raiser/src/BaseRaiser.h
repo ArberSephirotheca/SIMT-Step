@@ -47,7 +47,6 @@ namespace simt::test_raiser {
         bool noWrapper;
         bool noI64;
         bool noSizeControl;
-        bool noCleanup;
     };
 
     class BaseRaiser {
@@ -205,6 +204,10 @@ namespace simt::test_raiser {
             virtual LogicalResult printOp(GroupIdOp& op) = 0;
             virtual LogicalResult printOp(GroupThreadIdOp& op) = 0;
             virtual LogicalResult printOp(GroupIndexOp& op) = 0;
+            virtual LogicalResult printOp(WmmaFillOp& op) = 0;
+            virtual LogicalResult printOp(WmmaLoadMatrixOp& op) = 0;
+            virtual LogicalResult printOp(WmmaMmaOp& op) = 0;
+            virtual LogicalResult printOp(WmmaStoreMatrixOp& op) = 0;
             // virtual LogicalResult printOp(FenceOp& op) = 0;
             // virtual LogicalResult printOp(BarrierOp& op) = 0;
 

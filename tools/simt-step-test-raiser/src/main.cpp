@@ -105,13 +105,32 @@ llvm::LogicalResult getExpectedBuffer(
         return llvm::failure();
     }
 
-    for (auto [i, buf] : llvm::enumerate(buffers)){
+    auto getFillValue = [&](unsigned argIndex) {
+        for (const auto &bufopt : options.perBuffer) {
+            if (bufopt.argIndex == argIndex)
+                return bufopt.fill.value_or(0);
+        }
+        return int64_t{0};
+    };
+
+    auto findBufferIndex = [&](unsigned argIndex) {
+        for (size_t i = 0; i < buffers.size(); ++i) {
+            if (buffers[i].argIndex == argIndex)
+                return static_cast<int64_t>(i);
+        }
+        return int64_t{-1};
+    };
+
+    for (const auto &buf : buffers){
         expectedBuffer.push_back(buf.values);
-        inputBuffer.push_back(std::vector<int64_t>(buf.values.size(), 0));
+        inputBuffer.push_back(std::vector<int64_t>(buf.values.size(), getFillValue(buf.argIndex)));
     }
 
     for (auto entry : init_entries){
-        inputBuffer[entry.argIndex][entry.index] = entry.value;
+        int64_t index = findBufferIndex(entry.argIndex);
+        if (index < 0)
+            continue;
+        inputBuffer[index][entry.index] = entry.value;
     }
 
     return llvm::success();
@@ -125,8 +144,7 @@ auto makeTranslateFunction(
     llvm::cl::opt<bool>& noInterpreter,
     llvm::cl::opt<bool>& noWrapper,
     llvm::cl::opt<bool>& noInt64,
-    llvm::cl::opt<bool>& noSizeControl,
-    llvm::cl::opt<bool>& noCleanup){
+    llvm::cl::opt<bool>& noSizeControl){
     return [&, func](Operation *op, raw_ostream &output) {
                 std::vector<std::vector<int64_t>> expbuf = {};
                 std::vector<std::vector<int64_t>> inbuf = {};
@@ -140,8 +158,7 @@ auto makeTranslateFunction(
                     .noF64 = noFloat64,
                     .noWrapper = noWrapper,
                     .noI64 = noInt64,
-                    .noSizeControl = noSizeControl,
-                    .noCleanup = noCleanup
+                    .noSizeControl = noSizeControl
                 };
                 return func(op, output, props);
         };
@@ -199,19 +216,11 @@ int main(int argc, char** argv){
         llvm::cl::init(false)
     );
 
-    llvm::cl::opt<bool> noCleanup(
-        "no-cleanup",
-        llvm::cl::desc(
-            "When emity Python wrapper, do not emit code to clean up temporary files after execution. "
-            "Only works for HLSL w/ DirectX."),
-        llvm::cl::init(false)
-    );
-
     TranslateFromMLIRRegistration t_glsl(
         "mlir-to-glsl-amber", "translate mlir to GLSL with Amber harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedGLSL, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl, noCleanup),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -219,7 +228,7 @@ int main(int argc, char** argv){
         "mlir-to-cuda", "translate mlir to CUDA with a CUDA test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedCUDA, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl, noCleanup),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -227,7 +236,7 @@ int main(int argc, char** argv){
         "mlir-to-hip", "translate mlir to HIP with a HIP test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedHIP, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl, noCleanup),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -235,7 +244,7 @@ int main(int argc, char** argv){
         "mlir-to-hlsl-amber", "translate mlir to HLSL with a Amber test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedHLSLAmber, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl, noCleanup),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -243,7 +252,7 @@ int main(int argc, char** argv){
         "mlir-to-hlsl-directx", "translate mlir to HLSL with a DirectX C++ test harness",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedHLSL, 
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl, noCleanup),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
@@ -251,7 +260,7 @@ int main(int argc, char** argv){
         "mlir-to-msl", "translate mlir to MSL with Metal test harness (or shader-only with --no-wrapper)",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedMSL,
-            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl, noCleanup),
+            bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),
         insertSimtDialects
     );
 
