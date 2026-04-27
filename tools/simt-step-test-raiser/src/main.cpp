@@ -257,7 +257,7 @@ int main(int argc, char** argv){
     );
 
     TranslateFromMLIRRegistration t_msl(
-        "mlir-to-msl", "translate mlir to MSL with Metal test harness (or shader-only with --no-wrapper)",
+        "mlir-to-msl", "translate mlir to MSL with a Python-wrapped Metal test harness (or Objective-C++ harness with --no-wrapper)",
         makeTranslateFunction(
             simt::test_raiser::emitRaisedMSL,
             bufferInitYaml, subgroupWidth, noFloat64, noInterpreter, noWrapper, noInt64, noSizeControl),

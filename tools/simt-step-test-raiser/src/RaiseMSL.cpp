@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -68,8 +69,8 @@ public:
     subgroupWidth = std::max(1, props.subgroupWidth);
     hasWmma = hasWmmaOps(op);
     if (props.noWrapper)
-      return emitShaderOnly(op);
-    return emitWrappedHarness(op, props, bufferIndices);
+      return emitObjectiveCHarness(op, props, bufferIndices);
+    return emitPythonWrapper(op, props, bufferIndices);
   }
 
 private:
@@ -390,8 +391,59 @@ static inline bool simtBufferEqual(__fp16 actual, __fp16 expected) {
       os << "\n";
   }
 
-  LogicalResult emitWrappedHarness(Operation *op, HarnessProps props,
-                                   ArrayRef<int64_t> bufferIndices) {
+  LogicalResult emitPythonWrapper(Operation *op, HarnessProps props,
+                                  ArrayRef<int64_t> bufferIndices) {
+    std::string harnessText;
+    raw_string_ostream harnessOS(harnessText);
+    MslRaiser harness(harnessOS);
+    harness.subgroupWidth = subgroupWidth;
+    harness.hasWmma = hasWmma;
+    if (failed(harness.emitObjectiveCHarness(op, props, bufferIndices)))
+      return failure();
+    harnessOS.flush();
+
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(10000000,
+                                                                  99999999);
+    const std::string fname = "testout" + std::to_string(dist(rng));
+
+    os << "import os\n";
+    os << "import subprocess\n\n";
+    os << "PROGRAM = r\"\"\"\\\n";
+    os << harnessText;
+    if (!harnessText.empty() &&
+        static_cast<unsigned char>(harnessText.back()) != 10)
+      os << static_cast<char>(10);
+    os << "\"\"\"\n";
+    os << "if __name__ == \"__main__\":\n";
+    os.indent();
+    os << "with open(\"" << fname << ".mm\", \"w\") as f: f.write(PROGRAM)\n";
+    os << "try:\n";
+    os.indent();
+    os << "cmd = [\"xcrun\", \"clang++\", \"-std=c++17\", "
+          "\"-x\", \"objective-c++\", \""
+       << fname
+       << ".mm\", \"-framework\", \"Metal\", \"-framework\", \"Foundation\", "
+          "\"-o\", \""
+       << fname << ".out\"]\n";
+    os << "subprocess.run(cmd, check=True, env=os.environ)\n";
+    os << "subprocess.run([\"./" << fname
+       << ".out\"], check=True, env=os.environ)\n";
+    os.unindent();
+    os << "finally:\n";
+    os.indent();
+    os << "if os.path.exists(\"" << fname << ".mm\"): os.remove(\"" << fname
+       << ".mm\")\n";
+    os << "if os.path.exists(\"" << fname << ".out\"): os.remove(\"" << fname
+       << ".out\")\n";
+    os.unindent();
+    os.unindent();
+    return success();
+  }
+
+  LogicalResult emitObjectiveCHarness(Operation *op, HarnessProps props,
+                                      ArrayRef<int64_t> bufferIndices) {
     std::string shaderText;
     raw_string_ostream shaderOS(shaderText);
     MslRaiser shader(shaderOS);
